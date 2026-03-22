@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── NextAuth Models ───────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  accounts      Account[]
+  sessions      Session[]
+  subscription  Subscription?
+  savedAds      SavedAd[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── App Models ────────────────────────────────────────────────
+
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  plan             String    @default("free") // free | starter | premium | business
+  lsCustomerId     String?   // LemonSqueezy customer ID
+  lsOrderId        String?   // LemonSqueezy order ID
+  lsSubscriptionId String?   // LemonSqueezy subscription ID
+  lsVariantId      String?   // LemonSqueezy variant ID (maps to plan)
+  status           String?   // active | cancelled | expired | paused
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Ads scraped by Apify and stored for fast search
+model Ad {
+  id          String   @id @default(cuid())
+  adArchiveId String   @unique // Facebook ad_archive_id
+  pageId      String?
+  pageName    String?
+  bodyText    String?
+  title       String?
+  description String?
+  imageUrl    String?
+  adLibraryUrl String?
+  platforms   String[] // ["FACEBOOK", "INSTAGRAM"]
+  country     String   @default("US")
+  isActive    Boolean  @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  rawData     Json     // full Apify output for future use
+  scrapedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([country, isActive])
+  @@index([pageName])
+  @@index([scrapedAt])
+}
+
+model SavedAd {
+  id        String   @id @default(cuid())
+  userId    String
+  adId      String
+  adData    Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, adId])
+}
