@@ -79,13 +79,20 @@ function buildUrl(job: CrawlJob): string {
   );
 }
 
-async function startRun(job: CrawlJob, token: string): Promise<string> {
+async function startRun(job: CrawlJob, token: string, webhookUrl?: string): Promise<string> {
+  const body: Record<string, unknown> = {
+    urls: [{ url: buildUrl(job) }],
+    maxResults: MAX_RESULTS_PER_JOB,
+  };
+  if (webhookUrl) {
+    body.webhooks = [{ eventTypes: ["ACTOR.RUN.SUCCEEDED"], requestUrl: webhookUrl }];
+  }
   const res = await fetch(
     `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=512`,
     {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ urls: [{ url: buildUrl(job) }], maxResults: MAX_RESULTS_PER_JOB }),
+      body:    JSON.stringify(body),
     }
   );
   if (!res.ok) throw new Error(`Start run failed: ${res.status}`);
@@ -159,7 +166,34 @@ export async function crawlBatch(jobs: CrawlJob[]): Promise<BatchResult[]> {
 
 // ─── Upsert ads into DB ──────────────────────────────────────────────────────
 
-async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<number> {
+// ─── Webhook-based approach: start all runs, return quickly ─────────────────
+
+export async function startAllRunsWithWebhooks(
+  jobs: CrawlJob[],
+  appUrl: string,
+  secret: string
+): Promise<{ started: number; errors: number }> {
+  const token = process.env.APIFY_API_TOKEN;
+  if (!token) throw new Error("APIFY_API_TOKEN not configured");
+
+  const results = await Promise.allSettled(
+    jobs.map(job => {
+      const webhookUrl =
+        `${appUrl}/api/webhook/apify` +
+        `?secret=${encodeURIComponent(secret)}` +
+        `&keyword=${encodeURIComponent(job.keyword)}` +
+        `&country=${job.country}`;
+      return startRun(job, token, webhookUrl);
+    })
+  );
+
+  return {
+    started: results.filter(r => r.status === "fulfilled").length,
+    errors:  results.filter(r => r.status === "rejected").length,
+  };
+}
+
+export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<number> {
   let saved = 0;
 
   for (const raw of items) {

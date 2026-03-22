@@ -1,40 +1,26 @@
-// Vercel Cron endpoint — chạy tự động mỗi 4 tiếng
-// vercel.json schedule: "0 */4 * * *"
-// Chạy toàn bộ 40 jobs song song, tận dụng 128 concurrent runs của Scale plan.
-// Parallel start → single 55s wait → fetch all → upsert.
-// Total time: ~75s + upsert time, well within maxDuration 300s.
+// Vercel Cron endpoint — Hobby plan compatible (< 10s)
+// Strategy: start all Apify runs with webhook callbacks, return immediately.
+// Apify calls back /api/webhook/apify when each run completes.
 import { NextRequest, NextResponse } from "next/server";
-import { crawlBatch, cleanOldAds, DEFAULT_CRAWL_JOBS } from "@/lib/crawler";
+import { startAllRunsWithWebhooks, cleanOldAds, DEFAULT_CRAWL_JOBS } from "@/lib/crawler";
 
-export const maxDuration = 300;
+export const maxDuration = 10;
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Chạy toàn bộ jobs — Scale plan hỗ trợ 128 concurrent runs
-  const jobs = DEFAULT_CRAWL_JOBS;
+  const appUrl = (process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const secret = process.env.CRON_SECRET ?? "";
 
-  console.log(`[cron/crawl] Starting all ${jobs.length} jobs in parallel`);
-
-  const [results, deleted] = await Promise.all([
-    crawlBatch(jobs),
+  const [{ started, errors }, deleted] = await Promise.all([
+    startAllRunsWithWebhooks(DEFAULT_CRAWL_JOBS, appUrl, secret),
     cleanOldAds(),
   ]);
 
-  const totalSaved = results.reduce((s, r) => s + r.saved, 0);
-  const errors     = results.filter(r => r.error);
+  console.log(`[cron/crawl] Started ${started} Apify runs, ${errors} errors, ${deleted} old ads deleted`);
 
-  console.log(`[cron/crawl] Done: ${totalSaved} ads saved, ${deleted} old ads deleted`);
-
-  return NextResponse.json({
-    ok: true,
-    totalSaved,
-    deleted,
-    results,
-    errors: errors.length,
-  });
+  return NextResponse.json({ ok: true, started, errors, deleted });
 }
