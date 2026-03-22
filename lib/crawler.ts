@@ -207,16 +207,20 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
       (snap?.cards?.map(c => c.body).filter(Boolean) as string[]).join(" | ") ||
       snap?.body?.text || null;
 
-    // Thumbnail: prefer resized, fallback original
+    // Thumbnail: cards → snapshot.images[] → snapshot direct
     const imageUrl =
       firstCard?.resized_image_url ||
       firstCard?.original_image_url ||
+      snap?.images?.[0]?.resized_image_url ||
+      snap?.images?.[0]?.original_image_url ||
       null;
 
-    // Video URL
+    // Video URL: cards → snapshot.videos[] → snapshot direct
     const videoUrl =
       firstCard?.video_hd_url ||
       firstCard?.video_sd_url ||
+      snap?.videos?.[0]?.video_hd_url ||
+      snap?.videos?.[0]?.video_sd_url ||
       snap?.video_hd_url ||
       snap?.video_sd_url ||
       null;
@@ -313,6 +317,8 @@ interface ApifyRawAd {
     title?: string;
     video_hd_url?: string;
     video_sd_url?: string;
+    images?: Array<{ resized_image_url?: string; original_image_url?: string }>;
+    videos?: Array<{ video_hd_url?: string; video_sd_url?: string }>;
     cards?: Array<{
       body?: string;
       title?: string;

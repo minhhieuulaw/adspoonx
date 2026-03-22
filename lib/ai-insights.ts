@@ -1,5 +1,37 @@
 import type { FbAd } from "./facebook-ads";
 
+// ─── Dropshipping detection ───────────────────────────────────────────────────
+
+const DROPSHIPPING_PATTERNS = [
+  /\b(dropshipping|drop.?ship(ping)?|aliexpress|dhgate|cj.?dropship(ping)?)\b/i,
+  /\b(free.?shipping|ships? from (china|warehouse)|processing.?time)\b/i,
+  /\b(limited.?stock|while.?supplies? last|selling.?fast|almost.?sold.?out|low.?stock)\b/i,
+  /\b(order.?now|get.?yours|grab.?yours|claim.?yours|shop.?now.{0,5}(today|limited))\b/i,
+  /\b([5-9][0-9]%.?off|buy.?[23].?get.?[12].?free)\b/i,
+  /\b(trending|viral|tiktok.?(famous|made me buy|viral)|seen.?on.?tv)\b/i,
+  /\b(worldwide.?shipping|international.?shipping|ships? (world|globe|everywhere))\b/i,
+];
+
+export function getDropshippingScore(ad: FbAd): number {
+  const text = [
+    ad.ad_creative_bodies?.[0] ?? "",
+    ad.ad_creative_link_titles?.[0] ?? "",
+    ad.ad_creative_link_descriptions?.[0] ?? "",
+    ad.page_name ?? "",
+  ].join(" ");
+
+  let score = 0;
+  for (const pattern of DROPSHIPPING_PATTERNS) {
+    if (pattern.test(text)) score += 18;
+  }
+  // Audience Network = often dropshipping ad network targeting
+  if ((ad.publisher_platforms ?? []).some(p => p === "audience_network")) score += 10;
+  // Multi-country signal
+  if ((ad.countries?.length ?? 0) > 2) score += 10;
+
+  return Math.min(100, score);
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type Trend = "rising" | "stable" | "declining";

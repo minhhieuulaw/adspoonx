@@ -148,38 +148,77 @@ export async function GET(req: NextRequest) {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
-function extractFromRaw(rawData: unknown, keys: string[], deepKeys?: { snap?: string[]; card?: string[] }): string | undefined {
+function extractPageProfilePicture(rawData: unknown): string | undefined {
   if (!rawData || typeof rawData !== "object") return undefined;
-  const r = rawData as Record<string, unknown>;
-  for (const key of keys) {
-    if (typeof r[key] === "string" && r[key]) return r[key] as string;
-  }
-  const snap = r["snapshot"];
-  if (snap && typeof snap === "object") {
-    const s = snap as Record<string, unknown>;
-    for (const key of (deepKeys?.snap ?? keys)) {
-      if (typeof s[key] === "string" && s[key]) return s[key] as string;
-    }
-    const cards = s["cards"];
-    if (Array.isArray(cards) && cards.length > 0) {
-      const card = cards[0] as Record<string, unknown>;
-      for (const key of (deepKeys?.card ?? keys)) {
-        if (typeof card[key] === "string" && card[key]) return card[key] as string;
-      }
-    }
+  const snap = (rawData as Record<string, unknown>)["snapshot"] as Record<string, unknown> | undefined;
+  if (typeof snap?.["page_profile_picture_url"] === "string" && snap["page_profile_picture_url"]) {
+    return snap["page_profile_picture_url"] as string;
   }
   return undefined;
 }
 
+function extractCtaText(rawData: unknown): string | undefined {
+  if (!rawData || typeof rawData !== "object") return undefined;
+  const snap = (rawData as Record<string, unknown>)["snapshot"] as Record<string, unknown> | undefined;
+  if (!snap) return undefined;
+  const cards = snap["cards"] as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(cards) && cards.length > 0) {
+    const cta = cards[0]["cta_text"];
+    if (typeof cta === "string" && cta) return cta;
+  }
+  if (typeof snap["cta_text"] === "string" && snap["cta_text"]) return snap["cta_text"] as string;
+  return undefined;
+}
+
 function extractVideoUrl(rawData: unknown): string | undefined {
-  return extractFromRaw(rawData, ["videoUrl", "video_hd_url", "video_sd_url", "videoHdUrl", "videoSdUrl"]);
+  if (!rawData || typeof rawData !== "object") return undefined;
+  const r = rawData as Record<string, unknown>;
+  // Top-level enriched field (stored by crawler)
+  if (typeof r["videoUrl"] === "string" && r["videoUrl"]) return r["videoUrl"] as string;
+  const snap = r["snapshot"] as Record<string, unknown> | undefined;
+  if (!snap) return undefined;
+  // snapshot.videos[] array (main location)
+  const videos = snap["videos"] as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(videos) && videos.length > 0) {
+    const v = videos[0];
+    if (typeof v["video_hd_url"] === "string" && v["video_hd_url"]) return v["video_hd_url"] as string;
+    if (typeof v["video_sd_url"] === "string" && v["video_sd_url"]) return v["video_sd_url"] as string;
+  }
+  // snapshot.cards[0] video (carousel ads)
+  const cards = snap["cards"] as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(cards) && cards.length > 0) {
+    const c = cards[0];
+    if (typeof c["video_hd_url"] === "string" && c["video_hd_url"]) return c["video_hd_url"] as string;
+    if (typeof c["video_sd_url"] === "string" && c["video_sd_url"]) return c["video_sd_url"] as string;
+  }
+  // snapshot direct fields
+  if (typeof snap["video_hd_url"] === "string" && snap["video_hd_url"]) return snap["video_hd_url"] as string;
+  if (typeof snap["video_sd_url"] === "string" && snap["video_sd_url"]) return snap["video_sd_url"] as string;
+  return undefined;
 }
 
 function extractThumbnailUrl(rawData: unknown): string | undefined {
-  return extractFromRaw(rawData,
-    ["thumbnailUrl", "thumbnail_url"],
-    { snap: ["thumbnail_url"], card: ["resized_image_url", "original_image_url", "thumbnail_url"] }
-  );
+  if (!rawData || typeof rawData !== "object") return undefined;
+  const r = rawData as Record<string, unknown>;
+  // Top-level enriched field
+  if (typeof r["thumbnailUrl"] === "string" && r["thumbnailUrl"]) return r["thumbnailUrl"] as string;
+  const snap = r["snapshot"] as Record<string, unknown> | undefined;
+  if (!snap) return undefined;
+  // snapshot.images[] array (main location)
+  const images = snap["images"] as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(images) && images.length > 0) {
+    const img = images[0];
+    if (typeof img["resized_image_url"] === "string" && img["resized_image_url"]) return img["resized_image_url"] as string;
+    if (typeof img["original_image_url"] === "string" && img["original_image_url"]) return img["original_image_url"] as string;
+  }
+  // snapshot.cards[0] image (carousel)
+  const cards = snap["cards"] as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(cards) && cards.length > 0) {
+    const c = cards[0];
+    if (typeof c["resized_image_url"] === "string" && c["resized_image_url"]) return c["resized_image_url"] as string;
+    if (typeof c["original_image_url"] === "string" && c["original_image_url"]) return c["original_image_url"] as string;
+  }
+  return undefined;
 }
 
 type PrismaAd = {
@@ -199,14 +238,16 @@ function mapAdToFbAd(ad: PrismaAd): FbAd {
     ad_creative_link_titles:       ad.title ? [ad.title] : undefined,
     ad_creative_link_descriptions: ad.description ? [ad.description] : undefined,
     ad_snapshot_url:               ad.adLibraryUrl ?? undefined,
-    image_url:                     ad.imageUrl ?? undefined,
+    image_url:                     ad.imageUrl ?? extractThumbnailUrl(ad.rawData) ?? undefined,
     video_url:                     extractVideoUrl(ad.rawData),
-    thumbnail_url:                 extractVideoUrl(ad.rawData) ? (extractThumbnailUrl(ad.rawData) ?? ad.imageUrl ?? undefined) : undefined,
+    thumbnail_url:                 extractThumbnailUrl(ad.rawData) ?? ad.imageUrl ?? undefined,
     publisher_platforms:           ad.platforms.length ? ad.platforms : undefined,
     ad_delivery_start_time:        ad.startDate?.toISOString(),
     ad_delivery_stop_time:         ad.endDate?.toISOString(),
     is_active:                     ad.isActive,
     country:                       ad.country,
     countries:                     [ad.country],
+    page_profile_picture_url:      extractPageProfilePicture(ad.rawData),
+    cta_text:                      extractCtaText(ad.rawData),
   };
 }

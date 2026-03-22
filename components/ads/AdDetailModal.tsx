@@ -198,15 +198,15 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                 className="flex flex-col overflow-y-auto flex-shrink-0"
                 style={{ width: 300, background: "var(--bg-card)", borderRight: "1px solid var(--border)" }}
               >
-                {/* Brand header */}
+                {/* Brand header — Facebook Ads Library style */}
                 <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
                   {ad.page_profile_picture_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={ad.page_profile_picture_url} alt={storeName}
-                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      className="w-9 h-9 rounded-full object-cover flex-shrink-0"
                       style={{ border: `1.5px solid ${color}40` }} />
                   ) : (
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
                       style={{ background: `${color}20`, color, border: `1.5px solid ${color}35` }}>
                       {storeName.slice(0, 2).toUpperCase()}
                     </div>
@@ -215,18 +215,21 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                     <p className="font-display text-[13px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
                       {storeName}
                     </p>
-                    <span className="flex items-center gap-1 text-[10px]" style={{ color: isActive ? "var(--green-light)" : "var(--text-3)" }}>
-                      <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: isActive ? "var(--green-light)" : "rgba(255,255,255,0.2)", flexShrink: 0 }} />
-                      {isActive ? "Live" : "Paused"}
-                      {days !== null && <span className="font-data font-bold">{days}d</span>}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Sponsored ·</span>
+                      <span className="flex items-center gap-1 text-[10px]" style={{ color: isActive ? "var(--green-light)" : "var(--text-3)" }}>
+                        <span style={{ display: "inline-block", width: 4, height: 4, borderRadius: "50%", background: isActive ? "var(--green-light)" : "rgba(255,255,255,0.2)", flexShrink: 0 }} />
+                        {isActive ? "Live" : "Paused"}
+                        {days !== null && <span className="font-data font-bold">{days}d</span>}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Ad copy */}
+                {/* Ad copy — full text */}
                 {body && (
-                  <p className="px-4 pb-3 text-[11px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-                    {body.length > 180 ? body.slice(0, 180) + "…" : body}
+                  <p className="px-4 pb-3 text-[12px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-2)" }}>
+                    {body}
                   </p>
                 )}
 
@@ -268,7 +271,7 @@ export default function AdDetailModal({ ad, onClose }: Props) {
 
                 {/* Platforms */}
                 {platforms.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 px-4 pb-4">
+                  <div className="flex flex-wrap gap-1.5 px-4 pb-2">
                     {platforms.map(p => {
                       const c = PLATFORM_COLOR[p.toLowerCase()] ?? "#94A3B8";
                       return (
@@ -280,6 +283,13 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                     })}
                   </div>
                 )}
+
+                {/* Library ID */}
+                <div className="px-4 pb-4">
+                  <span className="font-data text-[9px]" style={{ color: "var(--text-3)" }}>
+                    Library ID: {ad.id}
+                  </span>
+                </div>
               </div>
 
               {/* ── Right: AI Analysis ───────────────────────────────────────── */}

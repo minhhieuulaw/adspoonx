@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import type { FbAd, FbAdsResponse } from "@/lib/facebook-ads";
-import { getAIInsights } from "@/lib/ai-insights";
+import { getAIInsights, getDropshippingScore } from "@/lib/ai-insights";
 import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues } from "@/components/ads/AdsFilter";
 import AdDetailModal from "@/components/ads/AdDetailModal";
@@ -41,7 +41,48 @@ function KPIStat({
 function applyClientFilters(ads: FbAd[], filters: FilterValues): FbAd[] {
   let result = [...ads];
 
-  // Preset filter
+  // 1. Dedup: same page + same first 40 chars of body
+  const seen = new Set<string>();
+  result = result.filter(ad => {
+    const body = (ad.ad_creative_bodies?.[0] ?? "").slice(0, 40).toLowerCase().replace(/\s+/g, " ").trim();
+    const key  = `${ad.page_id ?? ad.page_name ?? "?"}|${body}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // 2. Client-side media type filter (video filter handled server-side, image is client-side only)
+  if (filters.mediaType === "image") {
+    result = result.filter(ad => !ad.video_url && !!ad.image_url);
+  } else if (filters.mediaType === "video") {
+    result = result.filter(ad => !!ad.video_url);
+  }
+
+  // 3. Duration filter
+  if (filters.duration !== "any") {
+    result = result.filter(ad => {
+      const days = Math.floor((Date.now() - new Date(ad.ad_delivery_start_time ?? 0).getTime()) / 86_400_000);
+      switch (filters.duration) {
+        case "new":      return days <= 14;
+        case "growing":  return days > 14 && days <= 60;
+        case "proven":   return days > 60 && days <= 180;
+        case "evergreen": return days > 180;
+        default:         return true;
+      }
+    });
+  }
+
+  // 4. Dropshipping filter
+  if (filters.dropshipping !== "all") {
+    result = result.filter(ad => {
+      const score = getDropshippingScore(ad);
+      if (filters.dropshipping === "dropshipping") return score >= 40;
+      if (filters.dropshipping === "brand")        return score < 30;
+      return true;
+    });
+  }
+
+  // 5. Preset filter
   if (filters.preset) {
     result = result.filter(ad => {
       const ai   = getAIInsights(ad);
@@ -59,7 +100,7 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues): FbAd[] {
     });
   }
 
-  // Platform filter (OR — ad runs on ANY of the selected platforms)
+  // 6. Platform filter (OR — ad runs on ANY of the selected platforms)
   if (filters.platforms.length > 0) {
     result = result.filter(ad => {
       const p = (ad.publisher_platforms ?? []).map(x => x.toLowerCase());
@@ -67,7 +108,7 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues): FbAd[] {
     });
   }
 
-  // Sort
+  // 7. Sort
   result.sort((a, b) => {
     switch (filters.sortBy) {
       case "score":
@@ -82,6 +123,13 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues): FbAd[] {
         return 0;
     }
   });
+
+  // 8. Video-first: stable partition within the sorted result (only when showing all media)
+  if (!filters.mediaType) {
+    const videos = result.filter(a => !!a.video_url);
+    const images = result.filter(a => !a.video_url);
+    result = [...videos, ...images];
+  }
 
   return result;
 }
@@ -101,12 +149,14 @@ export default function AdsPage() {
   const [userPlan, setUserPlan]     = useState<string>("free");
 
   const [filters, setFilters] = useState<FilterValues>({
-    country:   searchParams.get("country") ?? "US",
-    status:    (searchParams.get("status") as FilterValues["status"]) ?? "ACTIVE",
-    mediaType: null,
-    preset:    null,
-    platforms: [],
-    sortBy:    "score",
+    country:      searchParams.get("country") ?? "US",
+    status:       (searchParams.get("status") as FilterValues["status"]) ?? "ACTIVE",
+    mediaType:    null,
+    preset:       null,
+    platforms:    [],
+    sortBy:       "score",
+    dropshipping: "all",
+    duration:     "any",
   });
 
   const [nextPage, setNextPage] = useState<number | null>(null);
@@ -133,21 +183,24 @@ export default function AdsPage() {
     []
   );
 
-  // Re-fetch when server-side params change
+  // Re-fetch when server-side params change (image filter is client-side only)
   useEffect(() => {
-    fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: filters.mediaType ?? undefined });
+    const apiMedia = filters.mediaType === "video" ? "video" : undefined;
+    fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia });
   }, [filters.country, filters.status, filters.mediaType, fetchAds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSearch(value: string) {
     setSearchTerm(value);
     const params = new URLSearchParams({ q: value, country: filters.country, status: filters.status });
     router.push(`/ads?${params.toString()}`);
-    fetchAds({ q: value, country: filters.country, status: filters.status, mediaType: filters.mediaType ?? undefined });
+    const apiMedia = filters.mediaType === "video" ? "video" : undefined;
+    fetchAds({ q: value, country: filters.country, status: filters.status, mediaType: apiMedia });
   }
 
   function loadMore() {
     if (nextPage) {
-      fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: filters.mediaType ?? undefined, page: nextPage });
+      const apiMedia = filters.mediaType === "video" ? "video" : undefined;
+      fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia, page: nextPage });
     }
   }
 

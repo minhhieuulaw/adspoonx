@@ -34,10 +34,12 @@ const SORT_OPTIONS = [
 export interface FilterValues {
   country: string;
   status: "ACTIVE" | "INACTIVE" | "ALL";
-  mediaType: "video" | null;
+  mediaType: "video" | "image" | null;
   preset: PresetId;
   platforms: string[];
   sortBy: "score" | "newest" | "longest" | "audience";
+  dropshipping: "all" | "dropshipping" | "brand";
+  duration: "any" | "new" | "growing" | "proven" | "evergreen";
 }
 
 interface AdsFilterProps {
@@ -83,8 +85,8 @@ export default function AdsFilter({
     (t.filter.countries as Record<string, string>)[code] ?? EXTRA_COUNTRIES[code] ?? code;
 
   const activeSort   = SORT_OPTIONS.find(s => s.id === values.sortBy) ?? SORT_OPTIONS[0];
-  const isVideoMode  = values.mediaType === "video";
-  const hasFilters   = values.preset !== null || values.platforms.length > 0 || values.sortBy !== "score";
+  const hasFilters   = values.preset !== null || values.platforms.length > 0 || values.sortBy !== "score"
+    || values.dropshipping !== "all" || values.duration !== "any" || values.mediaType !== null;
 
   function togglePlatform(id: string) {
     const next = values.platforms.includes(id)
@@ -98,7 +100,7 @@ export default function AdsFilter({
   }
 
   function clearAll() {
-    onChange({ ...values, preset: null, platforms: [], sortBy: "score" });
+    onChange({ ...values, preset: null, platforms: [], sortBy: "score", dropshipping: "all", duration: "any", mediaType: null });
   }
 
   const statusOptions = [
@@ -297,28 +299,82 @@ export default function AdsFilter({
 
         {/* Media type */}
         <FilterSection label="Media Type">
-          <button
-            onClick={() => onChange({ ...values, mediaType: isVideoMode ? null : "video" })}
-            className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium"
-            style={{
-              background: isVideoMode ? "rgba(244,114,182,0.12)" : "transparent",
-              border:     `1px solid ${isVideoMode ? "rgba(244,114,182,0.4)" : "transparent"}`,
-              color:      isVideoMode ? "#F472B6" : "var(--text-2)",
-              transition: "all 120ms var(--ease)",
-            }}
-            onMouseEnter={e => {
-              if (!isVideoMode) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
-            }}
-            onMouseLeave={e => {
-              if (!isVideoMode) (e.currentTarget as HTMLElement).style.background = "transparent";
-            }}
+          <div
+            className="flex items-center p-0.5 rounded-[8px] gap-0.5 w-full"
+            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}
           >
-            🎬
-            <span>Video Ads Only</span>
-            {isVideoMode && (
-              <div style={{ marginLeft: "auto", width: 6, height: 6, borderRadius: "50%", background: "#F472B6" }} />
-            )}
-          </button>
+            {([{ value: null, label: "All" }, { value: "video", label: "🎬 Video" }, { value: "image", label: "🖼 Image" }] as const).map(opt => (
+              <button
+                key={String(opt.value)}
+                onClick={() => onChange({ ...values, mediaType: opt.value })}
+                className="flex-1 py-1.5 rounded-[6px] text-[10px] font-medium"
+                style={
+                  values.mediaType === opt.value
+                    ? { background: "var(--bg-active)", color: "var(--text-1)" }
+                    : { color: "var(--text-3)" }
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </FilterSection>
+
+        <Divider />
+
+        {/* Duration buckets */}
+        <FilterSection label="Duration">
+          <div className="grid grid-cols-2 gap-1">
+            {([
+              { id: "any",      label: "Any" },
+              { id: "new",      label: "0–14d" },
+              { id: "growing",  label: "15–60d" },
+              { id: "proven",   label: "60–180d" },
+              { id: "evergreen",label: "180d+" },
+            ] as const).map(opt => {
+              const isOn = values.duration === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => onChange({ ...values, duration: opt.id })}
+                  className="py-1.5 px-2 rounded-[6px] text-[10px] font-medium text-center"
+                  style={{
+                    background: isOn ? "rgba(124,58,237,0.15)" : "var(--bg-hover)",
+                    border:     `1px solid ${isOn ? "rgba(124,58,237,0.4)" : "var(--border)"}`,
+                    color:      isOn ? "var(--ai-light)" : "var(--text-2)",
+                    transition: "all 120ms var(--ease)",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </FilterSection>
+
+        <Divider />
+
+        {/* Ad type: dropshipping vs brand */}
+        <FilterSection label="Ad Type">
+          <div
+            className="flex items-center p-0.5 rounded-[8px] gap-0.5 w-full"
+            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}
+          >
+            {([{ id: "all", label: "All" }, { id: "dropshipping", label: "DS" }, { id: "brand", label: "Brand" }] as const).map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => onChange({ ...values, dropshipping: opt.id })}
+                className="flex-1 py-1.5 rounded-[6px] text-[10px] font-medium"
+                style={
+                  values.dropshipping === opt.id
+                    ? { background: "var(--bg-active)", color: "var(--text-1)" }
+                    : { color: "var(--text-3)" }
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </FilterSection>
 
         <Divider />
@@ -444,17 +500,20 @@ export default function AdsFilter({
           ))}
         </div>
 
-        {/* Video toggle */}
-        <button
-          onClick={() => onChange({ ...values, mediaType: isVideoMode ? null : "video" })}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[7px] text-[12px] font-medium"
-          style={{
-            background: isVideoMode ? "rgba(244,114,182,0.12)" : "var(--bg-hover)",
-            border:     `1px solid ${isVideoMode ? "rgba(244,114,182,0.4)" : "var(--border)"}`,
-            color:      isVideoMode ? "#F472B6" : "var(--text-2)",
-            transition: "all 120ms var(--ease)",
-          }}
-        >🎬 Video</button>
+        {/* Media type toggle */}
+        <div className="flex items-center p-0.5 rounded-[8px] gap-0.5"
+          style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+          {([{ value: null, label: "All" }, { value: "video", label: "🎬 Video" }, { value: "image", label: "🖼 Image" }] as const).map(opt => (
+            <button key={String(opt.value)}
+              onClick={() => onChange({ ...values, mediaType: opt.value })}
+              className="px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
+              style={values.mediaType === opt.value
+                ? { background: "var(--bg-active)", color: "var(--text-1)" }
+                : { color: "var(--text-3)" }}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
 
         {/* Platform pills */}
         <div className="flex items-center gap-1">
