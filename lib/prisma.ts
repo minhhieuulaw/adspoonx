@@ -6,14 +6,17 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  // Read at call time (not module load time) so dotenv has a chance to inject vars
-  // DIRECT_URL = port 5432 direct (local dev only)
-  // DATABASE_URL = pooler port 6543 (Vercel production)
+  // DIRECT_URL = port 5432 direct (local dev only, via .env.local)
+  // POOLER_URL  = port 6543 pooler (Vercel production — custom var, avoids Supabase integration override)
+  // DATABASE_URL is intentionally NOT used here because Vercel's Supabase integration
+  //   injects DATABASE_URL = direct connection (port 5432), which is unreachable from Vercel serverless.
   const useDirect = !!process.env.DIRECT_URL;
-  const connectionString = useDirect ? process.env.DIRECT_URL! : process.env.DATABASE_URL!;
+  const connectionString = useDirect
+    ? process.env.DIRECT_URL!
+    : (process.env.POOLER_URL ?? process.env.DATABASE_URL)!;
   const adapter = new PrismaPg({
     connectionString,
-    // SSL only needed for direct connection (local dev); pooler handles SSL itself
+    // SSL only for direct (local dev); pooler handles SSL on its own
     ssl: useDirect ? { rejectUnauthorized: false } : undefined,
   });
   return new PrismaClient({

@@ -13,10 +13,10 @@ function maskUrl(url?: string) {
 
 export async function GET() {
   const dbInfo = {
+    POOLER_URL:   process.env.POOLER_URL ? maskUrl(process.env.POOLER_URL) : "NOT_SET",
     DATABASE_URL: maskUrl(process.env.DATABASE_URL),
     DIRECT_URL:   process.env.DIRECT_URL ? maskUrl(process.env.DIRECT_URL) : "NOT_SET",
     PGHOST:       process.env.PGHOST ?? "NOT_SET",
-    POSTGRES_URL: process.env.POSTGRES_URL ? maskUrl(process.env.POSTGRES_URL) : "NOT_SET",
   };
   try {
     const count = await prisma.ad.count();
