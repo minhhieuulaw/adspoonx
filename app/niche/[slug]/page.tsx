@@ -8,12 +8,7 @@ import { getAIInsights } from "@/lib/ai-insights";
 import type { FbAd } from "@/lib/facebook-ads";
 import { Zap, ArrowRight, TrendingUp } from "lucide-react";
 
-export const revalidate = 3600; // ISR: rebuild every hour
-
-// Pre-generate all niche slugs at build time
-export function generateStaticParams() {
-  return NICHES.map(n => ({ slug: n.slug }));
-}
+export const revalidate = 3600; // ISR: cache 1 hour, generate on first request
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
