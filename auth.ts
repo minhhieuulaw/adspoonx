@@ -9,16 +9,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      checks: ["state"],
+      checks: ["state"], // PKCE disabled — causes invalid_grant on serverless due to stale cookies
     }),
   ],
   session: {
-    strategy: "database",
+    strategy: "jwt", // JWT avoids DB queries on every request — critical for serverless reliability
   },
   callbacks: {
-    session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    jwt({ token, user }) {
+      if (user?.id) {
+        token.sub = user.id; // persist DB user ID in JWT
+      }
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
       }
       return session;
     },
