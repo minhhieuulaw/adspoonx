@@ -17,11 +17,11 @@ export const PRESETS = [
 export type PresetId = typeof PRESETS[number]["id"] | null;
 
 const PLATFORMS = [
-  { id: "facebook",         label: "Facebook",         short: "FB", color: "#60A5FA" },
-  { id: "instagram",        label: "Instagram",        short: "IG", color: "#F472B6" },
-  { id: "messenger",        label: "Messenger",        short: "MS", color: "#38BDF8" },
-  { id: "audience_network", label: "Audience Network", short: "AN", color: "#A78BFA" },
-  { id: "threads",          label: "Threads",          short: "TH", color: "#E5E7EB" },
+  { id: "facebook",         label: "Facebook",         short: "FB", color: "#60A5FA", icon: "📘" },
+  { id: "instagram",        label: "Instagram",        short: "IG", color: "#F472B6", icon: "📸" },
+  { id: "messenger",        label: "Messenger",        short: "MS", color: "#38BDF8", icon: "💬" },
+  { id: "audience_network", label: "Audience Network", short: "AN", color: "#A78BFA", icon: "📡" },
+  { id: "threads",          label: "Threads",          short: "TH", color: "#E5E7EB", icon: "🔗" },
 ] as const;
 
 const SORT_OPTIONS = [
@@ -102,6 +102,101 @@ function FilterSection({ label, children }: { label: string; children: React.Rea
 
 function Divider() {
   return <div style={{ height: 1, background: "var(--border)" }} />;
+}
+
+// ── Platform dropdown multi-select ────────────────────────────────────────────
+
+function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const count = selected.length;
+  const selectedPlatforms = PLATFORMS.filter(p => selected.includes(p.id));
+
+  return (
+    <div className="relative">
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center justify-between w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
+        style={{
+          background: count > 0 ? "rgba(124,58,237,0.06)" : "var(--bg-hover)",
+          border: `1px solid ${count > 0 ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+          color: count > 0 ? "var(--text-1)" : "var(--text-2)",
+          transition: "all 120ms var(--ease)",
+        }}
+      >
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {count === 0 ? (
+            <span>All Platforms</span>
+          ) : (
+            <div className="flex items-center gap-1 flex-wrap">
+              {selectedPlatforms.map(p => (
+                <span key={p.id} className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-[1px] rounded-[4px]"
+                  style={{ background: `${p.color}18`, color: p.color, border: `1px solid ${p.color}30` }}>
+                  <span className="text-[10px]">{p.icon}</span>
+                  {p.short}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <ChevronDown size={12} style={{
+          color: "var(--text-3)",
+          transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          transition: "transform 150ms ease",
+          flexShrink: 0,
+        }} />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1"
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+            }}>
+            {PLATFORMS.map(p => {
+              const isOn = selected.includes(p.id);
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => onToggle(p.id)}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
+                  style={{
+                    background: isOn ? `${p.color}10` : "transparent",
+                    color: isOn ? p.color : "var(--text-2)",
+                    transition: "all 100ms ease",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? `${p.color}15` : "var(--bg-hover)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? `${p.color}10` : "transparent"; }}
+                >
+                  {/* Modern icon */}
+                  <span className="text-[14px] flex-shrink-0">{p.icon}</span>
+                  {/* Label */}
+                  <span className="flex-1 text-left">{p.label}</span>
+                  {/* Checkbox indicator */}
+                  <div className="w-4 h-4 rounded-[4px] flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: isOn ? p.color : "transparent",
+                      border: `1.5px solid ${isOn ? p.color : "var(--text-3)"}`,
+                      transition: "all 100ms ease",
+                    }}>
+                    {isOn && (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -367,49 +462,12 @@ export default function AdsFilter({
         )}
 
 
-        {/* Platform */}
+        {/* Platform — dropdown multi-select */}
         <FilterSection label="Platform">
-          <div className="flex flex-col gap-1">
-            {PLATFORMS.map(p => {
-              const isOn = values.platforms.includes(p.id);
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => togglePlatform(p.id)}
-                  className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium"
-                  style={{
-                    background: isOn ? `${p.color}12` : "transparent",
-                    border:     `1px solid ${isOn ? `${p.color}35` : "transparent"}`,
-                    color:      isOn ? p.color : "var(--text-2)",
-                    transition: "all 120ms var(--ease)",
-                  }}
-                  onMouseEnter={e => {
-                    if (!isOn) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
-                  }}
-                  onMouseLeave={e => {
-                    if (!isOn) (e.currentTarget as HTMLElement).style.background = "transparent";
-                  }}
-                >
-                  <span
-                    className="text-[9px] font-bold px-1.5 py-[2px] rounded-[4px]"
-                    style={{
-                      background: isOn ? `${p.color}20` : "var(--bg-hover)",
-                      color:      isOn ? p.color : "var(--text-3)",
-                      border:     `1px solid ${isOn ? `${p.color}35` : "var(--border)"}`,
-                      minWidth: 24,
-                      textAlign: "center",
-                    }}
-                  >
-                    {p.short}
-                  </span>
-                  {p.label}
-                  {isOn && (
-                    <div style={{ marginLeft: "auto", width: 6, height: 6, borderRadius: "50%", background: p.color }} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          <PlatformDropdown
+            selected={values.platforms}
+            onToggle={(id) => togglePlatform(id)}
+          />
         </FilterSection>
 
         <Divider />
@@ -664,13 +722,14 @@ export default function AdsFilter({
             const isOn = values.platforms.includes(p.id);
             return (
               <button key={p.id} onClick={() => togglePlatform(p.id)}
-                className="text-[10px] font-bold px-2 py-1 rounded-[5px]"
+                className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-[5px]"
                 style={{
                   color:      isOn ? p.color : "var(--text-3)",
                   background: isOn ? `${p.color}18` : "var(--bg-hover)",
                   border:     `1px solid ${isOn ? `${p.color}40` : "var(--border)"}`,
                   transition: "all 120ms var(--ease)",
                 }}>
+                <span className="text-[11px]">{p.icon}</span>
                 {p.short}
               </button>
             );
