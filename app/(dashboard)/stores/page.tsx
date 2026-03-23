@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { Store, ExternalLink, TrendingUp, Zap } from "lucide-react";
 
 interface PotentialStore {
@@ -80,12 +81,12 @@ export default function StoresPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stores.map((store, i) => (
+          <Link key={store.pageName + i} href={store.pageId ? `/stores/${store.pageId}` : "#"}>
           <motion.div
-            key={store.pageName + i}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.03 }}
-            className="rounded-xl p-4 flex flex-col gap-3 glass-card glow-hover"
+            className="rounded-xl p-4 flex flex-col gap-3 glass-card glow-hover h-full"
           >
             {/* Store avatar + name */}
             <div className="flex items-center gap-3">
@@ -157,6 +158,7 @@ export default function StoresPage() {
               />
             </div>
           </motion.div>
+          </Link>
         ))}
       </div>
     </div>

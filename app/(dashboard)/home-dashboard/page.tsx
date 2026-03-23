@@ -6,13 +6,20 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Sparkles, Store, TrendingUp, Bookmark,
-  ArrowRight, Zap, BarChart2, Globe,
+  ArrowRight, Zap, BarChart2, Globe, Play,
+  Brain, Eye,
 } from "lucide-react";
+
+interface NicheItem { niche: string; count: number }
+interface StoreItem { pageName: string; pageId: string | null; adCount: number }
 
 interface Stats {
   totalAds: number;
   activeAds: number;
   countries: number;
+  videoCount: number;
+  niches: NicheItem[];
+  stores: StoreItem[];
 }
 
 const tips = [
@@ -20,10 +27,10 @@ const tips = [
   "Save ads you like — use them as inspiration for your own campaigns.",
   "Check Trending Niche weekly to spot emerging markets early.",
   "Use Potential Store to reverse-engineer competitors' strategies.",
-  "Filter by country to find ads running in your target market.",
+  "Filter by AI Score to see only proven, high-performing ads.",
+  "Use the Video filter to find video creatives — they convert 2x better.",
 ];
 
-/* Linear-style spring transition */
 const spring = { type: "spring" as const, stiffness: 380, damping: 30 };
 const fadeUp = (delay = 0) => ({
   initial:    { opacity: 0, y: 8 },
@@ -47,62 +54,137 @@ function AnimatedNumber({ value }: { value: number }) {
   return <>{display.toLocaleString()}</>;
 }
 
-/* ── Stat card ── */
-function StatCard({
-  label, value, icon, color, delay,
+// ── KPI Card ──────────────────────────────────────────────────────────────────
+
+function KPICard({
+  label, value, icon: Icon, color, bg, delay,
 }: {
-  label: string; value: React.ReactNode; icon: React.ReactNode; color: string; delay: number;
+  label: string; value: React.ReactNode; icon: React.ElementType; color: string; bg: string; delay: number;
 }) {
   return (
-    <motion.div {...fadeUp(delay)} className="col-span-4 glass-card glow-hover p-5 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium uppercase tracking-widest" style={{ color: "var(--text-muted)", letterSpacing: "0.09em" }}>
-          {label}
-        </span>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}14` }}>
-          <span style={{ color }}>{icon}</span>
-        </div>
+    <motion.div {...fadeUp(delay)}
+      className="rounded-[12px] p-4 flex items-center gap-3"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+    >
+      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+        <Icon size={16} strokeWidth={1.8} style={{ color }} />
       </div>
-      <p className="text-3xl font-semibold tabular-nums" style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
-        {value}
-      </p>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>{label}</p>
+        <p className="font-display text-[22px] font-bold leading-none mt-0.5" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+          {value}
+        </p>
+      </div>
     </motion.div>
   );
 }
 
-/* ── Feature card ── */
-function FeatureCard({
-  href, icon, iconColor, iconBg, title, description, cta, delay,
+// ── Niche Bar ─────────────────────────────────────────────────────────────────
+
+const NICHE_COLORS = [
+  "#A78BFA", "#60A5FA", "#34D399", "#F472B6", "#FCD34D",
+  "#FB923C", "#38BDF8", "#F87171", "#818CF8", "#94A3B8",
+];
+
+function NicheBar({ niches, total }: { niches: NicheItem[]; total: number }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {niches.map((n, i) => {
+        const pct = total > 0 ? (n.count / total) * 100 : 0;
+        const color = NICHE_COLORS[i % NICHE_COLORS.length];
+        return (
+          <Link key={n.niche} href={`/niche/${encodeURIComponent(n.niche.toLowerCase().replace(/[^a-z0-9]+/g, "-"))}`}>
+            <div className="group flex items-center gap-2.5 cursor-pointer">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[12px] font-medium truncate group-hover:text-white transition-colors" style={{ color: "var(--text-2)" }}>
+                    {n.niche}
+                  </span>
+                  <span className="text-[11px] font-data font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>
+                    {n.count.toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(2, pct)}%`, background: color }}
+                  />
+                </div>
+              </div>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Quick Link Card ───────────────────────────────────────────────────────────
+
+function QuickLink({
+  href, icon: Icon, iconColor, iconBg, title, desc, delay,
 }: {
-  href: string; icon: React.ReactNode; iconColor: string; iconBg: string;
-  title: string; description: string; cta: string; delay: number;
+  href: string; icon: React.ElementType; iconColor: string; iconBg: string;
+  title: string; desc: string; delay: number;
 }) {
   return (
-    <motion.div {...fadeUp(delay)} className="col-span-6">
-      <Link href={href}>
-        <div className="glass-card glow-hover p-5 cursor-pointer h-full flex flex-col">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-4"
-            style={{ background: iconBg }}>
-            <span style={{ color: iconColor }}>{icon}</span>
-          </div>
-          <h3 className="text-[14px] font-semibold mb-1.5" style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
-            {title}
-          </h3>
-          <p className="text-[13px] leading-relaxed flex-1" style={{ color: "var(--text-muted)" }}>
-            {description}
-          </p>
-          <div className="mt-4 flex items-center gap-1 text-[12px] font-medium" style={{ color: iconColor }}>
-            {cta} <ArrowRight size={12} strokeWidth={2} />
-          </div>
+    <motion.div {...fadeUp(delay)}>
+      <Link href={href}
+        className="flex items-center gap-3 p-3 rounded-[10px] group transition-colors"
+        style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}
+      >
+        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
+          <Icon size={15} strokeWidth={1.8} style={{ color: iconColor }} />
         </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>{title}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>{desc}</p>
+        </div>
+        <ArrowRight size={14} strokeWidth={1.5} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: iconColor }} />
       </Link>
     </motion.div>
   );
 }
 
+// ── Top Stores Row ────────────────────────────────────────────────────────────
+
+function TopStores({ stores }: { stores: StoreItem[] }) {
+  if (!stores.length) return null;
+  const max = stores[0]?.adCount ?? 1;
+  return (
+    <div className="flex flex-col gap-2">
+      {stores.map((s, i) => (
+        <Link key={s.pageName + i} href="/stores">
+          <div className="flex items-center gap-2.5 group cursor-pointer">
+            <span className="font-data text-[10px] font-bold w-4 text-center" style={{ color: "var(--text-3)" }}>
+              {i + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium truncate group-hover:text-white transition-colors" style={{ color: "var(--text-2)" }}>
+                {s.pageName}
+              </p>
+            </div>
+            <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
+              <div className="h-full rounded-full" style={{
+                width: `${(s.adCount / max) * 100}%`,
+                background: "linear-gradient(90deg, #F59E0B, #F97316)",
+              }} />
+            </div>
+            <span className="font-data text-[11px] font-semibold tabular-nums w-8 text-right" style={{ color: "var(--text-3)" }}>
+              {s.adCount}
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function HomeDashboardPage() {
   const { data: session } = useSession();
-  const [stats,     setStats]     = useState<Stats | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [randomTip, setRandomTip] = useState(tips[0]);
 
   useEffect(() => { setRandomTip(tips[Math.floor(Math.random() * tips.length)]); }, []);
@@ -111,146 +193,143 @@ export default function HomeDashboardPage() {
   const firstName = session?.user?.name?.split(" ")[0] ?? "there";
 
   return (
-    <div className="max-w-5xl">
-      <div className="grid grid-cols-12 gap-4 auto-rows-auto">
+    <div className="max-w-6xl page-enter">
+      {/* ── Welcome Banner ── */}
+      <motion.div
+        {...fadeUp(0)}
+        className="rounded-[14px] p-6 mb-5 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(59,130,246,0.06) 100%)",
+          border: "1px solid rgba(124,58,237,0.15)",
+        }}
+      >
+        <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(124,58,237,0.1) 0%, transparent 70%)" }} />
+        <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--ai-light)", letterSpacing: "0.1em" }}>
+          Dashboard
+        </p>
+        <h1 className="font-display text-[24px] font-bold mb-1.5" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+          Welcome back, <span className="gradient-text">{firstName}</span>
+        </h1>
+        <p className="text-[13px] mb-5" style={{ color: "var(--text-2)" }}>
+          Your ad intelligence hub — powered by real data from {stats?.totalAds?.toLocaleString() ?? "…"} ads.
+        </p>
+        <div className="flex gap-2.5">
+          <Link href="/ads"
+            className="flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-semibold text-white"
+            style={{ background: "var(--ai)", transition: "opacity 120ms" }}
+          >
+            <Sparkles size={13} strokeWidth={2} /> Explore Ads
+          </Link>
+          <Link href="/trending"
+            className="flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium"
+            style={{ border: "1px solid var(--border)", color: "var(--text-2)" }}
+          >
+            <TrendingUp size={13} strokeWidth={1.5} /> Trending
+          </Link>
+        </div>
+      </motion.div>
 
-        {/* ── Welcome ── col 8 */}
-        <motion.div
-          {...fadeUp(0)}
-          className="col-span-8 rounded-2xl p-6 relative overflow-hidden"
-          style={{
-            background: "rgba(94,106,210,0.06)",
-            border:     "1px solid rgba(94,106,210,0.14)",
-          }}
+      {/* ── KPI Grid ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <KPICard label="Total Ads" delay={0.04}
+          value={stats ? <AnimatedNumber value={stats.totalAds} /> : "—"}
+          icon={BarChart2} color="var(--ai-light)" bg="var(--ai-soft)" />
+        <KPICard label="Active" delay={0.06}
+          value={stats ? <AnimatedNumber value={stats.activeAds} /> : "—"}
+          icon={Zap} color="#34D399" bg="rgba(52,211,153,0.12)" />
+        <KPICard label="With Video" delay={0.08}
+          value={stats ? <AnimatedNumber value={stats.videoCount} /> : "—"}
+          icon={Play} color="#60A5FA" bg="rgba(59,130,246,0.12)" />
+        <KPICard label="Markets" delay={0.10}
+          value={stats?.countries ?? "—"}
+          icon={Globe} color="#FCD34D" bg="rgba(245,158,11,0.12)" />
+      </div>
+
+      {/* ── Two-column: Niches + Stores ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+        {/* Niche Distribution */}
+        <motion.div {...fadeUp(0.12)}
+          className="rounded-[12px] p-4"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
         >
-          {/* Subtle top-right glow */}
-          <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(94,106,210,0.12) 0%, transparent 70%)" }} />
-
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--accent-light)", letterSpacing: "0.1em" }}>
-            Dashboard
-          </p>
-          <h1 className="text-[26px] font-semibold mb-2" style={{ color: "var(--text-primary)", letterSpacing: "-0.025em" }}>
-            Welcome back, <span className="gradient-text">{firstName}</span>
-          </h1>
-          <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>
-            Your ad intelligence hub — powered by real data.
-          </p>
-
-          <div className="mt-6 flex gap-2.5">
-            <Link
-              href="/ads"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium text-white"
-              style={{
-                background:  "var(--accent)",
-                transition:  "opacity var(--duration) var(--ease)",
-              }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.opacity = "0.85")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.opacity = "1")}
-            >
-              <Sparkles size={13} strokeWidth={2} /> Start Exploring
-            </Link>
-            <Link
-              href="/trending"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium"
-              style={{
-                border:      "1px solid var(--card-border)",
-                color:       "var(--text-secondary)",
-                transition:  "background var(--duration) var(--ease), border-color var(--duration) var(--ease)",
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.background    = "rgba(255,255,255,0.05)";
-                el.style.borderColor   = "var(--card-border)";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.background    = "transparent";
-              }}
-            >
-              <TrendingUp size={13} strokeWidth={1.5} /> See Trending
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Brain size={14} strokeWidth={1.8} style={{ color: "var(--ai-light)" }} />
+              <h2 className="font-display text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
+                Niche Distribution
+              </h2>
+            </div>
+            <Link href="/ads" className="text-[11px] font-medium flex items-center gap-1" style={{ color: "var(--ai-light)" }}>
+              View all <ArrowRight size={10} />
             </Link>
           </div>
+          {stats?.niches ? (
+            <NicheBar niches={stats.niches} total={stats.totalAds} />
+          ) : (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-6 rounded skeleton" />
+              ))}
+            </div>
+          )}
         </motion.div>
 
-        {/* ── Stat: Total Ads — col 4 ── */}
-        <StatCard
-          label="Total Ads" delay={0.04}
-          value={stats ? <AnimatedNumber value={stats.totalAds} /> : "—"}
-          icon={<BarChart2 size={14} strokeWidth={1.5} />}
-          color="var(--accent-light)"
-        />
-
-        {/* ── Stat: Active Ads — col 4 ── */}
-        <StatCard
-          label="Running" delay={0.08}
-          value={stats ? <AnimatedNumber value={stats.activeAds} /> : "—"}
-          icon={<span className="w-2 h-2 rounded-full bg-emerald-400 block" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.6)" }} />}
-          color="#34d399"
-        />
-
-        {/* ── Stat: Countries — col 4 ── */}
-        <StatCard
-          label="Markets" delay={0.1}
-          value={stats?.countries ?? "—"}
-          icon={<Globe size={14} strokeWidth={1.5} />}
-          color="#f59e0b"
-        />
-
-        {/* ── Spacer so stat row is only 3×col-4 ── */}
-        {/* col 4+4+4 = 12, next row auto */}
-
-        {/* ── Feature cards ── */}
-        <FeatureCard
-          href="/ads" delay={0.12}
-          icon={<Sparkles size={18} strokeWidth={1.5} />}
-          iconColor="var(--accent-light)" iconBg="var(--accent-soft)"
-          title="Ads Finder by AI"
-          description="Search millions of Facebook ads. Filter by keyword, country, and status."
-          cta="Open library"
-        />
-        <FeatureCard
-          href="/stores" delay={0.15}
-          icon={<Store size={18} strokeWidth={1.5} />}
-          iconColor="#f59e0b" iconBg="rgba(245,158,11,0.1)"
-          title="Potential Store"
-          description="Discover top advertisers by ad volume. Reverse-engineer winning stores."
-          cta="Browse stores"
-        />
-        <FeatureCard
-          href="/trending" delay={0.17}
-          icon={<TrendingUp size={18} strokeWidth={1.5} />}
-          iconColor="#34d399" iconBg="rgba(52,211,153,0.1)"
-          title="Trending Niche"
-          description="Spot the hottest niches with growing ad spend before your competitors."
-          cta="View trends"
-        />
-        <FeatureCard
-          href="/saved" delay={0.19}
-          icon={<Bookmark size={18} strokeWidth={1.5} />}
-          iconColor="#a78bfa" iconBg="rgba(167,139,250,0.1)"
-          title="Saved Ads"
-          description="Your personal collection of winning ad creatives and references."
-          cta="View saved"
-        />
-
-        {/* ── Pro tip ── full width */}
-        <motion.div
-          {...fadeUp(0.25)}
-          className="col-span-12 rounded-xl px-4 py-3 flex items-center gap-3"
-          style={{
-            background: "rgba(94,106,210,0.05)",
-            border:     "1px solid rgba(94,106,210,0.12)",
-          }}
+        {/* Top Stores */}
+        <motion.div {...fadeUp(0.14)}
+          className="rounded-[12px] p-4"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
         >
-          <Zap size={13} strokeWidth={2} style={{ color: "var(--accent-light)", flexShrink: 0 }} />
-          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-            <span className="font-semibold" style={{ color: "var(--accent-light)" }}>TIP — </span>
-            {randomTip}
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Store size={14} strokeWidth={1.8} style={{ color: "#F59E0B" }} />
+              <h2 className="font-display text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
+                Top Advertisers
+              </h2>
+            </div>
+            <Link href="/stores" className="text-[11px] font-medium flex items-center gap-1" style={{ color: "#F59E0B" }}>
+              All stores <ArrowRight size={10} />
+            </Link>
+          </div>
+          {stats?.stores ? (
+            <TopStores stores={stats.stores} />
+          ) : (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-5 rounded skeleton" />
+              ))}
+            </div>
+          )}
         </motion.div>
-
       </div>
+
+      {/* ── Quick Links ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <QuickLink href="/ads" delay={0.16}
+          icon={Sparkles} iconColor="var(--ai-light)" iconBg="var(--ai-soft)"
+          title="Ads Finder" desc="Search & filter all ads" />
+        <QuickLink href="/stores" delay={0.18}
+          icon={Store} iconColor="#F59E0B" iconBg="rgba(245,158,11,0.1)"
+          title="Potential Store" desc="Top advertisers by volume" />
+        <QuickLink href="/trending" delay={0.20}
+          icon={TrendingUp} iconColor="#34D399" iconBg="rgba(52,211,153,0.1)"
+          title="Trending" desc="Hot ads right now" />
+        <QuickLink href="/saved" delay={0.22}
+          icon={Bookmark} iconColor="#A78BFA" iconBg="rgba(167,139,250,0.1)"
+          title="Saved Ads" desc="Your saved collection" />
+      </div>
+
+      {/* ── Pro Tip ── */}
+      <motion.div {...fadeUp(0.25)}
+        className="rounded-[10px] px-4 py-3 flex items-center gap-3"
+        style={{ background: "rgba(124,58,237,0.05)", border: "1px solid rgba(124,58,237,0.12)" }}
+      >
+        <Eye size={13} strokeWidth={1.8} style={{ color: "var(--ai-light)", flexShrink: 0 }} />
+        <p className="text-[12px]" style={{ color: "var(--text-2)" }}>
+          <span className="font-semibold" style={{ color: "var(--ai-light)" }}>TIP — </span>
+          {randomTip}
+        </p>
+      </motion.div>
     </div>
   );
 }
