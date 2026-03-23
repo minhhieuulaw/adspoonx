@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Bookmark, Sparkles, Play, Eye, DollarSign } from "lucide-react";
+import { Bookmark, Sparkles, Play, Eye, DollarSign, Calendar } from "lucide-react";
 import type { FbAd } from "@/lib/facebook-ads";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
 import { getAIInsights, getScoreBg, getScoreBorder } from "@/lib/ai-insights";
@@ -15,6 +15,25 @@ interface AdCardProps {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+function FlagImg({ code }: { code: string }) {
+  if (!code || code.length !== 2) return null;
+  const c = code.toLowerCase();
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://flagcdn.com/20x15/${c}.png`}
+      srcSet={`https://flagcdn.com/40x30/${c}.png 2x`}
+      width={14} height={10} alt={code}
+      style={{ borderRadius: 2, display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}
+    />
+  );
+}
+
+function fmtDate(iso?: string) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short" });
+}
 
 function daysRunning(iso?: string): number | null {
   if (!iso) return null;
@@ -146,6 +165,10 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
   const storeName  = ad.page_name ?? "Unknown";
   const isActive   = ad.is_active !== false;
   const days       = daysRunning(ad.ad_delivery_start_time);
+  const startDate  = fmtDate(ad.ad_delivery_start_time);
+  const countries  = ad.countries ?? (ad.country ? [ad.country] : []);
+  const primary    = countries[0];
+  const extra      = countries.length > 1 ? countries.length - 1 : 0;
   const color      = avatarColor(storeName);
   const impressFmt = fmtImpressions(ad.impressions?.lower_bound, ad.impressions?.upper_bound);
   const spendFmt   = fmtSpend(ad.spend?.lower_bound, ad.spend?.upper_bound);
@@ -217,7 +240,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
           </div>
         </div>
 
-        {/* ── Footer: brand + stats + actions — compact ── */}
+        {/* ── Footer: all info compact ── */}
         <div className="px-2.5 py-2 flex flex-col gap-1.5">
           {/* Brand row */}
           <div className="flex items-center gap-1.5 min-w-0">
@@ -237,28 +260,60 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             <span className="text-[11px] font-medium flex-1 truncate" style={{ color: "var(--text-1)" }}>
               {storeName}
             </span>
+            <button
+              onClick={e => { e.stopPropagation(); toggleSave(ad); }}
+              className="p-1 rounded-[4px] flex-shrink-0"
+              style={{
+                color: isSaved ? "var(--ai-light)" : "var(--text-3)",
+                background: isSaved ? "var(--ai-soft)" : "transparent",
+                transition: "all 100ms",
+              }}
+              title={isSaved ? "Saved" : "Save"}
+            >
+              <Bookmark size={11} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? "currentColor" : "none"} />
+            </button>
           </div>
 
-          {/* Stats + actions row */}
-          <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
-            {/* Stats inline */}
-            <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
-              {impressFmt && (
-                <span className="flex items-center gap-0.5 text-[9px] tabular-nums" style={{ color: "var(--text-3)" }}>
-                  <Eye size={8} strokeWidth={1.5} />{impressFmt}
-                </span>
-              )}
-              {spendFmt && (
-                <span className="flex items-center gap-0.5 text-[9px] tabular-nums" style={{ color: "var(--text-3)" }}>
-                  <DollarSign size={8} strokeWidth={1.5} />{spendFmt}
-                </span>
-              )}
-            </div>
+          {/* Stats row: country · impressions · spend · date */}
+          <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: 9, color: "var(--text-3)" }}>
+            {primary && (
+              <span className="flex items-center gap-0.5">
+                <FlagImg code={primary} />
+                <span style={{ color: "var(--text-2)", fontWeight: 500 }}>{primary}</span>
+                {extra > 0 && <span>+{extra}</span>}
+              </span>
+            )}
+            {impressFmt && (
+              <span className="flex items-center gap-0.5 tabular-nums">
+                <Eye size={8} strokeWidth={1.5} />{impressFmt}
+              </span>
+            )}
+            {spendFmt && (
+              <span className="flex items-center gap-0.5 tabular-nums">
+                <DollarSign size={8} strokeWidth={1.5} />{spendFmt}
+              </span>
+            )}
+            {startDate && (
+              <span className="flex items-center gap-0.5">
+                <Calendar size={8} strokeWidth={1.5} />{startDate}
+              </span>
+            )}
+          </div>
 
-            {/* Actions */}
+          {/* AI tags + Analyze button */}
+          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+            <span className="text-[8px] font-semibold px-1.5 py-[2px] rounded-[4px]"
+              style={{ background: ai.hookBg, color: ai.hookColor, border: `1px solid ${ai.hookColor}22` }}>
+              {ai.hookType}
+            </span>
+            <span className="text-[8px] font-semibold px-1.5 py-[2px] rounded-[4px]"
+              style={{ background: `${ai.trendColor}12`, color: ai.trendColor, border: `1px solid ${ai.trendColor}22` }}>
+              {ai.trendIcon} {ai.trendLabel}
+            </span>
+            <div className="flex-1" />
             <button
               onClick={e => { e.stopPropagation(); handleInspect(); }}
-              className="flex items-center gap-1 px-2 py-1 rounded-[5px] text-[9px] font-semibold"
+              className="flex items-center gap-1 px-2 py-[3px] rounded-[4px] text-[9px] font-semibold"
               style={{
                 background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.2)",
                 color: "var(--ai-light)", transition: "background 100ms",
@@ -268,19 +323,6 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             >
               <Sparkles size={8} strokeWidth={2} />
               Analyze
-            </button>
-
-            <button
-              onClick={e => { e.stopPropagation(); toggleSave(ad); }}
-              className="p-1 rounded-[5px]"
-              style={{
-                color: isSaved ? "var(--ai-light)" : "var(--text-3)",
-                background: isSaved ? "var(--ai-soft)" : "transparent",
-                transition: "all 100ms",
-              }}
-              title={isSaved ? "Saved" : "Save"}
-            >
-              <Bookmark size={11} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? "currentColor" : "none"} />
             </button>
           </div>
         </div>
