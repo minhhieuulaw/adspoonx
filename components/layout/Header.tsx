@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, User, Bell, Zap } from "lucide-react";
+import { ChevronDown, LogOut, User, Bell, Zap, Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -21,6 +21,14 @@ export default function Header() {
   const { locale, setLocale } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [plan, setPlan] = useState<string>("free");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     fetch("/api/me/plan").then(r => r.json()).then(d => { if (d.plan) setPlan(d.plan); }).catch(() => null);
@@ -30,28 +38,51 @@ export default function Header() {
     setLocale(locale === "en" ? "vi" : ("en" as Locale));
   }
 
+  function toggleSidebar() {
+    window.dispatchEvent(new Event("toggle-sidebar"));
+  }
+
   return (
     <header
-      className="flex items-center gap-3 px-5"
+      className="flex items-center gap-2 px-4"
       style={{
         position: "fixed",
         top: 0,
-        left: 256,
+        left: isMobile ? 0 : 256,
         right: 0,
         height: 56,
         zIndex: 30,
-        background: "rgba(17,17,19,0.85)",
+        background: "rgba(17,17,19,0.92)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         borderBottom: "1px solid var(--sidebar-border)",
+        transition: "left 0ms",
       }}
     >
+      {/* Hamburger — mobile only */}
+      {isMobile && (
+        <button
+          onClick={toggleSidebar}
+          className="w-8 h-8 rounded-[7px] flex items-center justify-center flex-shrink-0"
+          style={{ color: "var(--text-secondary)", background: "var(--hover-bg)", border: "1px solid var(--card-border)" }}
+        >
+          <Menu size={15} strokeWidth={1.8} />
+        </button>
+      )}
+
+      {/* App name — mobile only (since sidebar is hidden) */}
+      {isMobile && (
+        <span className="font-display text-[14px] font-bold flex-shrink-0" style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
+          adspoon<span style={{ color: "var(--accent)" }}>X</span>
+        </span>
+      )}
+
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* Right controls */}
       <div className="flex items-center gap-1.5">
-        {/* Notifications (placeholder) */}
+        {/* Notifications */}
         <button
           className="w-7 h-7 rounded-[6px] flex items-center justify-center transition-colors"
           style={{ color: "var(--text-muted)" }}
@@ -110,7 +141,7 @@ export default function Header() {
                 <User size={11} className="text-white" strokeWidth={2} />
               </div>
             )}
-            <span className="text-[12px] font-medium max-w-[90px] truncate" style={{ color: "var(--text-secondary)" }}>
+            <span className="text-[12px] font-medium max-w-[80px] truncate hidden sm:inline" style={{ color: "var(--text-secondary)" }}>
               {session?.user?.name ?? "User"}
             </span>
             <ChevronDown

@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Sparkles, Store, TrendingUp, Bookmark, Settings, Zap, Database } from "lucide-react";
+import { Home, Sparkles, Store, TrendingUp, Bookmark, Settings, Zap, Database, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -23,23 +25,40 @@ const NAV = [
     label: "Account",
     items: [
       { label: "Settings", href: "/settings", icon: Settings },
-      { label: "Admin", href: "/admin", icon: Database },
+      { label: "Admin",    href: "/admin",    icon: Database },
     ],
   },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  return (
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Listen for toggle events from Header
+  useEffect(() => {
+    const handler = () => setIsOpen(v => !v);
+    window.addEventListener("toggle-sidebar", handler);
+    return () => window.removeEventListener("toggle-sidebar", handler);
+  }, []);
+
+  // Close on route change (mobile)
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  const sidebarContent = (
     <aside
       className="h-full flex flex-col select-none"
       style={{
-        position: "fixed",
-        left: 0,
-        top: 0,
         width: 256,
-        zIndex: 40,
         background: "var(--sidebar-bg)",
         borderRight: "1px solid var(--sidebar-border)",
       }}
@@ -55,9 +74,19 @@ export default function Sidebar() {
         >
           <Zap size={13} className="text-white" strokeWidth={2.5} />
         </div>
-        <span className="font-display text-[15px] font-bold" style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
+        <span className="font-display text-[15px] font-bold flex-1" style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
           adspoon<span style={{ color: "var(--accent)" }}>X</span>
         </span>
+        {/* Close button on mobile */}
+        {isMobile && (
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-1 rounded-[6px]"
+            style={{ color: "var(--text-muted)", background: "var(--hover-bg)" }}
+          >
+            <X size={14} strokeWidth={2} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -144,5 +173,44 @@ export default function Sidebar() {
         </Link>
       </div>
     </aside>
+  );
+
+  // ── Desktop: fixed sidebar always visible ──────────────────────────────────
+  if (!isMobile) {
+    return (
+      <div style={{ position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 40, width: 256 }}>
+        {sidebarContent}
+      </div>
+    );
+  }
+
+  // ── Mobile: overlay drawer ─────────────────────────────────────────────────
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="sidebar-backdrop"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: "fixed", inset: 0, zIndex: 49,
+              background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)",
+            }}
+            onClick={() => setIsOpen(false)}
+          />
+          {/* Drawer */}
+          <motion.div
+            key="sidebar-drawer"
+            initial={{ x: -256 }} animate={{ x: 0 }} exit={{ x: -256 }}
+            transition={{ type: "spring", stiffness: 320, damping: 30 }}
+            style={{ position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 50, width: 256 }}
+          >
+            {sidebarContent}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

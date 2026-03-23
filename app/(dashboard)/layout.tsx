@@ -17,7 +17,8 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen" style={{ background: "var(--content-bg)" }}>
       <Sidebar />
-      <div style={{ paddingLeft: 256 }}>
+      {/* md:pl-64 = 256px on desktop, 0 on mobile (sidebar is overlay) */}
+      <div className="md:pl-64">
         <Header />
         <main className="min-h-screen" style={{ paddingTop: 56 }}>
           <div className="p-5">{children}</div>
