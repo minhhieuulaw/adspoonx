@@ -2,6 +2,7 @@
  * Backfill niche column for all ads in the database.
  * Replicates logic from lib/niche-detect.ts (can't import TS directly).
  */
+import 'dotenv/config';
 import pg from 'pg';
 
 const CATEGORY_MAP = {
@@ -129,12 +130,12 @@ let offset = 0;
 let total = 0;
 const nicheCounts = {};
 
-console.log('Backfilling niche for all ads...\n');
+console.log('Backfilling niche for ads with NULL niche...\n');
 
 while (true) {
   const { rows } = await client.query(
-    `SELECT id, "rawData", "bodyText", title FROM "Ad" ORDER BY id LIMIT $1 OFFSET $2`,
-    [BATCH, offset]
+    `SELECT id, "rawData", "bodyText", title FROM "Ad" WHERE niche IS NULL ORDER BY id LIMIT $1`,
+    [BATCH]
   );
   if (rows.length === 0) break;
 
@@ -145,7 +146,7 @@ while (true) {
     total++;
   }
 
-  offset += BATCH;
+  // no offset needed — WHERE niche IS NULL shrinks each iteration
   process.stdout.write(`  ${total} ads processed...\r`);
 }
 
