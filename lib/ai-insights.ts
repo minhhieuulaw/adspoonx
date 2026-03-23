@@ -134,34 +134,34 @@ function generatePerformanceSignals(ad: FbAd, score: number, hookType: string, d
 
   // Longevity signal — most important for sellers
   if (days > 90) {
-    bullets.push({ icon: "🔥", label: "Evergreen winner", detail: `${days} ngày liên tục chạy — ad này profitable, đáng nghiên cứu angle`, color: "#34D399" });
+    bullets.push({ icon: "🔥", label: "Evergreen winner", detail: `Running ${days} days straight — proven profitable, study this angle closely`, color: "#34D399" });
   } else if (days > 30) {
-    bullets.push({ icon: "📈", label: "Đã qua giai đoạn test", detail: `${days} ngày active — vượt qua giai đoạn testing, đang scale`, color: "#60A5FA" });
+    bullets.push({ icon: "📈", label: "Past testing phase", detail: `${days} days active — survived testing, now scaling up`, color: "#60A5FA" });
   } else if (days > 7) {
-    bullets.push({ icon: "🧪", label: "Đang test", detail: `${days} ngày — còn trong giai đoạn testing, chưa chắc chắn profitable`, color: "#FCD34D" });
+    bullets.push({ icon: "🧪", label: "Still testing", detail: `${days} days in — still in testing phase, profitability unconfirmed`, color: "#FCD34D" });
   } else {
-    bullets.push({ icon: "🆕", label: "Mới launch", detail: `${days} ngày — quá sớm để đánh giá hiệu quả`, color: "#94A3B8" });
+    bullets.push({ icon: "🆕", label: "Just launched", detail: `Only ${days} days — too early to judge performance`, color: "#94A3B8" });
   }
 
   // Platform scaling
   if (platCount >= 3) {
-    bullets.push({ icon: "📡", label: "Scale đa nền tảng", detail: `Chạy trên ${platCount} platforms — budget lớn, đang maximize reach`, color: "#A78BFA" });
+    bullets.push({ icon: "📡", label: "Multi-platform scale", detail: `Running on ${platCount} platforms — big budget, maximizing reach`, color: "#A78BFA" });
   }
 
   // Creative type signal
   if (hasVideo) {
-    bullets.push({ icon: "🎬", label: "Video creative", detail: "Video ad thường có CPM thấp hơn 20-40% so với image — lợi thế cạnh tranh", color: "#F472B6" });
+    bullets.push({ icon: "🎬", label: "Video creative", detail: "Video ads typically get 20-40% lower CPM than images — competitive edge", color: "#F472B6" });
   }
 
   // Hook analysis for sellers
   const hookInsights: Record<string, { detail: string; color: string }> = {
-    "Emotion-Led":  { detail: "Hook cảm xúc — CTR cao, phù hợp sản phẩm giải quyết pain point cá nhân", color: "#F472B6" },
-    "How-To":       { detail: "Hook giáo dục — xây dựng trust trước khi bán, tốt cho sản phẩm cần giải thích", color: "#60A5FA" },
-    "Pain Point":   { detail: "Hook đánh vào nỗi đau — conversion rate cao nhất nhưng dễ bị ad fatigue", color: "#FB923C" },
-    "Urgency":      { detail: "Hook urgency — push quyết định nhanh, cẩn thận bị Facebook restrict", color: "#F87171" },
-    "Social Proof": { detail: "Hook social proof — giảm lo ngại mua hàng, rất hiệu quả cho sản phẩm mới", color: "#34D399" },
-    "UGC":          { detail: "Hook UGC — trust cao nhất, CPM thấp vì Facebook ưu tiên content organic", color: "#A78BFA" },
-    "Direct":       { detail: "Hook trực tiếp — đơn giản, hiệu quả cho sản phẩm đã có brand awareness", color: "#94A3B8" },
+    "Emotion-Led":  { detail: "Emotion hook — high CTR, great for products solving personal pain points", color: "#F472B6" },
+    "How-To":       { detail: "Educational hook — builds trust before the pitch, ideal for complex products", color: "#60A5FA" },
+    "Pain Point":   { detail: "Pain point hook — highest conversion rate but burns out faster", color: "#FB923C" },
+    "Urgency":      { detail: "Urgency hook — pushes fast decisions, watch for Facebook policy flags", color: "#F87171" },
+    "Social Proof": { detail: "Social proof hook — reduces purchase anxiety, very effective for new products", color: "#34D399" },
+    "UGC":          { detail: "UGC hook — highest trust, lower CPM since Facebook favors organic content", color: "#A78BFA" },
+    "Direct":       { detail: "Direct hook — simple, effective for products with existing brand awareness", color: "#94A3B8" },
   };
   const hi = hookInsights[hookType];
   if (hi) {
@@ -170,16 +170,16 @@ function generatePerformanceSignals(ad: FbAd, score: number, hookType: string, d
 
   // Spend intelligence
   if (avgSpend > 10000) {
-    bullets.push({ icon: "💰", label: "Big spender", detail: `Est. spend >$${Math.round(avgSpend / 1000)}k — đối thủ có budget lớn, cần creative khác biệt để cạnh tranh`, color: "#34D399" });
+    bullets.push({ icon: "💰", label: "Big spender", detail: `Est. spend >$${Math.round(avgSpend / 1000)}k — competitor has deep pockets, differentiate your creative`, color: "#34D399" });
   } else if (avgSpend > 1000) {
-    bullets.push({ icon: "💵", label: "Spend tốt", detail: `Est. ~$${Math.round(avgSpend)} — mức chi tiêu cho thấy ad đang profitable`, color: "#60A5FA" });
+    bullets.push({ icon: "💵", label: "Solid spend", detail: `Est. ~$${Math.round(avgSpend)} total — spending at this level signals profitability`, color: "#60A5FA" });
   }
 
   // Copy length signal
   if (body.length > 300) {
-    bullets.push({ icon: "📝", label: "Long-form copy", detail: "Copy dài — phù hợp sản phẩm giá cao cần thuyết phục nhiều", color: "#FCD34D" });
+    bullets.push({ icon: "📝", label: "Long-form copy", detail: "Long copy — suits higher-ticket products that need more convincing", color: "#FCD34D" });
   } else if (body.length < 50 && body.length > 0) {
-    bullets.push({ icon: "⚡", label: "Short copy", detail: "Copy ngắn — impulse buy, sản phẩm visual-driven hoặc giá thấp", color: "#FB923C" });
+    bullets.push({ icon: "⚡", label: "Short copy", detail: "Short copy — impulse buy, visual-driven or low-price product", color: "#FB923C" });
   }
 
   return bullets;
@@ -187,20 +187,19 @@ function generatePerformanceSignals(ad: FbAd, score: number, hookType: string, d
 
 function generateSellerTakeaway(ad: FbAd, score: number, days: number, hookType: string): string {
   const hasVideo = !!ad.video_url;
-  const hasCTA = !!ad.cta_text;
 
   if (score >= 80) {
-    if (hasVideo) return "Ad này đang print money. Nghiên cứu kỹ angle video + hook đầu 3 giây để tạo variation.";
-    return "Winner confirmed. Phân tích copy structure + CTA flow để tạo ad tương tự cho sản phẩm của bạn.";
+    if (hasVideo) return "This ad is printing money. Study the video angle + first 3-second hook to create your own variation.";
+    return "Winner confirmed. Break down the copy structure + CTA flow to replicate for your product.";
   }
   if (score >= 65) {
-    if (days > 60) return "Ad ổn định lâu dài. Có thể test angle tương tự nhưng cải thiện hook để outperform.";
-    return "Đang scale tốt. Nếu bán sản phẩm tương tự, test angle này nhưng dùng creative format khác.";
+    if (days > 60) return "Long-term stable performer. Test a similar angle with an improved hook to outperform.";
+    return "Scaling well. If you sell something similar, test this angle but use a different creative format.";
   }
   if (score >= 50) {
-    return "Tín hiệu tích cực nhưng chưa chắc chắn. Theo dõi thêm 1-2 tuần trước khi copy angle.";
+    return "Positive signals but unconfirmed. Monitor for 1-2 more weeks before replicating this angle.";
   }
-  return "Quá sớm để đánh giá. Không nên copy — chờ xem ad này có survive qua testing phase không.";
+  return "Too early to judge. Don't copy yet — wait to see if this ad survives the testing phase.";
 }
 
 function generateCompetitiveEdge(ad: FbAd, hookType: string, days: number): string {
@@ -209,28 +208,27 @@ function generateCompetitiveEdge(ad: FbAd, hookType: string, days: number): stri
 
   const edges: string[] = [];
 
-  if (days > 60 && hasVideo) edges.push("Video evergreen — tìm góc quay khác để không bị trùng creative");
-  else if (days > 60) edges.push("Image ad lâu dài — thử chuyển sang video để có CPM thấp hơn");
-  else if (hasVideo) edges.push("Video ad mới — nếu copy angle, dùng UGC style để khác biệt");
+  if (days > 60 && hasVideo) edges.push("Evergreen video — find a different filming angle to avoid matching creative");
+  else if (days > 60) edges.push("Long-running image ad — try switching to video for lower CPM");
+  else if (hasVideo) edges.push("New video ad — if copying the angle, use UGC style to differentiate");
 
-  if (platCount >= 3) edges.push("Đối thủ đã scale rộng — tìm niche audience chưa được target");
-  if (hookType === "Urgency") edges.push("Hook urgency dễ bị ad fatigue — dùng social proof thay thế");
-  if (hookType === "UGC") edges.push("UGC khó copy chính xác — tạo UGC riêng với góc nhìn khác");
+  if (platCount >= 3) edges.push("Competitor already scaled wide — find untapped niche audiences");
+  if (hookType === "Urgency") edges.push("Urgency hooks burn out fast — try social proof instead");
+  if (hookType === "UGC") edges.push("UGC is hard to copy exactly — create your own with a fresh perspective");
 
-  if (edges.length === 0) edges.push("Thử test 2-3 variations với hook khác nhau để tìm angle tốt hơn");
+  if (edges.length === 0) edges.push("Test 2-3 variations with different hooks to find a better angle");
 
   return edges.join(". ") + ".";
 }
 
 function generateWhyWorking(ad: FbAd, score: number, hookType: string, days: number): string {
-  // Keep for backward compat (AdDetailModal uses this)
   if (score >= 80) {
-    return `Ad chạy ${days} ngày liên tục — profitable đã được chứng minh. Hook ${hookType.toLowerCase()} đang convert tốt. Đáng phân tích kỹ angle và copy structure.`;
+    return `Running ${days} days straight — proven profitable. The ${hookType.toLowerCase()} hook is converting well. Worth studying the angle and copy structure.`;
   }
   if (score >= 65) {
-    return `Hiệu suất ổn định sau ${days} ngày. Hook ${hookType.toLowerCase()} đang hoạt động — ad này đã qua testing phase và đang scale.`;
+    return `Consistent performance over ${days} days. The ${hookType.toLowerCase()} hook is working — past testing phase, now scaling.`;
   }
-  return `Ad mới ${days} ngày, còn trong giai đoạn test. Hook ${hookType.toLowerCase()} — chờ thêm data trước khi đánh giá.`;
+  return `Only ${days} days in, still in testing. ${hookType} approach — needs more data before drawing conclusions.`;
 }
 
 function generateAudience(ad: FbAd): string {
@@ -243,18 +241,18 @@ function generateAudience(ad: FbAd): string {
 
 function generateCreativeStrategy(hookType: string, days: number, _score: number): string {
   const strategies: Record<string, string> = {
-    "Emotion-Led":  "Mở bằng cảm xúc → bypass lý trí → dẫn đến CTA. Tỷ lệ giữ chân cao.",
-    "How-To":       "Dạy trước, bán sau. Tạo trust rồi mới pitch — hiệu quả với cold audience.",
-    "Pain Point":   "Khuấy nỗi đau → đặt sản phẩm làm giải pháp duy nhất. CR cao nhưng dễ fatigue.",
-    "Urgency":      "Tạo khan hiếm giả → ép quyết định nhanh. Cẩn thận bị Facebook penalize.",
-    "Social Proof": "Dùng tâm lý đám đông — review/rating giảm rào cản mua hàng.",
-    "UGC":          "Content tự nhiên như user thật → trust cao, CPM thấp vì FB ưu tiên organic.",
-    "Direct":       "Copy thẳng vào benefit → CTA. Đơn giản, hiệu quả cho sản phẩm đã quen thuộc.",
+    "Emotion-Led":  "Opens with emotion → bypasses rational resistance → drives to CTA. High retention scroll-stopper.",
+    "How-To":       "Teaches first, sells second. Builds trust before the pitch — effective with cold audiences.",
+    "Pain Point":   "Agitates a pain point → positions product as the only fix. High CR but burns out faster.",
+    "Urgency":      "Creates scarcity → compresses decision timeline. Watch for Facebook policy flags.",
+    "Social Proof": "Leverages crowd psychology — reviews and ratings reduce purchase anxiety.",
+    "UGC":          "Natural user-style content → high trust, lower CPM since Facebook favors organic.",
+    "Direct":       "Leads with benefits → straight to CTA. Simple, effective for known products.",
   };
 
-  const base = strategies[hookType] ?? "Approach trực tiếp với value proposition rõ ràng.";
-  const fatigue = days > 90 ? " Chạy >90 ngày chưa fatigue — creative này có staying power." :
-                  days > 60 ? " Sau 60+ ngày vẫn active — chưa có dấu hiệu fatigue." : "";
+  const base = strategies[hookType] ?? "Direct response approach with clear value proposition.";
+  const fatigue = days > 90 ? " Running 90+ days with no fatigue — this creative has staying power." :
+                  days > 60 ? " Still active after 60+ days — no signs of creative fatigue yet." : "";
   return base + fatigue;
 }
 

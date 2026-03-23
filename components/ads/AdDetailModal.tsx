@@ -486,7 +486,7 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                       <span className="text-[12px] flex-shrink-0 mt-0.5">⚔️</span>
                       <div>
                         <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "#34D399" }}>
-                          Cách cạnh tranh
+                          How to Compete
                         </p>
                         <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>
                           {ai.competitiveEdge}
