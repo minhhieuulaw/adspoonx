@@ -204,19 +204,21 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues, userPlan: string
     });
   }
 
-  // 9. Sort
-  result.sort((a, b) => {
-    switch (filters.sortBy) {
-      case "score":
-        return getAIInsights(b).winningScore - getAIInsights(a).winningScore;
-      case "newest":
-        return new Date(b.ad_delivery_start_time ?? 0).getTime() - new Date(a.ad_delivery_start_time ?? 0).getTime();
-      case "longest":
-        return new Date(a.ad_delivery_start_time ?? 0).getTime() - new Date(b.ad_delivery_start_time ?? 0).getTime();
-      default:
-        return 0;
-    }
-  });
+  // 9. Sort ("mixed" = keep API's random order)
+  if (filters.sortBy !== "mixed") {
+    result.sort((a, b) => {
+      switch (filters.sortBy) {
+        case "score":
+          return getAIInsights(b).winningScore - getAIInsights(a).winningScore;
+        case "newest":
+          return new Date(b.ad_delivery_start_time ?? 0).getTime() - new Date(a.ad_delivery_start_time ?? 0).getTime();
+        case "longest":
+          return new Date(a.ad_delivery_start_time ?? 0).getTime() - new Date(b.ad_delivery_start_time ?? 0).getTime();
+        default:
+          return 0;
+      }
+    });
+  }
 
   // 8. Video-first: stable partition within the sorted result (only when showing all media)
   if (!filters.mediaType) {
@@ -240,6 +242,7 @@ export default function AdsPage() {
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [selectedAd, setSelectedAd] = useState<FbAd | null>(null);
+  const [gridFade, setGridFade]     = useState(false); // filter transition
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
   const [userPlan, setUserPlan]       = useState<string>("free");
   const [filterOpen, setFilterOpen]   = useState(false);
@@ -271,7 +274,7 @@ export default function AdsPage() {
       mediaType:    saved?.mediaType ?? null,
       preset:       null,
       platforms:    saved?.platforms ?? [],
-      sortBy:       saved?.sortBy ?? "score",
+      sortBy:       saved?.sortBy ?? "mixed",
       dropshipping: saved?.dropshipping ?? "all",
       duration:     saved?.duration ?? "any",
       aiScore:      saved?.aiScore ?? "all",
@@ -454,6 +457,16 @@ export default function AdsPage() {
   }
   function exitBulk() { setBulkMode(false); setBulkSelected(new Set()); }
 
+  // Filter change handler with fade transition
+  const handleFilterChange = useCallback((newFilters: FilterValues) => {
+    setGridFade(true);
+    setVisibleCount(20);
+    setTimeout(() => {
+      setFilters(newFilters);
+      setGridFade(false);
+    }, 150);
+  }, []);
+
   // Client-side filtered + sorted ads (instant, no API call)
   const filteredAds = useMemo(() => applyClientFilters(ads, filters, userPlan), [ads, filters, userPlan]);
   // Display 20 ads per page, load more adds 20
@@ -501,7 +514,7 @@ export default function AdsPage() {
           </div>
           <AdsFilter
             values={filters}
-            onChange={setFilters}
+            onChange={handleFilterChange}
             totalResults={ads.length}
             filteredResults={filteredAds.length}
             loading={loading}
@@ -543,7 +556,7 @@ export default function AdsPage() {
                 </div>
                 <AdsFilter
                   values={filters}
-                  onChange={v => { setFilters(v); }}
+                  onChange={handleFilterChange}
                   totalResults={ads.length}
                   filteredResults={filteredAds.length}
                   loading={loading}
@@ -899,7 +912,8 @@ export default function AdsPage() {
         {/* Ads grid — container query responsive */}
         <AnimatePresence>
           {visibleAds.length > 0 && (
-            <div className="ads-grid-container">
+            <div className="ads-grid-container"
+              style={{ opacity: gridFade ? 0.3 : 1, transform: gridFade ? "translateY(4px)" : "translateY(0)", transition: "opacity 150ms ease, transform 150ms ease" }}>
               <div className="ads-grid">
                 {visibleAds.map((ad, i) => (
                   <div key={ad.id} className="relative">

@@ -25,6 +25,7 @@ const PLATFORMS = [
 ] as const;
 
 const SORT_OPTIONS = [
+  { id: "mixed",    label: "Mixed" },
   { id: "score",    label: "AI Score" },
   { id: "newest",   label: "Newest First" },
   { id: "longest",  label: "Longest Running" },
@@ -66,7 +67,7 @@ export interface FilterValues {
   mediaType: "video" | "image" | null;
   preset: PresetId;
   platforms: string[];
-  sortBy: "score" | "newest" | "longest";
+  sortBy: "mixed" | "score" | "newest" | "longest";
   dropshipping: "all" | "dropshipping" | "brand";
   duration: "any" | "new" | "growing" | "proven" | "evergreen";
   aiScore: AIScoreTier;
@@ -371,7 +372,7 @@ export default function AdsFilter({
     (t.filter.countries as Record<string, string>)[code] ?? EXTRA_COUNTRIES[code] ?? code;
 
   const activeSort   = SORT_OPTIONS.find(s => s.id === values.sortBy) ?? SORT_OPTIONS[0];
-  const hasFilters   = values.preset !== null || values.platforms.length > 0 || values.sortBy !== "score"
+  const hasFilters   = values.preset !== null || values.platforms.length > 0 || values.sortBy !== "mixed"
     || values.dropshipping !== "all" || values.duration !== "any" || values.mediaType !== null || values.aiScore !== "all"
     || values.niche !== null || values.language !== "all";
 
@@ -387,7 +388,7 @@ export default function AdsFilter({
   }
 
   function clearAll() {
-    onChange({ ...values, preset: null, platforms: [], sortBy: "score", dropshipping: "all", duration: "any", mediaType: null, aiScore: "all", niche: null, language: "all" });
+    onChange({ ...values, preset: null, platforms: [], sortBy: "mixed", dropshipping: "all", duration: "any", mediaType: null, aiScore: "all", niche: null, language: "all" });
   }
 
   const statusOptions = [
