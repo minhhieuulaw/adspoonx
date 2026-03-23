@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ChevronDown, Globe, SlidersHorizontal } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
-const COUNTRY_CODES = ["VN", "US", "TH", "ID", "PH", "MY", "SG", "GB", "AU", "CA"] as const;
+// Only show countries that actually exist in our database
+const COUNTRY_CODES = ["US"] as const;
 
 export const PRESETS = [
   { id: "top",          label: "Top Performers", icon: "🏆", desc: "AI Score ≥ 80" },
@@ -22,13 +23,13 @@ const PLATFORMS = [
   { id: "instagram",        label: "Instagram",        short: "IG", color: "#F472B6" },
   { id: "messenger",        label: "Messenger",        short: "MS", color: "#38BDF8" },
   { id: "audience_network", label: "Audience Network", short: "AN", color: "#A78BFA" },
+  { id: "threads",          label: "Threads",          short: "TH", color: "#E5E7EB" },
 ] as const;
 
 const SORT_OPTIONS = [
   { id: "score",    label: "AI Score" },
   { id: "newest",   label: "Newest First" },
   { id: "longest",  label: "Longest Running" },
-  { id: "audience", label: "Biggest Audience" },
 ] as const;
 
 export type AIScoreTier = "all" | "weak" | "testing" | "promising" | "winning" | "elite";
@@ -67,7 +68,7 @@ export interface FilterValues {
   mediaType: "video" | "image" | null;
   preset: PresetId;
   platforms: string[];
-  sortBy: "score" | "newest" | "longest" | "audience";
+  sortBy: "score" | "newest" | "longest";
   dropshipping: "all" | "dropshipping" | "brand";
   duration: "any" | "new" | "growing" | "proven" | "evergreen";
   aiScore: AIScoreTier;
@@ -322,69 +323,50 @@ export default function AdsFilter({
 
         <Divider />
 
-        {/* Status */}
-        <FilterSection label="Status">
-          <div
-            className="flex items-center p-0.5 rounded-[8px] gap-0.5 w-full"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}
-          >
-            {statusOptions.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => onChange({ ...values, status: opt.value })}
-                className="flex-1 py-1.5 rounded-[6px] text-[11px] font-medium"
-                style={
-                  values.status === opt.value
-                    ? { background: "var(--bg-active)", color: "var(--text-1)" }
-                    : { color: "var(--text-3)" }
-                }
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </FilterSection>
+        {/* Status — hidden: 99.7% active, only 41 inactive ads */}
 
-        <Divider />
-
-        {/* Country */}
-        <FilterSection label="Country">
-          <div className="relative">
-            <button
-              onClick={() => { setShowCountryDrop(v => !v); setShowSortDrop(false); }}
-              className="flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium"
-              style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
-            >
-              <Globe size={12} style={{ color: "var(--text-3)" }} />
-              <span className="flex-1 text-left">{getCountryLabel(values.country)}</span>
-              <ChevronDown size={11} style={{ color: "var(--text-3)", transform: showCountryDrop ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
-            </button>
-            {showCountryDrop && (
-              <div
-                className="absolute top-full left-0 right-0 mt-1 rounded-[10px] py-1 z-20"
-                style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
-              >
-                {COUNTRY_CODES.map(code => (
-                  <button
-                    key={code}
-                    onClick={() => { onChange({ ...values, country: code }); setShowCountryDrop(false); }}
-                    className="w-full text-left px-3 py-1.5 text-[12px]"
-                    style={{
-                      color:      values.country === code ? "var(--ai-light)" : "var(--text-2)",
-                      fontWeight: values.country === code ? 500 : 400,
-                    }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+        {/* Country — only show when multiple countries exist */}
+        {COUNTRY_CODES.length > 1 && (
+          <>
+            <FilterSection label="Country">
+              <div className="relative">
+                <button
+                  onClick={() => { setShowCountryDrop(v => !v); setShowSortDrop(false); }}
+                  className="flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium"
+                  style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+                >
+                  <Globe size={12} style={{ color: "var(--text-3)" }} />
+                  <span className="flex-1 text-left">{getCountryLabel(values.country)}</span>
+                  <ChevronDown size={11} style={{ color: "var(--text-3)", transform: showCountryDrop ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                </button>
+                {showCountryDrop && (
+                  <div
+                    className="absolute top-full left-0 right-0 mt-1 rounded-[10px] py-1 z-20"
+                    style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
                   >
-                    {getCountryLabel(code)}
-                  </button>
-                ))}
+                    {COUNTRY_CODES.map(code => (
+                      <button
+                        key={code}
+                        onClick={() => { onChange({ ...values, country: code }); setShowCountryDrop(false); }}
+                        className="w-full text-left px-3 py-1.5 text-[12px]"
+                        style={{
+                          color:      values.country === code ? "var(--ai-light)" : "var(--text-2)",
+                          fontWeight: values.country === code ? 500 : 400,
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                      >
+                        {getCountryLabel(code)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </FilterSection>
+            </FilterSection>
+            <Divider />
+          </>
+        )}
 
-        <Divider />
 
         {/* Platform */}
         <FilterSection label="Platform">
@@ -628,44 +610,8 @@ export default function AdsFilter({
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2">
 
-        {/* Country */}
-        <div className="relative">
-          <button
-            onClick={() => { setShowCountryDrop(v => !v); setShowSortDrop(false); }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[7px] text-[12px] font-medium"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
-          >
-            <Globe size={12} style={{ color: "var(--text-3)" }} />
-            {getCountryLabel(values.country)}
-            <ChevronDown size={11} style={{ color: "var(--text-3)" }} />
-          </button>
-          {showCountryDrop && (
-            <div className="absolute top-full left-0 mt-1 w-44 rounded-[10px] py-1 z-20"
-              style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
-              {COUNTRY_CODES.map(code => (
-                <button key={code} onClick={() => { onChange({ ...values, country: code }); setShowCountryDrop(false); }}
-                  className="w-full text-left px-3 py-1.5 text-[12px]"
-                  style={{ color: values.country === code ? "var(--ai-light)" : "var(--text-2)", fontWeight: values.country === code ? 500 : 400 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                  {getCountryLabel(code)}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Status */}
-        <div className="flex items-center p-0.5 rounded-[8px] gap-0.5"
-          style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
-          {statusOptions.map(opt => (
-            <button key={opt.value} onClick={() => onChange({ ...values, status: opt.value })}
-              className="px-3 py-1 rounded-[6px] text-[11px] font-medium"
-              style={values.status === opt.value ? { background: "var(--bg-active)", color: "var(--text-1)" } : { color: "var(--text-3)" }}>
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        {/* Country — hidden: only US data available */}
+        {/* Status — hidden: 99.7% active */}
 
         {/* Media type toggle */}
         <div className="flex items-center p-0.5 rounded-[8px] gap-0.5"

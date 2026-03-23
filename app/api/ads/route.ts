@@ -30,11 +30,12 @@ export async function GET(req: NextRequest) {
 
   const page  = Math.max(1, Number(searchParams.get("page") ?? "1"));
   // Fetch more than displayed — client-side dedup/filters reduce the count significantly
-  // Plan maxResults only caps total visible ads on the frontend, not DB fetch
   const requestedLimit = Math.max(1, Number(searchParams.get("limit") ?? "40"));
-  const limit = Math.min(200, requestedLimit); // hard cap at 200 for safety
-  const skip  = (page - 1) * limit;
+  const limit = Math.min(500, requestedLimit); // hard cap at 500 for safety
   const isActive = status !== "INACTIVE";
+  // Random seed per page-load: client sends a seed, we use it for reproducible random within a session
+  // but different across reloads. If no seed, generate one.
+  const seed = Number(searchParams.get("seed")) || Math.floor(Math.random() * 1_000_000);
 
   // ── Video filter via raw SQL (JSON field query) ─────────────────────────────
   if (mediaType === "video") {
@@ -48,6 +49,7 @@ export async function GET(req: NextRequest) {
 
     try {
       // $queryRaw tagged template — parameterised, safe from injection
+      // Use seed-based random ordering so each page load shows different ads
       const [videoAds, countResult] = await Promise.all([
         q
           ? prisma.$queryRaw<RawAd[]>`
@@ -62,8 +64,8 @@ export async function GET(req: NextRequest) {
                   "rawData"->'snapshot'->>'video_sd_url'
                 ) IS NOT NULL
                 AND ("pageName" ILIKE ${`%${q}%`} OR "bodyText" ILIKE ${`%${q}%`})
-              ORDER BY "scrapedAt" DESC
-              LIMIT ${limit} OFFSET ${skip}
+              ORDER BY md5("adArchiveId" || ${String(seed)})
+              LIMIT ${limit}
             `
           : prisma.$queryRaw<RawAd[]>`
               SELECT * FROM "Ad"
@@ -76,8 +78,8 @@ export async function GET(req: NextRequest) {
                   "rawData"->'snapshot'->>'video_hd_url',
                   "rawData"->'snapshot'->>'video_sd_url'
                 ) IS NOT NULL
-              ORDER BY "scrapedAt" DESC
-              LIMIT ${limit} OFFSET ${skip}
+              ORDER BY md5("adArchiveId" || ${String(seed)})
+              LIMIT ${limit}
             `,
         q
           ? prisma.$queryRaw<[{ count: bigint }]>`
@@ -110,43 +112,67 @@ export async function GET(req: NextRequest) {
       const total      = Number(countResult[0]?.count ?? 0);
       const totalPages = Math.ceil(total / limit);
       const data: FbAd[] = videoAds.map(ad => mapAdToFbAd(ad));
-      return NextResponse.json({ data, total, page, totalPages, hasMore: page < totalPages, plan, maxResults: limits.maxResults });
+      return NextResponse.json({ data, total, page, totalPages, hasMore: page < totalPages, plan, maxResults: limits.maxResults, seed });
     } catch (err) {
       console.error("[api/ads] video query error:", err);
       return NextResponse.json({ error: "DB error", detail: String(err) }, { status: 500 });
     }
   }
 
-  // ── Standard query ──────────────────────────────────────────────────────────
-  const where = {
-    country,
-    isActive,
-    ...(q
-      ? {
-          OR: [
-            { pageName:    { contains: q, mode: "insensitive" as const } },
-            { bodyText:    { contains: q, mode: "insensitive" as const } },
-            { title:       { contains: q, mode: "insensitive" as const } },
-            { description: { contains: q, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
+  // ── Standard query (raw SQL for seed-based random ordering) ─────────────────
+  type RawAdStd = {
+    id: string; adArchiveId: string; pageId: string | null; pageName: string | null;
+    bodyText: string | null; title: string | null; description: string | null;
+    imageUrl: string | null; adLibraryUrl: string | null; platforms: string[];
+    country: string; isActive: boolean; startDate: Date | null; endDate: Date | null;
+    niche: string | null; rawData: Record<string, unknown>; scrapedAt: Date;
   };
 
-  let ads, total;
+  let stdAds: RawAdStd[], stdTotal: number;
   try {
-    [ads, total] = await Promise.all([
-      prisma.ad.findMany({ where, orderBy: { scrapedAt: "desc" }, take: limit, skip }),
-      prisma.ad.count({ where }),
+    const seedStr = String(seed);
+    const [rows, countResult] = await Promise.all([
+      q
+        ? prisma.$queryRaw<RawAdStd[]>`
+            SELECT * FROM "Ad"
+            WHERE country = ${country}
+              AND "isActive" = ${isActive}
+              AND ("pageName" ILIKE ${`%${q}%`} OR "bodyText" ILIKE ${`%${q}%`}
+                   OR "title" ILIKE ${`%${q}%`} OR "description" ILIKE ${`%${q}%`})
+            ORDER BY md5("adArchiveId" || ${seedStr})
+            LIMIT ${limit}
+          `
+        : prisma.$queryRaw<RawAdStd[]>`
+            SELECT * FROM "Ad"
+            WHERE country = ${country}
+              AND "isActive" = ${isActive}
+            ORDER BY md5("adArchiveId" || ${seedStr})
+            LIMIT ${limit}
+          `,
+      q
+        ? prisma.$queryRaw<[{ count: bigint }]>`
+            SELECT COUNT(*) FROM "Ad"
+            WHERE country = ${country}
+              AND "isActive" = ${isActive}
+              AND ("pageName" ILIKE ${`%${q}%`} OR "bodyText" ILIKE ${`%${q}%`}
+                   OR "title" ILIKE ${`%${q}%`} OR "description" ILIKE ${`%${q}%`})
+          `
+        : prisma.$queryRaw<[{ count: bigint }]>`
+            SELECT COUNT(*) FROM "Ad"
+            WHERE country = ${country}
+              AND "isActive" = ${isActive}
+          `,
     ]);
+    stdAds = rows;
+    stdTotal = Number(countResult[0]?.count ?? 0);
   } catch (err) {
     console.error("[api/ads] DB query error:", err);
     return NextResponse.json({ error: "DB error", detail: String(err) }, { status: 500 });
   }
 
-  const totalPages = Math.ceil(total / limit);
-  const data: FbAd[] = ads.map(ad => mapAdToFbAd(ad));
-  return NextResponse.json({ data, total, page, totalPages, hasMore: page < totalPages, plan, maxResults: limits.maxResults });
+  const totalPages = Math.ceil(stdTotal / limit);
+  const data: FbAd[] = stdAds.map(ad => mapAdToFbAd(ad));
+  return NextResponse.json({ data, total: stdTotal, page, totalPages, hasMore: page < totalPages, plan, maxResults: limits.maxResults, seed });
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────

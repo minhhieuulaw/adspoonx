@@ -138,8 +138,6 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues, userPlan: string
         return new Date(b.ad_delivery_start_time ?? 0).getTime() - new Date(a.ad_delivery_start_time ?? 0).getTime();
       case "longest":
         return new Date(a.ad_delivery_start_time ?? 0).getTime() - new Date(b.ad_delivery_start_time ?? 0).getTime();
-      case "audience":
-        return (b.estimated_audience_size?.upper_bound ?? 0) - (a.estimated_audience_size?.upper_bound ?? 0);
       default:
         return 0;
     }
@@ -185,13 +183,20 @@ export default function AdsPage() {
   });
 
   const [nextPage, setNextPage] = useState<number | null>(null);
+  // Random seed: generated once per page load, sent to API so same seed = same shuffled order
+  // New seed on each reload = different ads order
+  const [seed] = useState(() => Math.floor(Math.random() * 1_000_000));
 
   const fetchAds = useCallback(
     async (params: { q: string; country: string; status: string; mediaType?: string; page?: number }) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get<FbAdsResponse & { plan?: string }>("/api/ads", { params: { ...params, limit: 60 } });
+        // Fetch 200 ads to have enough after dedup/filters — especially for video (only 9% of DB)
+        const fetchLimit = params.mediaType === "video" ? 300 : 200;
+        const res = await axios.get<FbAdsResponse & { plan?: string; seed?: number }>("/api/ads", {
+          params: { ...params, limit: fetchLimit, seed },
+        });
         if (params.page && params.page > 1) {
           setAds(prev => [...prev, ...res.data.data]);
         } else {
@@ -205,7 +210,7 @@ export default function AdsPage() {
         setLoading(false);
       }
     },
-    []
+    [seed]
   );
 
   // Re-fetch when server-side params change (image filter is client-side only)
@@ -246,11 +251,11 @@ export default function AdsPage() {
 
   // KPI computed from ALL fetched ads (not filtered)
   const kpi = useMemo(() => {
-    const active   = ads.filter(a => a.is_active !== false).length;
-    const scores   = ads.map(a => getAIInsights(a).winningScore);
-    const topScore = scores.length ? Math.max(...scores) : 0;
-    const countries = new Set(ads.map(a => a.country).filter(Boolean)).size;
-    return { total: ads.length, active, topScore, countries };
+    const active     = ads.filter(a => a.is_active !== false).length;
+    const scores     = ads.map(a => getAIInsights(a).winningScore);
+    const topScore   = scores.length ? Math.max(...scores) : 0;
+    const videoCount = ads.filter(a => !!a.video_url).length;
+    return { total: ads.length, active, topScore, videoCount };
   }, [ads]);
 
   // Container queries handle responsive grid cols automatically
@@ -375,7 +380,7 @@ export default function AdsPage() {
             <KPIStat label="Total Ads"    value={kpi.total}    sub="in current filter" icon={Sparkles} iconColor="#A78BFA" iconBg="rgba(124,58,237,0.12)" />
             <KPIStat label="Active"       value={kpi.active}   sub="currently live"    icon={Zap}      iconColor="#34D399" iconBg="rgba(52,211,153,0.12)"  />
             <KPIStat label="Top AI Score" value={kpi.topScore} sub="highest performer" icon={Brain}    iconColor="#60A5FA" iconBg="rgba(59,130,246,0.12)"  />
-            <KPIStat label="Markets"      value={kpi.countries || "—"} sub="countries detected" icon={Globe} iconColor="#FCD34D" iconBg="rgba(245,158,11,0.12)" />
+            <KPIStat label="With Video"   value={kpi.videoCount} sub="video creatives" icon={Globe}    iconColor="#FCD34D" iconBg="rgba(245,158,11,0.12)" />
           </motion.div>
         )}
 
