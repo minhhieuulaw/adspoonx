@@ -6,6 +6,7 @@ import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import type { FbAd, FbAdsResponse } from "@/lib/facebook-ads";
 import { getAIInsights, getDropshippingScore } from "@/lib/ai-insights";
+import { detectLanguage } from "@/lib/detect-language";
 import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues, AI_SCORE_TIERS } from "@/components/ads/AdsFilter";
 import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
@@ -108,9 +109,6 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues, userPlan: string
         case "top":          return ai.winningScore >= 80;
         case "trending":     return active && days < 30;
         case "evergreen":    return days > 90 && ai.winningScore >= 65;
-        case "fomo":         return ai.hookType === "FOMO";
-        case "social_proof": return ai.hookType === "Social Proof";
-        case "ugc":          return ai.hookType === "UGC";
         default:             return true;
       }
     });
@@ -129,7 +127,15 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues, userPlan: string
     result = result.filter(ad => ad.niche === filters.niche);
   }
 
-  // 8. Sort
+  // 8. Language filter
+  if (filters.language !== "all") {
+    result = result.filter(ad => {
+      const lang = detectLanguage(ad.ad_creative_bodies?.[0]);
+      return lang === filters.language;
+    });
+  }
+
+  // 9. Sort
   result.sort((a, b) => {
     switch (filters.sortBy) {
       case "score":
@@ -180,6 +186,7 @@ export default function AdsPage() {
     duration:     "any",
     aiScore:      "all",
     niche:        null,
+    language:     "all",
   });
 
   const [nextPage, setNextPage] = useState<number | null>(null);

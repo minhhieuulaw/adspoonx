@@ -122,10 +122,13 @@ function detectNiche(raw, bodyText, title) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-const client = new pg.Client(process.env.DATABASE_URL);
+const client = new pg.Client({
+  connectionString: process.env.DATABASE_URL,
+  statement_timeout: 120000, // 2 min per statement
+});
 await client.connect();
 
-const BATCH = 1000;
+const BATCH = 200;
 let offset = 0;
 let total = 0;
 const nicheCounts = {};

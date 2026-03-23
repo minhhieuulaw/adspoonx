@@ -6,6 +6,7 @@ import { Bookmark, Play, Pause, Eye, DollarSign, Calendar, Volume2, VolumeX } fr
 import type { FbAd } from "@/lib/facebook-ads";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
 import { getAIInsights, getScoreBg, getScoreBorder } from "@/lib/ai-insights";
+import { detectLanguage, getLanguageFlag } from "@/lib/detect-language";
 import AdDetailModal from "./AdDetailModal";
 
 interface AdCardProps {
@@ -465,9 +466,8 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
   const isActive   = ad.is_active !== false;
   const days       = daysRunning(ad.ad_delivery_start_time);
   const startDate  = fmtDate(ad.ad_delivery_start_time);
-  const countries  = ad.countries ?? (ad.country ? [ad.country] : []);
-  const primary    = countries[0];
-  const extra      = countries.length > 1 ? countries.length - 1 : 0;
+  const adLang     = detectLanguage(ad.ad_creative_bodies?.[0]);
+  const langFlag   = getLanguageFlag(adLang);
   const color      = avatarColor(storeName);
   const impressFmt = fmtImpressions(ad.impressions?.lower_bound, ad.impressions?.upper_bound);
   const spendFmt   = fmtSpend(ad.spend?.lower_bound, ad.spend?.upper_bound);
@@ -571,13 +571,10 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
 
           {/* Stats row: country · impressions · spend · date */}
           <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: 9, color: "var(--text-3)" }}>
-            {primary && (
-              <span className="flex items-center gap-0.5">
-                <FlagImg code={primary} />
-                <span style={{ color: "var(--text-2)", fontWeight: 500 }}>{primary}</span>
-                {extra > 0 && <span>+{extra}</span>}
-              </span>
-            )}
+            <span className="flex items-center gap-0.5">
+              <span style={{ fontSize: 11, lineHeight: 1 }}>{langFlag}</span>
+              <span style={{ color: "var(--text-2)", fontWeight: 500, textTransform: "uppercase" }}>{adLang}</span>
+            </span>
             {impressFmt && (
               <span className="flex items-center gap-0.5 tabular-nums">
                 <Eye size={8} strokeWidth={1.5} />{impressFmt}

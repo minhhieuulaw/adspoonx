@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, Globe, SlidersHorizontal } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { LANGUAGE_OPTIONS, type AdLanguage } from "@/lib/detect-language";
 
 // Only show countries that actually exist in our database
 const COUNTRY_CODES = ["US"] as const;
@@ -11,9 +12,6 @@ export const PRESETS = [
   { id: "top",          label: "Top Performers", icon: "🏆", desc: "AI Score ≥ 80" },
   { id: "trending",     label: "Trending",       icon: "🚀", desc: "Active, < 30 days" },
   { id: "evergreen",    label: "Evergreen",      icon: "🌲", desc: "> 90 days + proven" },
-  { id: "fomo",         label: "FOMO",           icon: "⚡", desc: "Urgency hook" },
-  { id: "social_proof", label: "Social Proof",   icon: "🛡️", desc: "Trust-based copy" },
-  { id: "ugc",          label: "UGC Style",      icon: "🎥", desc: "Authentic content" },
 ] as const;
 
 export type PresetId = typeof PRESETS[number]["id"] | null;
@@ -73,6 +71,7 @@ export interface FilterValues {
   duration: "any" | "new" | "growing" | "proven" | "evergreen";
   aiScore: AIScoreTier;
   niche: string | null;
+  language: AdLanguage | "all";
 }
 
 interface AdsFilterProps {
@@ -120,7 +119,7 @@ export default function AdsFilter({
   const activeSort   = SORT_OPTIONS.find(s => s.id === values.sortBy) ?? SORT_OPTIONS[0];
   const hasFilters   = values.preset !== null || values.platforms.length > 0 || values.sortBy !== "score"
     || values.dropshipping !== "all" || values.duration !== "any" || values.mediaType !== null || values.aiScore !== "all"
-    || values.niche !== null;
+    || values.niche !== null || values.language !== "all";
 
   function togglePlatform(id: string) {
     const next = values.platforms.includes(id)
@@ -134,7 +133,7 @@ export default function AdsFilter({
   }
 
   function clearAll() {
-    onChange({ ...values, preset: null, platforms: [], sortBy: "score", dropshipping: "all", duration: "any", mediaType: null, aiScore: "all", niche: null });
+    onChange({ ...values, preset: null, platforms: [], sortBy: "score", dropshipping: "all", duration: "any", mediaType: null, aiScore: "all", niche: null, language: "all" });
   }
 
   const statusOptions = [
@@ -435,6 +434,37 @@ export default function AdsFilter({
                 {opt.label}
               </button>
             ))}
+          </div>
+        </FilterSection>
+
+        <Divider />
+
+        {/* Language */}
+        <FilterSection label="Language">
+          <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto no-scrollbar">
+            {LANGUAGE_OPTIONS.map(l => {
+              const isOn = values.language === l.id;
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => onChange({ ...values, language: isOn ? "all" : l.id as AdLanguage | "all" })}
+                  className="flex items-center gap-1.5 w-full px-2 py-[5px] rounded-[6px] text-left"
+                  style={{
+                    background: isOn ? "rgba(124,58,237,0.12)" : "transparent",
+                    border: `1px solid ${isOn ? "rgba(124,58,237,0.3)" : "transparent"}`,
+                    transition: "all 120ms var(--ease)",
+                  }}
+                  onMouseEnter={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = isOn ? "rgba(124,58,237,0.12)" : "transparent"; }}
+                >
+                  <span style={{ fontSize: 12, lineHeight: 1 }}>{l.flag}</span>
+                  <span className="text-[10px] font-medium flex-1" style={{ color: isOn ? "var(--ai-light)" : "var(--text-2)" }}>
+                    {l.label}
+                  </span>
+                  {isOn && l.id !== "all" && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ai-light)", flexShrink: 0 }} />}
+                </button>
+              );
+            })}
           </div>
         </FilterSection>
 
