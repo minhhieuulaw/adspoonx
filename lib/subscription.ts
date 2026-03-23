@@ -13,10 +13,10 @@ export interface PlanLimits {
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  free:     { maxResults: 12,  maxSavedAds: 10,   canFilterVideo: true,  canExport: false },
-  starter:  { maxResults: 48,  maxSavedAds: 100,  canFilterVideo: true,  canExport: false },
-  premium:  { maxResults: 100, maxSavedAds: 500,  canFilterVideo: true,  canExport: true  },
-  business: { maxResults: 200, maxSavedAds: 9999, canFilterVideo: true,  canExport: true  },
+  free:     { maxResults: 200, maxSavedAds: 10,   canFilterVideo: true,  canExport: false },
+  starter:  { maxResults: 200, maxSavedAds: 100,  canFilterVideo: true,  canExport: false },
+  premium:  { maxResults: 500, maxSavedAds: 500,  canFilterVideo: true,  canExport: true  },
+  business: { maxResults: 1000, maxSavedAds: 9999, canFilterVideo: true,  canExport: true  },
 };
 
 export const PLAN_LABELS: Record<Plan, string> = {
