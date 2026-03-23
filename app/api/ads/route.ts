@@ -78,12 +78,15 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Validate regex patterns early to avoid DB errors
+  // Validate regex patterns early — length cap + syntax check (ReDoS protection)
   if (useRegex) {
     for (const pattern of [q, searchPage, searchBody, searchNiche]) {
       if (pattern) {
+        if (pattern.length > 200) {
+          return NextResponse.json({ error: "Regex pattern too long (max 200 chars)" }, { status: 400 });
+        }
         try { new RegExp(pattern); } catch {
-          return NextResponse.json({ error: "Invalid regex pattern", pattern }, { status: 400 });
+          return NextResponse.json({ error: "Invalid regex pattern" }, { status: 400 });
         }
       }
     }
@@ -91,7 +94,7 @@ export async function GET(req: NextRequest) {
 
   const page  = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const requestedLimit = Math.max(1, Number(searchParams.get("limit") ?? "40"));
-  const limit = Math.min(500, requestedLimit);
+  const limit = Math.min(limits.maxResults, requestedLimit); // enforce plan limit
   const isActive = status !== "INACTIVE";
   const seed = Number(searchParams.get("seed")) || Math.floor(Math.random() * 1_000_000);
 
@@ -177,12 +180,11 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("[api/ads] query error:", err);
-    // If regex error, return friendly message
     const msg = String(err);
     if (msg.includes("invalid regular expression")) {
       return NextResponse.json({ error: "Invalid regex pattern" }, { status: 400 });
     }
-    return NextResponse.json({ error: "DB error", detail: msg }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -197,15 +199,24 @@ function extractPageProfilePicture(rawData: unknown): string | undefined {
   return undefined;
 }
 
+function sanitizeUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return url;
+  } catch { /* invalid URL */ }
+  return undefined;
+}
+
 function extractLinkUrl(rawData: unknown): string | undefined {
   if (!rawData || typeof rawData !== "object") return undefined;
   const snap = (rawData as Record<string, unknown>)["snapshot"] as Record<string, unknown> | undefined;
   if (!snap) return undefined;
-  if (typeof snap["link_url"] === "string" && snap["link_url"]) return snap["link_url"] as string;
+  if (typeof snap["link_url"] === "string" && snap["link_url"]) return sanitizeUrl(snap["link_url"] as string);
   const cards = snap["cards"] as Array<Record<string, unknown>> | undefined;
   if (Array.isArray(cards) && cards.length > 0) {
     const link = cards[0]["link_url"];
-    if (typeof link === "string" && link) return link as string;
+    if (typeof link === "string" && link) return sanitizeUrl(link as string);
   }
   return undefined;
 }

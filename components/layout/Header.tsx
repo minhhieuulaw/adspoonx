@@ -52,9 +52,10 @@ export default function Header() {
     fetch("/api/me/plan").then(r => r.json()).then(d => { if (d.plan) setPlan(d.plan); }).catch(() => null);
   }, [session?.user?.id]);
 
-  // Generate contextual notifications from stats
+  // Generate contextual notifications from stats (with AbortController cleanup)
   useEffect(() => {
-    fetch("/api/stats")
+    const controller = new AbortController();
+    fetch("/api/stats", { signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         const notifs: Notification[] = [];
@@ -78,16 +79,17 @@ export default function Header() {
           title: "Pro tip: Use AI Score filter",
           body: "Filter by \"Elite\" (85+) to see only top-performing ads worth studying.",
         });
-        if (data.recentAds?.length) {
+        if (data.recentCount > 0) {
           notifs.push({
             id: "recent", type: "update", read: false, time: now,
             title: "Fresh ads added",
-            body: `${data.recentAds.length} new ads recently scraped and ready to explore.`,
+            body: `${data.recentCount} new ads added this week.`,
           });
         }
         setNotifications(notifs);
       })
-      .catch(() => {});
+      .catch(e => { if (e.name !== "AbortError") console.error(e); });
+    return () => controller.abort();
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;

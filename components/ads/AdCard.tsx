@@ -159,10 +159,12 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
+    const handleMeta = () => setDuration(v.duration || 0);
     v.addEventListener("timeupdate", handleTimeUpdate);
-    v.addEventListener("loadedmetadata", () => setDuration(v.duration || 0));
+    v.addEventListener("loadedmetadata", handleMeta);
     return () => {
       v.removeEventListener("timeupdate", handleTimeUpdate);
+      v.removeEventListener("loadedmetadata", handleMeta);
     };
   }, [handleTimeUpdate]);
 

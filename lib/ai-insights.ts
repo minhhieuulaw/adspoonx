@@ -349,6 +349,7 @@ export function getAIInsights(ad: FbAd): AIInsights {
     competitiveEdge:   generateCompetitiveEdge(ad, hookType, days),
   };
 
+  if (insightsCache.size > 5000) insightsCache.clear();
   insightsCache.set(ad.id, result);
   return result;
 }

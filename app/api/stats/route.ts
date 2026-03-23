@@ -2,13 +2,25 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+// ── In-memory cache (5 minutes TTL) ─────────────────────────────────────────
+
+let cached: { data: Record<string, unknown>; ts: number } | null = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [totalAds, activeAds, countries, nicheGroups, topStores, recentAds] = await Promise.all([
+  // Return cached if fresh
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    return NextResponse.json(cached.data, {
+      headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=600" },
+    });
+  }
+
+  const [totalAds, activeAds, countries, nicheGroups, topStores, recentCount] = await Promise.all([
     prisma.ad.count(),
     prisma.ad.count({ where: { isActive: true } }),
     prisma.ad.groupBy({ by: ["country"] }).then((r) => r.length),
@@ -31,28 +43,11 @@ export async function GET() {
       take: 5,
     }),
 
-    // 8 most recently scraped ads (for "Recent Ads" feed)
-    prisma.ad.findMany({
-      where: { isActive: true },
-      orderBy: { scrapedAt: "desc" },
-      take: 8,
-      select: {
-        adArchiveId: true,
-        pageName: true,
-        pageId: true,
-        bodyText: true,
-        title: true,
-        description: true,
-        imageUrl: true,
-        adLibraryUrl: true,
-        platforms: true,
-        country: true,
+    // Just count recent ads (no rawData needed)
+    prisma.ad.count({
+      where: {
         isActive: true,
-        startDate: true,
-        endDate: true,
-        niche: true,
-        rawData: true,
-        scrapedAt: true,
+        scrapedAt: { gte: new Date(Date.now() - 7 * 86_400_000) },
       },
     }),
   ]);
@@ -94,15 +89,22 @@ export async function GET() {
     GROUP BY week ORDER BY week ASC
   `.then(rows => rows.map(r => ({ week: r.week.toISOString().slice(0, 10), count: Number(r.count) })));
 
-  return NextResponse.json({
+  const data = {
     totalAds,
     activeAds,
     countries,
     videoCount,
     niches,
     stores,
-    recentAds,
+    recentCount,
     platformDist,
     weeklyGrowth,
+  };
+
+  // Update cache
+  cached = { data, ts: Date.now() };
+
+  return NextResponse.json(data, {
+    headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=600" },
   });
 }

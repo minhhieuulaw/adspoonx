@@ -79,7 +79,7 @@ function KPIStat({
 function InfiniteScrollSentinel({ onVisible, loading }: { onVisible: () => void; loading: boolean }) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const onVisibleRef = useRef(onVisible);
-  onVisibleRef.current = onVisible;
+  useEffect(() => { onVisibleRef.current = onVisible; });
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -259,6 +259,10 @@ export default function AdsPage() {
   const [searchNiche, setSearchNiche] = useState("");
   const [useRegex, setUseRegex]       = useState(false);
 
+  // Refs for search params (avoid stale closures in filter useEffect)
+  const searchRef = useRef({ searchTerm: "", searchPage: "", searchBody: "", searchNiche: "", useRegex: false });
+  useEffect(() => { searchRef.current = { searchTerm, searchPage, searchBody, searchNiche, useRegex }; });
+
   // Saved searches
   interface SavedSearchItem { id: string; name: string; filters: Record<string, unknown> }
   const [savedSearches, setSavedSearches] = useState<SavedSearchItem[]>([]);
@@ -354,15 +358,17 @@ export default function AdsPage() {
     fetch("/api/saved-searches").then(r => r.json()).then(d => setSavedSearches(d.data ?? [])).catch(() => {});
   }, []);
 
-  // Re-fetch when server-side params change
+  // Re-fetch when server-side params change (uses refs to avoid stale closures)
   useEffect(() => {
     setVisibleCount(20);
-    const apiMedia = filters.mediaType ?? undefined;
+    const s = searchRef.current;
     fetchAds({
-      q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia,
-      searchPage, searchBody, searchNiche, useRegex,
+      q: s.searchTerm, country: filters.country, status: filters.status,
+      mediaType: filters.mediaType ?? undefined,
+      searchPage: s.searchPage, searchBody: s.searchBody,
+      searchNiche: s.searchNiche, useRegex: s.useRegex,
     });
-  }, [filters.country, filters.status, filters.mediaType, fetchAds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.country, filters.status, filters.mediaType, fetchAds]);
 
   function handleSearch(value?: string) {
     const q = value ?? searchTerm;
