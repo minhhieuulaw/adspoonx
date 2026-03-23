@@ -29,7 +29,10 @@ export async function GET(req: NextRequest) {
   }
 
   const page  = Math.max(1, Number(searchParams.get("page") ?? "1"));
-  const limit = Math.min(limits.maxResults, Math.max(1, Number(searchParams.get("limit") ?? "20")));
+  // Fetch more than displayed — client-side dedup/filters reduce the count significantly
+  // Plan maxResults only caps total visible ads on the frontend, not DB fetch
+  const requestedLimit = Math.max(1, Number(searchParams.get("limit") ?? "40"));
+  const limit = Math.min(200, requestedLimit); // hard cap at 200 for safety
   const skip  = (page - 1) * limit;
   const isActive = status !== "INACTIVE";
 

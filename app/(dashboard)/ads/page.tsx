@@ -162,8 +162,9 @@ export default function AdsPage() {
   const [error, setError]           = useState<string | null>(null);
   const [selectedAd, setSelectedAd] = useState<FbAd | null>(null);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
-  const [userPlan, setUserPlan]     = useState<string>("free");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [userPlan, setUserPlan]       = useState<string>("free");
+  const [maxResults, setMaxResults]   = useState<number>(200);
+  const [filterOpen, setFilterOpen]   = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
 
   const [filters, setFilters] = useState<FilterValues>({
@@ -185,7 +186,7 @@ export default function AdsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get<FbAdsResponse & { plan?: string }>("/api/ads", { params: { ...params, limit: 40 } });
+        const res = await axios.get<FbAdsResponse & { plan?: string; maxResults?: number }>("/api/ads", { params: { ...params, limit: 60 } });
         if (params.page && params.page > 1) {
           setAds(prev => [...prev, ...res.data.data]);
         } else {
@@ -193,6 +194,7 @@ export default function AdsPage() {
         }
         setNextPage(res.data.hasMore ? (params.page ?? 1) + 1 : null);
         if (res.data.plan) setUserPlan(res.data.plan);
+        if (res.data.maxResults) setMaxResults(res.data.maxResults);
       } catch {
         setError("Failed to load ads. Please try again.");
       } finally {
@@ -219,23 +221,27 @@ export default function AdsPage() {
   }
 
   function loadMore() {
+    // Respect plan cap
+    if (visibleCount >= maxResults) return;
     // First: show more from already-fetched & filtered ads
     if (visibleCount < filteredAds.length) {
-      setVisibleCount(prev => prev + 20);
+      setVisibleCount(prev => Math.min(prev + 20, maxResults));
       return;
     }
     // Then: fetch more from API
     if (nextPage) {
       const apiMedia = filters.mediaType === "video" ? "video" : undefined;
       fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia, page: nextPage });
-      setVisibleCount(prev => prev + 20);
+      setVisibleCount(prev => Math.min(prev + 20, maxResults));
     }
   }
 
   // Client-side filtered + sorted ads (instant, no API call)
   const filteredAds = useMemo(() => applyClientFilters(ads, filters, userPlan), [ads, filters, userPlan]);
-  const visibleAds = useMemo(() => filteredAds.slice(0, visibleCount), [filteredAds, visibleCount]);
-  const canShowMore = visibleCount < filteredAds.length || nextPage !== null;
+  // Plan cap: free=12 visible max, starter=48, etc. Display cap: 20 per page increment
+  const planCap = Math.min(filteredAds.length, maxResults);
+  const visibleAds = useMemo(() => filteredAds.slice(0, Math.min(visibleCount, planCap)), [filteredAds, visibleCount, planCap]);
+  const canShowMore = visibleCount < planCap || (visibleCount < maxResults && nextPage !== null);
 
   // KPI computed from ALL fetched ads (not filtered)
   const kpi = useMemo(() => {
@@ -437,10 +443,10 @@ export default function AdsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
-                      You're on the Free plan — showing up to 12 ads
+                      You&apos;re on the Free plan — showing up to {maxResults} ads
                     </p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
-                      Upgrade to Starter to unlock 48 ads per page, video filters, and more.
+                      Upgrade to unlock more ads, video filters, and Elite scores.
                     </p>
                   </div>
                   <a href="/pricing"
