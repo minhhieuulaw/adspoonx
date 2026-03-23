@@ -99,8 +99,19 @@ function PlatformIcon({ platform }: { platform: string }) {
 
 function FadeImage({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
+
+  function handleDownload(e: React.MouseEvent) {
+    e.stopPropagation();
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = `${alt || "image"}.jpg`;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.click();
+  }
+
   return (
-    <div className="ad-creative-wrap">
+    <div className="ad-creative-wrap group">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src} alt={alt} loading="lazy"
@@ -109,11 +120,30 @@ function FadeImage({ src, alt }: { src: string; alt: string }) {
         onLoad={() => setLoaded(true)}
       />
       {!loaded && <div className="absolute inset-0 skeleton" />}
+      {/* Download button — visible on hover */}
+      <button
+        onClick={handleDownload}
+        className="absolute bottom-2 right-2 vid-btn opacity-0 group-hover:opacity-100"
+        style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", borderRadius: 5, padding: 4, transition: "opacity 150ms" }}
+        title="Download image"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
     </div>
   );
 }
 
-// ── Video creative with controls ──────────────────────────────────────────────
+// ── Format time (seconds → "0:05") ───────────────────────────────────────────
+
+function fmtTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// ── Video creative with full controls ────────────────────────────────────────
 
 function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt: string }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -121,20 +151,45 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   const handleTimeUpdate = useCallback(() => {
     const v = ref.current;
-    if (v && v.duration) setProgress((v.currentTime / v.duration) * 100);
+    if (v && v.duration) {
+      setProgress((v.currentTime / v.duration) * 100);
+      setCurrentTime(v.currentTime);
+      setDuration(v.duration);
+    }
   }, []);
 
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     v.addEventListener("timeupdate", handleTimeUpdate);
-    return () => v.removeEventListener("timeupdate", handleTimeUpdate);
+    v.addEventListener("loadedmetadata", () => setDuration(v.duration || 0));
+    return () => {
+      v.removeEventListener("timeupdate", handleTimeUpdate);
+    };
   }, [handleTimeUpdate]);
+
+  // Auto-play on hover
+  function handleMouseEnter() {
+    setHovered(true);
+    ref.current?.play().then(() => setPlaying(true)).catch(() => {});
+  }
+  function handleMouseLeave() {
+    setHovered(false);
+    setShowMenu(false);
+    if (ref.current) { ref.current.pause(); ref.current.currentTime = 0; }
+    setPlaying(false);
+    setProgress(0);
+    setCurrentTime(0);
+  }
 
   function togglePlay(e: React.MouseEvent) {
     e.stopPropagation();
@@ -159,13 +214,8 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
     if (!v) return;
     setVolume(val);
     v.volume = val;
-    if (val === 0) {
-      v.muted = true;
-      setMuted(true);
-    } else if (muted) {
-      v.muted = false;
-      setMuted(false);
-    }
+    if (val === 0) { v.muted = true; setMuted(true); }
+    else if (muted) { v.muted = false; setMuted(false); }
   }
 
   function seekTo(e: React.MouseEvent) {
@@ -178,8 +228,34 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
     v.currentTime = pct * v.duration;
   }
 
+  function handleDownload(e: React.MouseEvent) {
+    e.stopPropagation();
+    setShowMenu(false);
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = `${alt || "video"}.mp4`;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.click();
+  }
+
+  function handleFullscreen(e: React.MouseEvent) {
+    e.stopPropagation();
+    ref.current?.requestFullscreen?.().catch(() => {});
+  }
+
+  function handleSpeed(e: React.MouseEvent, rate: number) {
+    e.stopPropagation();
+    if (ref.current) ref.current.playbackRate = rate;
+    setShowMenu(false);
+  }
+
   return (
-    <div className="ad-creative-wrap group">
+    <div
+      className="ad-creative-wrap"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <video
         ref={ref} src={src} poster={poster} muted playsInline loop preload="metadata"
         className="w-full h-full object-cover"
@@ -187,114 +263,119 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
         aria-label={alt}
       />
 
-      {/* Center play/pause — only visible when paused or on hover */}
-      <div
-        className="absolute inset-0 flex items-center justify-center transition-opacity"
-        style={{ opacity: playing ? 0 : 1, pointerEvents: playing ? "none" : "auto" }}
-      >
-        <button onClick={togglePlay} style={{
-          width: 40, height: 40, borderRadius: "50%",
-          background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)",
-          border: "1.5px solid rgba(255,255,255,0.25)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer",
-        }}>
-          {playing
-            ? <Pause size={14} fill="white" color="white" />
-            : <Play size={14} fill="white" color="white" style={{ marginLeft: 2 }} />
-          }
-        </button>
-      </div>
+      {/* Center play — only when not hovered & not playing */}
+      {!hovered && !playing && (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.15)" }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: "50%",
+            background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)",
+            border: "1.5px solid rgba(255,255,255,0.25)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Play size={14} fill="white" color="white" style={{ marginLeft: 2 }} />
+          </div>
+        </div>
+      )}
 
-      {/* Bottom controls bar */}
+      {/* Bottom controls — always visible when hovered */}
       <div
-        className="absolute bottom-0 left-0 right-0 flex items-center gap-1.5 px-1.5 py-1 transition-opacity"
+        className="absolute bottom-0 left-0 right-0 transition-opacity"
         style={{
-          background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-          opacity: playing ? 1 : 0,
-          pointerEvents: playing ? "auto" : "none",
+          background: "linear-gradient(transparent, rgba(0,0,0,0.8))",
+          opacity: hovered ? 1 : 0,
+          pointerEvents: hovered ? "auto" : "none",
+          padding: "16px 6px 4px",
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Play/pause mini */}
-        <button onClick={togglePlay} className="flex-shrink-0" style={{ color: "white", cursor: "pointer", background: "none", border: "none", padding: 2 }}>
-          {playing ? <Pause size={10} fill="white" /> : <Play size={10} fill="white" style={{ marginLeft: 1 }} />}
-        </button>
-
         {/* Progress bar */}
-        <div
-          ref={progressRef}
-          onClick={seekTo}
-          className="flex-1 h-1 rounded-full cursor-pointer"
-          style={{ background: "rgba(255,255,255,0.2)" }}
-        >
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${progress}%`,
-              background: "var(--ai-light)",
-              transition: "width 100ms linear",
-            }}
-          />
+        <div ref={progressRef} onClick={seekTo}
+          className="w-full h-1 rounded-full cursor-pointer mb-1.5"
+          style={{ background: "rgba(255,255,255,0.2)" }}>
+          <div className="h-full rounded-full"
+            style={{ width: `${progress}%`, background: "var(--ai-light)", transition: "width 80ms linear" }} />
         </div>
 
-        {/* Mute/unmute with volume slider */}
-        <div
-          className="flex-shrink-0"
-          style={{ position: "relative" }}
-          onMouseEnter={() => setShowVolumeSlider(true)}
-          onMouseLeave={() => setShowVolumeSlider(false)}
-        >
-          {/* Volume slider popup */}
-          {showVolumeSlider && (
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{
-                position: "absolute",
-                bottom: "100%",
-                left: "50%",
-                transform: "translateX(-50%)",
-                marginBottom: 4,
-                background: "rgba(0,0,0,0.8)",
-                backdropFilter: "blur(8px)",
-                borderRadius: 6,
-                padding: "8px 6px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: 60,
-              }}
-            >
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={muted ? 0 : volume}
-                onChange={handleVolumeChange}
-                onClick={e => e.stopPropagation()}
-                style={{
-                  width: 44,
-                  height: 3,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  background: `linear-gradient(to right, var(--ai-light) ${(muted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(muted ? 0 : volume) * 100}%)`,
-                  borderRadius: 2,
-                  outline: "none",
-                  cursor: "pointer",
-                  transform: "rotate(-90deg)",
-                  transformOrigin: "center center",
-                }}
-              />
-            </div>
-          )}
-          <button onClick={toggleMute} style={{ color: "white", cursor: "pointer", background: "none", border: "none", padding: 2 }}>
-            {muted ? <VolumeX size={10} strokeWidth={2} /> : <Volume2 size={10} strokeWidth={2} />}
+        {/* Controls row */}
+        <div className="flex items-center gap-1">
+          {/* Play/pause */}
+          <button onClick={togglePlay} className="vid-btn">
+            {playing ? <Pause size={11} fill="white" color="white" /> : <Play size={11} fill="white" color="white" style={{ marginLeft: 1 }} />}
           </button>
+
+          {/* Timestamp */}
+          <span className="font-data text-[8px] tabular-nums" style={{ color: "rgba(255,255,255,0.7)" }}>
+            {fmtTime(currentTime)} / {fmtTime(duration)}
+          </span>
+
+          <div className="flex-1" />
+
+          {/* Volume */}
+          <div className="relative" style={{ position: "relative" }}
+            onMouseEnter={() => setShowVolumeSlider(true)}
+            onMouseLeave={() => setShowVolumeSlider(false)}>
+            {showVolumeSlider && (
+              <div onClick={e => e.stopPropagation()} style={{
+                position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)",
+                marginBottom: 4, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)",
+                borderRadius: 6, padding: "8px 6px", height: 60,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <input type="range" min={0} max={1} step={0.01}
+                  value={muted ? 0 : volume} onChange={handleVolumeChange}
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    width: 44, height: 3, appearance: "none", WebkitAppearance: "none",
+                    background: `linear-gradient(to right, var(--ai-light) ${(muted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(muted ? 0 : volume) * 100}%)`,
+                    borderRadius: 2, outline: "none", cursor: "pointer",
+                    transform: "rotate(-90deg)", transformOrigin: "center center",
+                  }}
+                />
+              </div>
+            )}
+            <button onClick={toggleMute} className="vid-btn">
+              {muted ? <VolumeX size={10} strokeWidth={2} /> : <Volume2 size={10} strokeWidth={2} />}
+            </button>
+          </div>
+
+          {/* Fullscreen */}
+          <button onClick={handleFullscreen} className="vid-btn">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+            </svg>
+          </button>
+
+          {/* 3-dot menu */}
+          <div style={{ position: "relative" }}>
+            <button onClick={e => { e.stopPropagation(); setShowMenu(!showMenu); }} className="vid-btn">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
+                <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+              </svg>
+            </button>
+            {showMenu && (
+              <div onClick={e => e.stopPropagation()} style={{
+                position: "absolute", bottom: "100%", right: 0, marginBottom: 4,
+                background: "rgba(20,20,25,0.95)", backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8,
+                padding: "4px 0", minWidth: 130, zIndex: 10,
+              }}>
+                <button onClick={handleDownload} className="vid-menu-item">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Download
+                </button>
+                <button onClick={e => handleSpeed(e, 0.5)} className="vid-menu-item">⏱ 0.5x Speed</button>
+                <button onClick={e => handleSpeed(e, 1)} className="vid-menu-item">⏱ 1x Speed</button>
+                <button onClick={e => handleSpeed(e, 1.5)} className="vid-menu-item">⏱ 1.5x Speed</button>
+                <button onClick={e => handleSpeed(e, 2)} className="vid-menu-item">⏱ 2x Speed</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* VIDEO badge */}
+      {/* VIDEO badge — top left */}
       <div style={{
         position: "absolute", top: 6, left: 6, pointerEvents: "none",
         background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
@@ -309,21 +390,24 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   );
 }
 
-// ── AI Score Ribbon (prominent flag design) ─────────────────────────────────────
+// ── AI Score Ribbon (prominent flag + fire for ≥80) ──────────────────────────
 
 function AIScoreRibbon({ score }: { score: number }) {
-  // Tier-based gradient
+  const isHot = score >= 80;
+  const isGood = score >= 65;
+  const isMid = score >= 50;
+
   let gradient: string;
   let shadow: string;
-  if (score >= 80) {
+  if (isHot) {
+    gradient = "linear-gradient(135deg, #DC2626, #F97316, #FBBF24)";
+    shadow = "0 2px 16px rgba(239,68,68,0.6), 0 0 24px rgba(249,115,22,0.3)";
+  } else if (isGood) {
     gradient = "linear-gradient(135deg, #7C3AED, #A78BFA)";
     shadow = "0 2px 12px rgba(124,58,237,0.5)";
-  } else if (score >= 65) {
+  } else if (isMid) {
     gradient = "linear-gradient(135deg, #2563EB, #60A5FA)";
     shadow = "0 2px 12px rgba(37,99,235,0.4)";
-  } else if (score >= 50) {
-    gradient = "linear-gradient(135deg, #D97706, #FCD34D)";
-    shadow = "0 2px 12px rgba(217,119,6,0.4)";
   } else {
     gradient = "linear-gradient(135deg, #475569, #94A3B8)";
     shadow = "0 2px 8px rgba(71,85,105,0.3)";
@@ -331,7 +415,7 @@ function AIScoreRibbon({ score }: { score: number }) {
 
   return (
     <div
-      className="ai-score-ribbon"
+      className={`ai-score-ribbon ${isHot ? "ai-ribbon-fire" : ""}`}
       style={{
         position: "absolute",
         top: -1,
@@ -340,7 +424,7 @@ function AIScoreRibbon({ score }: { score: number }) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "4px 8px 6px",
+        padding: isHot ? "3px 8px 7px" : "4px 8px 6px",
         background: gradient,
         borderRadius: "0 0 6px 6px",
         boxShadow: shadow,
@@ -348,10 +432,28 @@ function AIScoreRibbon({ score }: { score: number }) {
       }}
       title={`AI Performance Score: ${score}/100`}
     >
-      <span style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.08em", lineHeight: 1 }}>
+      {/* Fire icon for 80+ */}
+      {isHot && (
+        <span className="ai-fire-icon" style={{ fontSize: 10, lineHeight: 1, marginBottom: -1 }}>
+          🔥
+        </span>
+      )}
+      <span style={{
+        fontSize: isHot ? 6 : 7,
+        fontWeight: 700,
+        color: "rgba(255,255,255,0.8)",
+        letterSpacing: "0.08em",
+        lineHeight: 1,
+      }}>
         AI
       </span>
-      <span className="font-data" style={{ fontSize: 14, fontWeight: 800, color: "#fff", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+      <span className="font-data" style={{
+        fontSize: isHot ? 15 : 14,
+        fontWeight: 800,
+        color: "#fff",
+        lineHeight: 1.1,
+        letterSpacing: "-0.02em",
+      }}>
         {score}
       </span>
     </div>

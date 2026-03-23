@@ -158,17 +158,62 @@ export function getAIInsights(ad: FbAd): AIInsights {
   const body = ad.ad_creative_bodies?.[0] ?? ad.ad_creative_link_descriptions?.[0] ?? "";
   const isActive = ad.is_active !== false;
 
-  // Winning Score (heuristic — ranges 15–99)
-  let score = 30;
-  if (days > 90) score += 28;
-  else if (days > 30) score += 20;
-  else if (days > 14) score += 12;
-  else if (days > 7)  score += 6;
-  if (isActive)                                   score += 15;
-  if (ad.image_url)                               score += 8;
-  if (body.length > 40)                           score += 7;
-  if ((ad.publisher_platforms?.length ?? 0) > 1)  score += 9;
-  if (ad.ad_creative_link_titles?.[0])            score += 2;
+  // Winning Score — strict multi-factor heuristic (15–99)
+  // Designed to be hard to reach 80+: only proven, long-running,
+  // multi-platform ads with real traction should qualify.
+  let score = 10;
+
+  // Duration (max +18) — the strongest signal
+  if      (days > 180) score += 18;
+  else if (days > 90)  score += 14;
+  else if (days > 60)  score += 10;
+  else if (days > 30)  score += 6;
+  else if (days > 14)  score += 3;
+  else if (days > 7)   score += 1;
+
+  // Still active = confirmed ROI (+8)
+  if (isActive) score += 8;
+
+  // Platform breadth (max +8) — multi-platform = serious spend
+  const platCount = ad.publisher_platforms?.length ?? 0;
+  if      (platCount >= 3) score += 8;
+  else if (platCount >= 2) score += 4;
+
+  // Creative quality (max +8)
+  if (ad.video_url)   score += 5;  // video ads convert better
+  else if (ad.image_url) score += 2;
+  if (body.length > 120) score += 3;
+  else if (body.length > 50) score += 1;
+
+  // CTA + link signals (max +4)
+  if (ad.cta_text) score += 2;
+  if (ad.ad_creative_link_titles?.[0]) score += 2;
+
+  // Real traction data (max +12)
+  const impressLo = Number(ad.impressions?.lower_bound ?? 0);
+  const impressHi = Number(ad.impressions?.upper_bound ?? 0);
+  const avgImpress = (impressLo + impressHi) / 2;
+  if      (avgImpress > 100_000) score += 8;
+  else if (avgImpress > 10_000)  score += 5;
+  else if (avgImpress > 1_000)   score += 2;
+
+  const spendLo = Number(ad.spend?.lower_bound ?? 0);
+  const spendHi = Number(ad.spend?.upper_bound ?? 0);
+  const avgSpend = (spendLo + spendHi) / 2;
+  if      (avgSpend > 5_000) score += 4;
+  else if (avgSpend > 500)   score += 2;
+
+  // Geographic reach (max +5)
+  const countryCount = ad.countries?.length ?? (ad.country ? 1 : 0);
+  if      (countryCount >= 5) score += 5;
+  else if (countryCount >= 3) score += 3;
+  else if (countryCount >= 2) score += 1;
+
+  // Audience size bonus (max +4)
+  const audHi = ad.estimated_audience_size?.upper_bound ?? 0;
+  if      (audHi > 1_000_000) score += 4;
+  else if (audHi > 100_000)   score += 2;
+
   const winningScore = Math.min(99, Math.max(15, score));
 
   const { hookType, hookColor, hookBg } = detectHook(body);
