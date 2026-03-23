@@ -13,6 +13,9 @@ import {
 interface NicheItem { niche: string; count: number }
 interface StoreItem { pageName: string; pageId: string | null; adCount: number }
 
+interface PlatformItem { platform: string; count: number }
+interface WeeklyItem { week: string; count: number }
+
 interface Stats {
   totalAds: number;
   activeAds: number;
@@ -20,6 +23,8 @@ interface Stats {
   videoCount: number;
   niches: NicheItem[];
   stores: StoreItem[];
+  platformDist?: PlatformItem[];
+  weeklyGrowth?: WeeklyItem[];
 }
 
 const tips = [
@@ -180,6 +185,88 @@ function TopStores({ stores }: { stores: StoreItem[] }) {
   );
 }
 
+// ── Platform Distribution (horizontal bars) ──────────────────────────────────
+
+const PLATFORM_COLORS: Record<string, string> = {
+  FACEBOOK: "#1877F2", INSTAGRAM: "#E4405F", MESSENGER: "#0084FF",
+  AUDIENCE_NETWORK: "#A78BFA", THREADS: "#94A3B8",
+};
+
+function PlatformChart({ data }: { data: PlatformItem[] }) {
+  if (!data.length) return null;
+  const max = data[0]?.count ?? 1;
+  return (
+    <div className="flex flex-col gap-2.5">
+      {data.map(p => {
+        const pct = max > 0 ? (p.count / max) * 100 : 0;
+        const color = PLATFORM_COLORS[p.platform.toUpperCase()] ?? "#94A3B8";
+        const label = p.platform.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+        return (
+          <div key={p.platform}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>{label}</span>
+              <span className="font-data text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>
+                {p.count.toLocaleString()}
+              </span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
+              <div className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${Math.max(3, pct)}%`, background: color }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Weekly Growth (SVG sparkline area chart) ─────────────────────────────────
+
+function WeeklyChart({ data }: { data: WeeklyItem[] }) {
+  if (!data.length) return null;
+  const max = Math.max(...data.map(d => d.count), 1);
+  const w = 100;
+  const h = 50;
+  const padding = 2;
+
+  const points = data.map((d, i) => ({
+    x: padding + (i / Math.max(data.length - 1, 1)) * (w - padding * 2),
+    y: h - padding - ((d.count / max) * (h - padding * 2)),
+  }));
+  const line = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  const area = `${line} L ${points[points.length - 1].x} ${h} L ${points[0].x} ${h} Z`;
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 80 }}>
+        <defs>
+          <linearGradient id="weekGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#A78BFA" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill="url(#weekGrad)" />
+        <path d={line} fill="none" stroke="#A78BFA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="2" fill="#A78BFA" />
+        ))}
+      </svg>
+      <div className="flex justify-between mt-1.5">
+        {data.map((d, i) => (
+          <div key={i} className="text-center" style={{ flex: 1 }}>
+            <p className="font-data text-[8px] font-semibold" style={{ color: "var(--text-3)" }}>
+              {new Date(d.week).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </p>
+            <p className="font-data text-[9px] font-bold" style={{ color: "var(--text-2)" }}>
+              {d.count.toLocaleString()}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function HomeDashboardPage() {
@@ -303,24 +390,67 @@ export default function HomeDashboardPage() {
         </motion.div>
       </div>
 
+      {/* ── Analytics: Platform Distribution + Weekly Growth ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+        {/* Platform Distribution */}
+        <motion.div {...fadeUp(0.16)}
+          className="rounded-[12px] p-4"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart2 size={14} strokeWidth={1.8} style={{ color: "#60A5FA" }} />
+            <h2 className="font-display text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
+              Platform Distribution
+            </h2>
+          </div>
+          {stats?.platformDist?.length ? (
+            <PlatformChart data={stats.platformDist} />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-6 rounded skeleton" />
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Weekly Growth */}
+        <motion.div {...fadeUp(0.18)}
+          className="rounded-[12px] p-4"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+            <h2 className="font-display text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
+              Ads Added Per Week
+            </h2>
+          </div>
+          {stats?.weeklyGrowth?.length ? (
+            <WeeklyChart data={stats.weeklyGrowth} />
+          ) : (
+            <div className="h-[100px] rounded skeleton" />
+          )}
+        </motion.div>
+      </div>
+
       {/* ── Quick Links ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <QuickLink href="/ads" delay={0.16}
+        <QuickLink href="/ads" delay={0.22}
           icon={Sparkles} iconColor="var(--ai-light)" iconBg="var(--ai-soft)"
           title="Ads Finder" desc="Search & filter all ads" />
-        <QuickLink href="/stores" delay={0.18}
+        <QuickLink href="/stores" delay={0.24}
           icon={Store} iconColor="#F59E0B" iconBg="rgba(245,158,11,0.1)"
           title="Potential Store" desc="Top advertisers by volume" />
-        <QuickLink href="/trending" delay={0.20}
+        <QuickLink href="/trending" delay={0.26}
           icon={TrendingUp} iconColor="#34D399" iconBg="rgba(52,211,153,0.1)"
           title="Trending" desc="Hot ads right now" />
-        <QuickLink href="/saved" delay={0.22}
+        <QuickLink href="/saved" delay={0.28}
           icon={Bookmark} iconColor="#A78BFA" iconBg="rgba(167,139,250,0.1)"
           title="Saved Ads" desc="Your saved collection" />
       </div>
 
       {/* ── Pro Tip ── */}
-      <motion.div {...fadeUp(0.25)}
+      <motion.div {...fadeUp(0.30)}
         className="rounded-[10px] px-4 py-3 flex items-center gap-3"
         style={{ background: "rgba(124,58,237,0.05)", border: "1px solid rgba(124,58,237,0.12)" }}
       >

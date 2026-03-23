@@ -11,7 +11,8 @@ import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues, AI_SCORE_TIERS } from "@/components/ads/AdsFilter";
 import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code, Loader2 } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code, Loader2, CheckSquare, Square, Bookmark } from "lucide-react";
+import { useSavedAds } from "@/lib/hooks/useSavedAds";
 
 // ── Filter persistence (localStorage) ─────────────────────────────────────────
 
@@ -233,6 +234,7 @@ export default function AdsPage() {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toggleSave } = useSavedAds();
 
   const [ads, setAds]               = useState<FbAd[]>([]);
   const [loading, setLoading]       = useState(false);
@@ -242,6 +244,10 @@ export default function AdsPage() {
   const [userPlan, setUserPlan]       = useState<string>("free");
   const [filterOpen, setFilterOpen]   = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
+
+  // Bulk select
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
 
   // Advanced search
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -412,6 +418,26 @@ export default function AdsPage() {
       setVisibleCount(prev => prev + 20);
     }
   }
+
+  // Bulk actions
+  function toggleBulkSelect(id: string) {
+    setBulkSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function bulkSelectAll() {
+    if (bulkSelected.size === visibleAds.length) setBulkSelected(new Set());
+    else setBulkSelected(new Set(visibleAds.map(a => a.id)));
+  }
+  function bulkSaveAll() {
+    const toSave = visibleAds.filter(a => bulkSelected.has(a.id));
+    toSave.forEach(a => toggleSave(a));
+    setBulkSelected(new Set());
+    setBulkMode(false);
+  }
+  function exitBulk() { setBulkMode(false); setBulkSelected(new Set()); }
 
   // Client-side filtered + sorted ads (instant, no API call)
   const filteredAds = useMemo(() => applyClientFilters(ads, filters, userPlan), [ads, filters, userPlan]);
@@ -787,13 +813,71 @@ export default function AdsPage() {
           </div>
         )}
 
+        {/* Bulk action bar */}
+        {visibleAds.length > 0 && (
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              onClick={() => bulkMode ? exitBulk() : setBulkMode(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium"
+              style={{
+                background: bulkMode ? "var(--ai-soft)" : "var(--bg-hover)",
+                border: `1px solid ${bulkMode ? "rgba(124,58,237,0.3)" : "var(--border)"}`,
+                color: bulkMode ? "var(--ai-light)" : "var(--text-3)",
+              }}
+            >
+              <CheckSquare size={12} strokeWidth={1.8} />
+              {bulkMode ? "Cancel" : "Select"}
+            </button>
+            {bulkMode && (
+              <>
+                <button onClick={bulkSelectAll}
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-[7px] text-[10px] font-medium"
+                  style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}>
+                  {bulkSelected.size === visibleAds.length ? <CheckSquare size={10} /> : <Square size={10} />}
+                  All ({visibleAds.length})
+                </button>
+                {bulkSelected.size > 0 && (
+                  <button onClick={bulkSaveAll}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[10px] font-semibold"
+                    style={{ background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}>
+                    <Bookmark size={10} strokeWidth={2} />
+                    Save {bulkSelected.size} ads
+                  </button>
+                )}
+                <span className="text-[10px] ml-auto" style={{ color: "var(--text-3)" }}>
+                  {bulkSelected.size} selected
+                </span>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Ads grid — container query responsive */}
         <AnimatePresence>
           {visibleAds.length > 0 && (
             <div className="ads-grid-container">
               <div className="ads-grid">
                 {visibleAds.map((ad, i) => (
-                  <AdCard key={ad.id} ad={ad} index={i} onSelect={setSelectedAd} />
+                  <div key={ad.id} className="relative">
+                    {bulkMode && (
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleBulkSelect(ad.id); }}
+                        className="absolute top-2 left-2 z-10 w-5 h-5 rounded-[4px] flex items-center justify-center"
+                        style={{
+                          background: bulkSelected.has(ad.id) ? "var(--ai-light)" : "rgba(0,0,0,0.6)",
+                          border: `1.5px solid ${bulkSelected.has(ad.id) ? "var(--ai-light)" : "rgba(255,255,255,0.3)"}`,
+                          backdropFilter: "blur(4px)",
+                        }}
+                      >
+                        {bulkSelected.has(ad.id) && (
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                    <AdCard ad={ad} index={i} onSelect={bulkMode ? () => toggleBulkSelect(ad.id) : setSelectedAd} />
+                  </div>
                 ))}
                 {loading && ads.length > 0 &&
                   Array.from({ length: 3 }).map((_, i) => (

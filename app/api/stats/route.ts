@@ -79,6 +79,21 @@ export async function GET() {
       ) IS NOT NULL
   `.then((r) => Number(r[0]?.count ?? 0));
 
+  // Platform distribution (unnest platforms array)
+  const platformDist = await prisma.$queryRaw<Array<{ platform: string; count: bigint }>>`
+    SELECT unnest(platforms) as platform, COUNT(*) as count
+    FROM "Ad" WHERE "isActive" = true
+    GROUP BY platform ORDER BY count DESC
+  `.then(rows => rows.map(r => ({ platform: r.platform, count: Number(r.count) })));
+
+  // Ads added per week (last 8 weeks)
+  const weeklyGrowth = await prisma.$queryRaw<Array<{ week: Date; count: bigint }>>`
+    SELECT date_trunc('week', "scrapedAt") as week, COUNT(*) as count
+    FROM "Ad"
+    WHERE "scrapedAt" > NOW() - INTERVAL '8 weeks'
+    GROUP BY week ORDER BY week ASC
+  `.then(rows => rows.map(r => ({ week: r.week.toISOString().slice(0, 10), count: Number(r.count) })));
+
   return NextResponse.json({
     totalAds,
     activeAds,
@@ -87,5 +102,7 @@ export async function GET() {
     niches,
     stores,
     recentAds,
+    platformDist,
+    weeklyGrowth,
   });
 }
