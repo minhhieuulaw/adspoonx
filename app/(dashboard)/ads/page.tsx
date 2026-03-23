@@ -8,9 +8,9 @@ import type { FbAd, FbAdsResponse } from "@/lib/facebook-ads";
 import { getAIInsights, getDropshippingScore } from "@/lib/ai-insights";
 import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues } from "@/components/ads/AdsFilter";
-import AdDetailModal from "@/components/ads/AdDetailModal";
+import AdDetailPanel from "@/components/ads/AdDetailPanel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { Search, ChevronRight, Sparkles, Zap, Globe, Brain } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X } from "lucide-react";
 
 // ── KPI stat card ─────────────────────────────────────────────────────────────
 
@@ -147,6 +147,15 @@ export default function AdsPage() {
   const [selectedAd, setSelectedAd] = useState<FbAd | null>(null);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
   const [userPlan, setUserPlan]     = useState<string>("free");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [isMobile, setIsMobile]     = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const [filters, setFilters] = useState<FilterValues>({
     country:      searchParams.get("country") ?? "US",
@@ -216,52 +225,112 @@ export default function AdsPage() {
     return { total: ads.length, active, topScore, countries };
   }, [ads]);
 
+  // Dynamic grid: fewer cols when right panel is open
+  const gridCols = selectedAd && !isMobile
+    ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+
   return (
     // Negate parent p-5 to let filter panel sit flush at content edges
     <div className="page-enter flex" style={{ margin: "-20px", minHeight: "calc(100vh - 56px)" }}>
 
-      {/* ── Left: Filter panel (Minea-style sticky sidebar) ── */}
-      <div
-        className="flex-shrink-0 no-scrollbar"
-        style={{
-          width: 192,
-          position: "sticky",
-          top: 56,
-          alignSelf: "flex-start",
-          height: "calc(100vh - 56px)",
-          background: "var(--bg-surface)",
-          borderRight: "1px solid var(--border)",
-          overflowY: "auto",
-        }}
-      >
-        {/* Page title inside filter panel */}
-        <div className="px-3 pt-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
-          <div className="flex items-center gap-2 mb-0.5">
-            <Brain size={13} style={{ color: "var(--ai-light)" }} />
-            <h1 className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
-              AI Ads Intelligence
-            </h1>
+      {/* ── Left: Filter panel — hidden on mobile, sticky on desktop ── */}
+      {!isMobile && (
+        <div
+          className="flex-shrink-0 no-scrollbar"
+          style={{
+            width: 192,
+            position: "sticky",
+            top: 56,
+            alignSelf: "flex-start",
+            height: "calc(100vh - 56px)",
+            background: "var(--bg-surface)",
+            borderRight: "1px solid var(--border)",
+            overflowY: "auto",
+          }}
+        >
+          <div className="px-3 pt-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div className="flex items-center gap-2 mb-0.5">
+              <Brain size={13} style={{ color: "var(--ai-light)" }} />
+              <h1 className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
+                AI Ads Intelligence
+              </h1>
+            </div>
+            <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
+              {t.ads.pageSubtitle}
+            </p>
           </div>
-          <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
-            {t.ads.pageSubtitle}
-          </p>
+          <AdsFilter
+            values={filters}
+            onChange={setFilters}
+            totalResults={ads.length}
+            filteredResults={filteredAds.length}
+            loading={loading}
+            vertical
+          />
         </div>
+      )}
 
-        <AdsFilter
-          values={filters}
-          onChange={setFilters}
-          totalResults={ads.length}
-          filteredResults={filteredAds.length}
-          loading={loading}
-          vertical
-        />
-      </div>
+      {/* ── Mobile: filter drawer overlay ── */}
+      {isMobile && (
+        <AnimatePresence>
+          {filterOpen && (
+            <>
+              <motion.div
+                key="filter-backdrop"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,0.6)" }}
+                onClick={() => setFilterOpen(false)}
+              />
+              <motion.div
+                key="filter-drawer"
+                initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
+                transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                style={{
+                  position: "fixed", top: 56, left: 0, bottom: 0, width: 280, zIndex: 41,
+                  background: "var(--bg-surface)", borderRight: "1px solid var(--border)", overflowY: "auto",
+                }}
+                className="no-scrollbar"
+              >
+                <div className="flex items-center justify-between px-3 pt-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                  <div className="flex items-center gap-2">
+                    <Brain size={13} style={{ color: "var(--ai-light)" }} />
+                    <span className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Filters</span>
+                  </div>
+                  <button onClick={() => setFilterOpen(false)}
+                    className="p-1.5 rounded-[7px]"
+                    style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+                    <X size={13} strokeWidth={2} />
+                  </button>
+                </div>
+                <AdsFilter
+                  values={filters}
+                  onChange={v => { setFilters(v); }}
+                  totalResults={ads.length}
+                  filteredResults={filteredAds.length}
+                  loading={loading}
+                  vertical
+                />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      )}
 
-      {/* ── Right: Content area ── */}
+      {/* ── Center: Content area ── */}
       <div className="flex-1 min-w-0 flex flex-col" style={{ padding: 16 }}>
 
         {/* Search bar */}
         <div className="mb-4 command-bar flex items-center gap-3 px-4 py-3">
+          {isMobile && (
+            <button
+              onClick={() => setFilterOpen(true)}
+              className="p-1.5 rounded-[7px] flex-shrink-0"
+              style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}
+            >
+              <SlidersHorizontal size={14} strokeWidth={1.5} />
+            </button>
+          )}
           <Search size={15} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
           <input
             type="text"
@@ -333,7 +402,7 @@ export default function AdsPage() {
         <AnimatePresence>
           {filteredAds.length > 0 && (
             <div>
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className={`grid gap-3 ${gridCols}`}>
                 {filteredAds.map((ad, i) => (
                   <AdCard key={ad.id} ad={ad} index={i} onSelect={setSelectedAd} />
                 ))}
@@ -387,8 +456,12 @@ export default function AdsPage() {
         </AnimatePresence>
       </div>
 
-      {/* Detail modal */}
-      <AdDetailModal ad={selectedAd} onClose={() => setSelectedAd(null)} />
+      {/* ── Right: Detail panel (desktop sticky / mobile overlay) ── */}
+      <AdDetailPanel
+        ad={selectedAd}
+        onClose={() => setSelectedAd(null)}
+        isMobile={isMobile}
+      />
     </div>
   );
 }

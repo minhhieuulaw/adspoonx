@@ -293,7 +293,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
         }}
       >
         {/* ── Header: avatar + brand + AI score ── */}
-        <div className="flex items-center gap-2 px-3 pt-3 pb-2.5">
+        <div className="flex items-center gap-2 px-3 pt-2.5 pb-1.5">
           <BrandAvatar name={storeName} src={ad.page_profile_picture_url} color={color} />
           <p className="font-display text-[12px] font-semibold flex-1 truncate" style={{ color: "var(--text-1)" }}>
             {storeName}
@@ -308,7 +308,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
         </div>
 
         {/* ── Status row: LIVE Xd + date range ── */}
-        <div className="flex items-center justify-between px-3 pb-2.5">
+        <div className="flex items-center justify-between px-3 pb-1.5">
           {/* LIVE · Xd — đồng màu xanh */}
           <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: liveColor }}>
             <span
@@ -334,11 +334,8 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
           )}
         </div>
 
-        {/* ── Divider ── */}
-        <div style={{ height: "1px", background: "var(--border)", margin: "0 12px 8px" }} />
-
-        {/* ── Creative ── */}
-        <div className="mx-3 rounded-[8px] overflow-hidden" style={{ background: "rgba(0,0,0,0.3)" }}>
+        {/* ── Creative (full-bleed) ── */}
+        <div className="overflow-hidden" style={{ background: "rgba(0,0,0,0.3)" }}>
           {ad.video_url ? (
             <VideoCreative src={ad.video_url} poster={ad.thumbnail_url ?? ad.image_url} alt={storeName} />
           ) : ad.image_url ? (
