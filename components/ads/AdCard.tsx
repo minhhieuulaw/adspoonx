@@ -415,7 +415,7 @@ function AIScoreRibbon({ score }: { score: number }) {
 
   return (
     <div
-      className={`ai-score-ribbon ${isHot ? "ai-ribbon-fire" : ""}`}
+      className="ai-score-ribbon"
       style={{
         position: "absolute",
         top: -1,
@@ -424,7 +424,7 @@ function AIScoreRibbon({ score }: { score: number }) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: isHot ? "3px 8px 7px" : "4px 8px 6px",
+        padding: "4px 8px 6px",
         background: gradient,
         borderRadius: "0 0 6px 6px",
         boxShadow: shadow,
@@ -432,14 +432,8 @@ function AIScoreRibbon({ score }: { score: number }) {
       }}
       title={`AI Performance Score: ${score}/100`}
     >
-      {/* Fire icon for 80+ */}
-      {isHot && (
-        <span className="ai-fire-icon" style={{ fontSize: 10, lineHeight: 1, marginBottom: -1 }}>
-          🔥
-        </span>
-      )}
       <span style={{
-        fontSize: isHot ? 6 : 7,
+        fontSize: 7,
         fontWeight: 700,
         color: "rgba(255,255,255,0.8)",
         letterSpacing: "0.08em",
