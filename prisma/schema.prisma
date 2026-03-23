@@ -93,6 +93,7 @@ model Ad {
   isActive    Boolean  @default(true)
   startDate   DateTime?
   endDate     DateTime?
+  niche       String?  // auto-detected niche (e.g. "Fashion", "Health & Beauty")
   rawData     Json     // full Apify output for future use
   scrapedAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -100,6 +101,7 @@ model Ad {
   @@index([country, isActive])
   @@index([pageName])
   @@index([scrapedAt])
+  @@index([niche])
 }
 
 model SavedAd {

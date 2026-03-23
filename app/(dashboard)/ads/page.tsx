@@ -124,7 +124,12 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues, userPlan: string
     });
   }
 
-  // 7. Sort
+  // 7. Niche filter
+  if (filters.niche) {
+    result = result.filter(ad => ad.niche === filters.niche);
+  }
+
+  // 8. Sort
   result.sort((a, b) => {
     switch (filters.sortBy) {
       case "score":
@@ -176,6 +181,7 @@ export default function AdsPage() {
     dropshipping: "all",
     duration:     "any",
     aiScore:      "all",
+    niche:        null,
   });
 
   const [nextPage, setNextPage] = useState<number | null>(null);

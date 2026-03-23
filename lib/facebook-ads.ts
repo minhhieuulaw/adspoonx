@@ -32,6 +32,7 @@ export interface FbAd {
   page_profile_uri?: string;
   country?: string;
   countries?: string[];     // all countries the ad ran in
+  niche?: string;           // auto-detected niche (e.g. "Fashion & Apparel")
 }
 
 export interface FbAdsResponse {

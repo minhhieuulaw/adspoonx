@@ -42,6 +42,25 @@ export const AI_SCORE_TIERS: Array<{ id: AIScoreTier; label: string; range: stri
   { id: "elite",     label: "Elite",       range: "85–99",   min: 85, max: 99, color: "#A78BFA",        bg: "rgba(167,139,250,0.12)",   border: "rgba(167,139,250,0.35)",   icon: "🔥" },
 ];
 
+export const NICHE_OPTIONS = [
+  { id: "Fashion & Apparel",       icon: "👗", short: "Fashion" },
+  { id: "Health & Beauty",         icon: "💄", short: "Beauty" },
+  { id: "Fitness & Wellness",      icon: "💪", short: "Fitness" },
+  { id: "Supplements & Nutrition", icon: "💊", short: "Supplements" },
+  { id: "Food & Beverage",         icon: "🍕", short: "Food" },
+  { id: "Electronics & Tech",      icon: "📱", short: "Tech" },
+  { id: "Home & Living",           icon: "🏠", short: "Home" },
+  { id: "Baby & Kids",             icon: "🍼", short: "Kids" },
+  { id: "Jewelry & Accessories",   icon: "💎", short: "Jewelry" },
+  { id: "Pet Supplies",            icon: "🐾", short: "Pets" },
+  { id: "Sports & Outdoors",       icon: "⚽", short: "Sports" },
+  { id: "Education & Courses",     icon: "📚", short: "Education" },
+  { id: "Entertainment & Media",   icon: "🎬", short: "Entertainment" },
+  { id: "Finance & Insurance",     icon: "💰", short: "Finance" },
+  { id: "E-commerce",              icon: "🛒", short: "E-commerce" },
+  { id: "Other",                   icon: "📦", short: "Other" },
+] as const;
+
 export interface FilterValues {
   country: string;
   status: "ACTIVE" | "INACTIVE" | "ALL";
@@ -52,6 +71,7 @@ export interface FilterValues {
   dropshipping: "all" | "dropshipping" | "brand";
   duration: "any" | "new" | "growing" | "proven" | "evergreen";
   aiScore: AIScoreTier;
+  niche: string | null;
 }
 
 interface AdsFilterProps {
@@ -98,7 +118,8 @@ export default function AdsFilter({
 
   const activeSort   = SORT_OPTIONS.find(s => s.id === values.sortBy) ?? SORT_OPTIONS[0];
   const hasFilters   = values.preset !== null || values.platforms.length > 0 || values.sortBy !== "score"
-    || values.dropshipping !== "all" || values.duration !== "any" || values.mediaType !== null || values.aiScore !== "all";
+    || values.dropshipping !== "all" || values.duration !== "any" || values.mediaType !== null || values.aiScore !== "all"
+    || values.niche !== null;
 
   function togglePlatform(id: string) {
     const next = values.platforms.includes(id)
@@ -112,7 +133,7 @@ export default function AdsFilter({
   }
 
   function clearAll() {
-    onChange({ ...values, preset: null, platforms: [], sortBy: "score", dropshipping: "all", duration: "any", mediaType: null, aiScore: "all" });
+    onChange({ ...values, preset: null, platforms: [], sortBy: "score", dropshipping: "all", duration: "any", mediaType: null, aiScore: "all", niche: null });
   }
 
   const statusOptions = [
@@ -432,6 +453,37 @@ export default function AdsFilter({
                 {opt.label}
               </button>
             ))}
+          </div>
+        </FilterSection>
+
+        <Divider />
+
+        {/* Niche / Industry */}
+        <FilterSection label="Niche">
+          <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto no-scrollbar">
+            {NICHE_OPTIONS.map(n => {
+              const isOn = values.niche === n.id;
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => onChange({ ...values, niche: isOn ? null : n.id })}
+                  className="flex items-center gap-1.5 w-full px-2 py-[5px] rounded-[6px] text-left"
+                  style={{
+                    background: isOn ? "rgba(124,58,237,0.12)" : "transparent",
+                    border: `1px solid ${isOn ? "rgba(124,58,237,0.3)" : "transparent"}`,
+                    transition: "all 120ms var(--ease)",
+                  }}
+                  onMouseEnter={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = isOn ? "rgba(124,58,237,0.12)" : "transparent"; }}
+                >
+                  <span style={{ fontSize: 11, lineHeight: 1 }}>{n.icon}</span>
+                  <span className="text-[10px] font-medium flex-1" style={{ color: isOn ? "var(--ai-light)" : "var(--text-2)" }}>
+                    {n.short}
+                  </span>
+                  {isOn && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ai-light)", flexShrink: 0 }} />}
+                </button>
+              );
+            })}
           </div>
         </FilterSection>
 

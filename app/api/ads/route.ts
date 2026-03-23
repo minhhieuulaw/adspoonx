@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       bodyText: string | null; title: string | null; description: string | null;
       imageUrl: string | null; adLibraryUrl: string | null; platforms: string[];
       country: string; isActive: boolean; startDate: Date | null; endDate: Date | null;
-      rawData: Record<string, unknown>; scrapedAt: Date;
+      niche: string | null; rawData: Record<string, unknown>; scrapedAt: Date;
     };
 
     try {
@@ -229,7 +229,7 @@ type PrismaAd = {
   bodyText: string | null; title: string | null; description: string | null;
   imageUrl: string | null; adLibraryUrl: string | null; platforms: string[];
   country: string; isActive: boolean; startDate: Date | null; endDate: Date | null;
-  rawData: unknown;
+  niche: string | null; rawData: unknown;
 };
 
 function mapAdToFbAd(ad: PrismaAd): FbAd {
@@ -252,5 +252,6 @@ function mapAdToFbAd(ad: PrismaAd): FbAd {
     countries:                     [ad.country],
     page_profile_picture_url:      extractPageProfilePicture(ad.rawData),
     cta_text:                      extractCtaText(ad.rawData),
+    niche:                         ad.niche ?? undefined,
   };
 }

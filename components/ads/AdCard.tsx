@@ -613,6 +613,16 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             }}>
               {ai.trendIcon} {ai.trendLabel}
             </span>
+            {/* Niche tag */}
+            {ad.niche && ad.niche !== "Other" && (
+              <span className="ad-tag" style={{
+                background: "rgba(124,58,237,0.10)",
+                color: "#a78bfa",
+                borderColor: "rgba(124,58,237,0.20)",
+              }}>
+                {ad.niche}
+              </span>
+            )}
             {/* Spacer */}
             <div className="flex-1" />
             {/* Platform icons */}
