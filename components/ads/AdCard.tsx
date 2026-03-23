@@ -121,6 +121,8 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
   const handleTimeUpdate = useCallback(() => {
     const v = ref.current;
@@ -148,6 +150,22 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
     if (!v) return;
     v.muted = !v.muted;
     setMuted(v.muted);
+  }
+
+  function handleVolumeChange(e: React.ChangeEvent<HTMLInputElement>) {
+    e.stopPropagation();
+    const val = parseFloat(e.target.value);
+    const v = ref.current;
+    if (!v) return;
+    setVolume(val);
+    v.volume = val;
+    if (val === 0) {
+      v.muted = true;
+      setMuted(true);
+    } else if (muted) {
+      v.muted = false;
+      setMuted(false);
+    }
   }
 
   function seekTo(e: React.MouseEvent) {
@@ -220,10 +238,60 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
           />
         </div>
 
-        {/* Mute/unmute */}
-        <button onClick={toggleMute} className="flex-shrink-0" style={{ color: "white", cursor: "pointer", background: "none", border: "none", padding: 2 }}>
-          {muted ? <VolumeX size={10} strokeWidth={2} /> : <Volume2 size={10} strokeWidth={2} />}
-        </button>
+        {/* Mute/unmute with volume slider */}
+        <div
+          className="flex-shrink-0"
+          style={{ position: "relative" }}
+          onMouseEnter={() => setShowVolumeSlider(true)}
+          onMouseLeave={() => setShowVolumeSlider(false)}
+        >
+          {/* Volume slider popup */}
+          {showVolumeSlider && (
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                position: "absolute",
+                bottom: "100%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                marginBottom: 4,
+                background: "rgba(0,0,0,0.8)",
+                backdropFilter: "blur(8px)",
+                borderRadius: 6,
+                padding: "8px 6px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: 60,
+              }}
+            >
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={muted ? 0 : volume}
+                onChange={handleVolumeChange}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  width: 44,
+                  height: 3,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  background: `linear-gradient(to right, var(--ai-light) ${(muted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(muted ? 0 : volume) * 100}%)`,
+                  borderRadius: 2,
+                  outline: "none",
+                  cursor: "pointer",
+                  transform: "rotate(-90deg)",
+                  transformOrigin: "center center",
+                }}
+              />
+            </div>
+          )}
+          <button onClick={toggleMute} style={{ color: "white", cursor: "pointer", background: "none", border: "none", padding: 2 }}>
+            {muted ? <VolumeX size={10} strokeWidth={2} /> : <Volume2 size={10} strokeWidth={2} />}
+          </button>
+        </div>
       </div>
 
       {/* VIDEO badge */}

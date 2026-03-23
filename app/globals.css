@@ -281,6 +281,28 @@ main { position: relative; z-index: 1; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Volume slider thumb */
+.volume-slider::-webkit-slider-thumb,
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 4px rgba(0,0,0,0.3);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: none;
+}
+
 /* Legacy compat */
 .glass-card  { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
 .raycast-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }

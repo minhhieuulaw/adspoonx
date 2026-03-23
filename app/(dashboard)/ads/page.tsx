@@ -465,7 +465,7 @@ export default function AdsPage() {
               transition={{ duration: 0.18 }}
               style={{ minHeight: "100%" }}
             >
-              <PanelContent ad={selectedAd} onClose={() => setSelectedAd(null)} />
+              <PanelContent ad={selectedAd} onClose={() => setSelectedAd(null)} allAds={ads} />
             </motion.div>
           ) : (
             <motion.div
@@ -500,6 +500,7 @@ export default function AdsPage() {
           ad={selectedAd}
           onClose={() => setSelectedAd(null)}
           isMobile={true}
+          allAds={ads}
         />
       </div>
     </div>
