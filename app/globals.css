@@ -138,6 +138,39 @@ main { position: relative; z-index: 1; }
   transform: translateY(-1px);
 }
 
+/* Ad card — Minea-style compact */
+.ad-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease), transform 150ms var(--ease);
+}
+.ad-card:hover {
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  transform: translateY(-1px);
+}
+
+/* Creative wrapper — square aspect */
+.ad-creative-wrap {
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  position: relative;
+  background: rgba(255,255,255,0.02);
+}
+
+/* Container queries for ads grid */
+.ads-grid-container { container-type: inline-size; container-name: adsgrid; }
+.ads-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(1, 1fr);
+}
+@container adsgrid (min-width: 420px)  { .ads-grid { grid-template-columns: repeat(2, 1fr); } }
+@container adsgrid (min-width: 680px)  { .ads-grid { grid-template-columns: repeat(3, 1fr); } }
+@container adsgrid (min-width: 960px)  { .ads-grid { grid-template-columns: repeat(4, 1fr); } }
+@container adsgrid (min-width: 1280px) { .ads-grid { grid-template-columns: repeat(5, 1fr); } }
+
 /* Command / search bar */
 .command-bar {
   background: rgba(255,255,255,0.04);

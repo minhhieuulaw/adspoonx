@@ -217,10 +217,7 @@ export default function AdsPage() {
     return { total: ads.length, active, topScore, countries };
   }, [ads]);
 
-  // Grid: on xl+ right panel is always visible (320px), so fewer cols
-  // xl(1280): filter(192)+cards+panel(320) → 2 cols comfortable
-  // 2xl(1536): enough for 3 cols with panel
-  const gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3";
+  // Container queries handle responsive grid cols automatically
 
   return (
     // Negate parent p-5 to let filter panel sit flush at content edges
@@ -378,24 +375,26 @@ export default function AdsPage() {
 
         {/* Skeleton loading */}
         {loading && ads.length === 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={`sk-${i}`} className="skeleton" style={{ height: 340, borderRadius: 12 }} />
-            ))}
+          <div className="ads-grid-container">
+            <div className="ads-grid">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={`sk-${i}`} className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 10 }} />
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Ads grid */}
+        {/* Ads grid — container query responsive */}
         <AnimatePresence>
           {filteredAds.length > 0 && (
-            <div>
-              <div className={`grid gap-3 ${gridCols}`}>
+            <div className="ads-grid-container">
+              <div className="ads-grid">
                 {filteredAds.map((ad, i) => (
                   <AdCard key={ad.id} ad={ad} index={i} onSelect={setSelectedAd} />
                 ))}
                 {loading && ads.length > 0 &&
                   Array.from({ length: 3 }).map((_, i) => (
-                    <div key={`sk-more-${i}`} className="skeleton" style={{ height: 340, borderRadius: 12 }} />
+                    <div key={`sk-more-${i}`} className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 10 }} />
                   ))}
               </div>
 
