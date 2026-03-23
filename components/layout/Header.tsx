@@ -21,14 +21,6 @@ export default function Header() {
   const { locale, setLocale } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [plan, setPlan] = useState<string>("free");
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
 
   useEffect(() => {
     fetch("/api/me/plan").then(r => r.json()).then(d => { if (d.plan) setPlan(d.plan); }).catch(() => null);
@@ -44,38 +36,30 @@ export default function Header() {
 
   return (
     <header
-      className="flex items-center gap-2 px-4"
+      className="flex items-center gap-2 px-4 fixed top-0 right-0 left-0 md:left-64"
       style={{
-        position: "fixed",
-        top: 0,
-        left: isMobile ? 0 : 256,
-        right: 0,
         height: 56,
         zIndex: 30,
         background: "rgba(17,17,19,0.92)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         borderBottom: "1px solid var(--sidebar-border)",
-        transition: "left 0ms",
       }}
     >
-      {/* Hamburger — mobile only */}
-      {isMobile && (
-        <button
-          onClick={toggleSidebar}
-          className="w-8 h-8 rounded-[7px] flex items-center justify-center flex-shrink-0"
-          style={{ color: "var(--text-secondary)", background: "var(--hover-bg)", border: "1px solid var(--card-border)" }}
-        >
-          <Menu size={15} strokeWidth={1.8} />
-        </button>
-      )}
+      {/* Hamburger — mobile only (hidden on md+) */}
+      <button
+        onClick={toggleSidebar}
+        className="md:hidden w-8 h-8 rounded-[7px] flex items-center justify-center flex-shrink-0"
+        style={{ color: "var(--text-secondary)", background: "var(--hover-bg)", border: "1px solid var(--card-border)" }}
+      >
+        <Menu size={15} strokeWidth={1.8} />
+      </button>
 
-      {/* App name — mobile only (since sidebar is hidden) */}
-      {isMobile && (
-        <span className="font-display text-[14px] font-bold flex-shrink-0" style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
-          adspoon<span style={{ color: "var(--accent)" }}>X</span>
-        </span>
-      )}
+      {/* App name — mobile only */}
+      <span className="md:hidden font-display text-[14px] font-bold flex-shrink-0"
+        style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
+        adspoon<span style={{ color: "var(--accent)" }}>X</span>
+      </span>
 
       {/* Spacer */}
       <div className="flex-1" />
