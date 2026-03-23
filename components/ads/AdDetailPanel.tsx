@@ -672,22 +672,75 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
           </div>
         )}
 
-        {/* Why this works */}
+        {/* Seller Takeaway — one-line actionable insight */}
         <div className="mx-3 mt-4 rounded-[10px] p-3"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>
-            Why This Ad Works
-          </p>
-          <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>{ai.whyWorking}</p>
+          style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.25)" }}>
+          <div className="flex items-start gap-2">
+            <span className="text-[14px] flex-shrink-0 mt-0.5">💡</span>
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--ai-light)" }}>
+                Seller Takeaway
+              </p>
+              <p className="text-[12px] leading-relaxed font-medium" style={{ color: "var(--text-1)" }}>
+                {ai.sellerTakeaway}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Creative strategy */}
+        {/* Performance Signals — structured bullets */}
         <div className="mx-3 mt-3 rounded-[10px] p-3"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>
-            Creative Strategy
+          <p className="text-[9px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "var(--text-3)" }}>
+            Performance Signals
           </p>
-          <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>{ai.creativeStrategy}</p>
+          <div className="flex flex-col gap-2">
+            {ai.performanceSignals.map((s, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="text-[12px] flex-shrink-0 mt-px">{s.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold" style={{ color: s.color ?? "var(--text-1)" }}>
+                    {s.label}
+                  </p>
+                  <p className="text-[11px] leading-snug" style={{ color: "var(--text-2)" }}>
+                    {s.detail}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Creative Strategy */}
+        <div className="mx-3 mt-3 rounded-[10px] p-3"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+          <div className="flex items-start gap-2">
+            <span className="text-[12px] flex-shrink-0 mt-0.5">🎨</span>
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>
+                Creative Strategy
+              </p>
+              <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+                {ai.creativeStrategy}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Competitive Edge */}
+        <div className="mx-3 mt-3 rounded-[10px] p-3"
+          style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+          <div className="flex items-start gap-2">
+            <span className="text-[12px] flex-shrink-0 mt-0.5">⚔️</span>
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "#34D399" }}>
+                Cách cạnh tranh
+              </p>
+              <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+                {ai.competitiveEdge}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Ads from this shop */}

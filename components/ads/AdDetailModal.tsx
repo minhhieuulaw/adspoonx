@@ -426,36 +426,73 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                     </div>
                   </div>
 
-                  {/* Why this works */}
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>
-                      Why This Ad Works
-                    </p>
-                    <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-                      {ai.whyWorking}
-                    </p>
+                  {/* Seller Takeaway */}
+                  <div className="rounded-[10px] p-3.5"
+                    style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.25)" }}>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[14px] flex-shrink-0">💡</span>
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--ai-light)" }}>
+                          Seller Takeaway
+                        </p>
+                        <p className="text-[12px] leading-relaxed font-medium" style={{ color: "var(--text-1)" }}>
+                          {ai.sellerTakeaway}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Target audience */}
+                  {/* Performance Signals */}
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>
-                      Target Audience
+                    <p className="text-[9px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "var(--text-3)" }}>
+                      Performance Signals
                     </p>
-                    {ai.targetAudience.split("\n").map((line, i) => (
-                      <p key={i} className="text-[12px]" style={{ color: i === 0 ? "var(--text-1)" : "var(--text-2)", marginBottom: i === 0 ? 2 : 0 }}>
-                        {line}
-                      </p>
-                    ))}
+                    <div className="flex flex-col gap-2.5">
+                      {ai.performanceSignals.map((s, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <span className="text-[12px] flex-shrink-0 mt-px">{s.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-bold" style={{ color: s.color ?? "var(--text-1)" }}>
+                              {s.label}
+                            </p>
+                            <p className="text-[11px] leading-snug" style={{ color: "var(--text-2)" }}>
+                              {s.detail}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Creative strategy */}
+                  {/* Creative Strategy */}
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>
-                      Creative Strategy
-                    </p>
-                    <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-                      {ai.creativeStrategy}
-                    </p>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[12px] flex-shrink-0 mt-0.5">🎨</span>
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>
+                          Creative Strategy
+                        </p>
+                        <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+                          {ai.creativeStrategy}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Competitive Edge */}
+                  <div className="rounded-[10px] p-3.5"
+                    style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[12px] flex-shrink-0 mt-0.5">⚔️</span>
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "#34D399" }}>
+                          Cách cạnh tranh
+                        </p>
+                        <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+                          {ai.competitiveEdge}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
