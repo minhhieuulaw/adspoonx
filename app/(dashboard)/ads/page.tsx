@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +11,43 @@ import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues, AI_SCORE_TIERS } from "@/components/ads/AdsFilter";
 import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code, Loader2 } from "lucide-react";
+
+// ── Filter persistence (localStorage) ─────────────────────────────────────────
+
+const FILTER_STORAGE_KEY = "adspoonx_filters";
+const SEARCH_HISTORY_KEY = "adspoonx_search_history";
+const MAX_SEARCH_HISTORY = 8;
+
+function loadSavedFilters(): Partial<FilterValues> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(FILTER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveFiltersToStorage(filters: FilterValues) {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters)); } catch {}
+}
+
+function loadSearchHistory(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SEARCH_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function addToSearchHistory(term: string) {
+  if (typeof window === "undefined" || !term.trim()) return;
+  try {
+    const history = loadSearchHistory().filter(h => h !== term);
+    history.unshift(term);
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, MAX_SEARCH_HISTORY)));
+  } catch {}
+}
 
 // ── KPI stat card ─────────────────────────────────────────────────────────────
 
@@ -33,6 +69,38 @@ function KPIStat({
         </p>
         {sub && <p className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>{sub}</p>}
       </div>
+    </div>
+  );
+}
+
+// ── Infinite scroll sentinel ──────────────────────────────────────────────────
+
+function InfiniteScrollSentinel({ onVisible, loading }: { onVisible: () => void; loading: boolean }) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const onVisibleRef = useRef(onVisible);
+  onVisibleRef.current = onVisible;
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) onVisibleRef.current(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={sentinelRef} className="flex justify-center py-8">
+      {loading ? (
+        <div className="flex items-center gap-2 text-[12px] font-medium" style={{ color: "var(--text-3)" }}>
+          <Loader2 size={14} className="animate-spin" style={{ color: "var(--ai-light)" }} />
+          Loading more ads...
+        </div>
+      ) : (
+        <div className="w-6 h-0.5 rounded-full" style={{ background: "var(--border)" }} />
+      )}
     </div>
   );
 }
@@ -189,19 +257,30 @@ export default function AdsPage() {
   const [saveName, setSaveName] = useState("");
   const [showSaveInput, setShowSaveInput] = useState(false);
 
-  const [filters, setFilters] = useState<FilterValues>({
-    country:      searchParams.get("country") ?? "US",
-    status:       (searchParams.get("status") as FilterValues["status"]) ?? "ACTIVE",
-    mediaType:    null,
-    preset:       null,
-    platforms:    [],
-    sortBy:       "score",
-    dropshipping: "all",
-    duration:     "any",
-    aiScore:      "all",
-    niche:        null,
-    language:     "all",
+  const [filters, setFilters] = useState<FilterValues>(() => {
+    const saved = loadSavedFilters();
+    return {
+      country:      searchParams.get("country") ?? saved?.country ?? "US",
+      status:       (searchParams.get("status") as FilterValues["status"]) ?? saved?.status ?? "ACTIVE",
+      mediaType:    saved?.mediaType ?? null,
+      preset:       null,
+      platforms:    saved?.platforms ?? [],
+      sortBy:       saved?.sortBy ?? "score",
+      dropshipping: saved?.dropshipping ?? "all",
+      duration:     saved?.duration ?? "any",
+      aiScore:      saved?.aiScore ?? "all",
+      niche:        saved?.niche ?? null,
+      language:     saved?.language ?? "all",
+    };
   });
+
+  // Persist filters to localStorage on change
+  useEffect(() => { saveFiltersToStorage(filters); }, [filters]);
+
+  // Search history
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  useEffect(() => { setSearchHistory(loadSearchHistory()); }, []);
 
   const [nextPage, setNextPage] = useState<number | null>(null);
   // Random seed: generated once per page load, sent to API so same seed = same shuffled order
@@ -265,6 +344,8 @@ export default function AdsPage() {
     const q = value ?? searchTerm;
     setSearchTerm(q);
     setVisibleCount(20);
+    setShowHistory(false);
+    if (q.trim()) { addToSearchHistory(q.trim()); setSearchHistory(loadSearchHistory()); }
     const params = new URLSearchParams({ q, country: filters.country, status: filters.status });
     router.push(`/ads?${params.toString()}`);
     const apiMedia = filters.mediaType === "video" ? "video" : undefined;
@@ -446,15 +527,38 @@ export default function AdsPage() {
             <SlidersHorizontal size={14} strokeWidth={1.5} />
           </button>
           <Search size={15} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSearch()}
-            placeholder="Tìm ads, sản phẩm, thương hiệu…"
-            className="flex-1 bg-transparent text-[13px] outline-none"
-            style={{ color: "var(--text-1)" }}
-          />
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSearch()}
+              onFocus={() => { if (searchHistory.length > 0 && !searchTerm) setShowHistory(true); }}
+              onBlur={() => { setTimeout(() => setShowHistory(false), 150); }}
+              placeholder="Search ads, products, brands…"
+              className="w-full bg-transparent text-[13px] outline-none"
+              style={{ color: "var(--text-1)" }}
+            />
+            {/* Search history dropdown */}
+            {showHistory && searchHistory.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-30 rounded-[10px] py-1.5 overflow-hidden"
+                style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+                <p className="px-3 py-1 text-[9px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Recent Searches</p>
+                {searchHistory.map((h, i) => (
+                  <button key={i}
+                    onMouseDown={e => { e.preventDefault(); handleSearch(h); }}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] font-medium text-left"
+                    style={{ color: "var(--text-2)" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-hover)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <Search size={10} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                    {h}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {/* Toggle regex */}
           <button
             onClick={() => setUseRegex(!useRegex)}
@@ -721,21 +825,8 @@ export default function AdsPage() {
                 </div>
               )}
 
-              {/* Load more */}
-              {canShowMore && !loading && (
-                <div className="flex justify-center mt-8">
-                  <button
-                    onClick={loadMore}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-[8px] text-[13px] font-medium"
-                    style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-strong)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; }}
-                  >
-                    {t.ads.loadMore}
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
-              )}
+              {/* Infinite scroll sentinel */}
+              {canShowMore && <InfiniteScrollSentinel onVisible={loadMore} loading={loading} />}
             </div>
           )}
         </AnimatePresence>

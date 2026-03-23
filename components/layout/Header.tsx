@@ -1,13 +1,37 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, User, Bell, Zap, Menu } from "lucide-react";
+import { ChevronDown, LogOut, User, Bell, Zap, Menu, TrendingUp, Database, Star, Info } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { Locale } from "@/lib/i18n/translations";
+
+// ── Notification types ────────────────────────────────────────────────────────
+
+interface Notification {
+  id: string;
+  type: "info" | "update" | "tip" | "stats";
+  title: string;
+  body: string;
+  time: string;
+  read: boolean;
+}
+
+const NOTIF_ICON = {
+  info: Info,
+  update: Database,
+  tip: Star,
+  stats: TrendingUp,
+};
+const NOTIF_COLOR = {
+  info: "#60A5FA",
+  update: "#34D399",
+  tip: "#FCD34D",
+  stats: "#A78BFA",
+};
 
 const PLAN_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   free:     { bg: "rgba(100,100,120,0.12)", color: "var(--text-muted)",  border: "rgba(100,100,120,0.2)" },
@@ -20,11 +44,56 @@ export default function Header() {
   const { data: session } = useSession();
   const { locale, setLocale } = useLanguage();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [plan, setPlan] = useState<string>("free");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     fetch("/api/me/plan").then(r => r.json()).then(d => { if (d.plan) setPlan(d.plan); }).catch(() => null);
   }, [session?.user?.id]);
+
+  // Generate contextual notifications from stats
+  useEffect(() => {
+    fetch("/api/stats")
+      .then(r => r.json())
+      .then(data => {
+        const notifs: Notification[] = [];
+        const now = new Date().toISOString();
+        if (data.totalAds) {
+          notifs.push({
+            id: "db-stats", type: "stats", read: false, time: now,
+            title: `${data.totalAds.toLocaleString()} ads in database`,
+            body: `${data.activeAds?.toLocaleString() ?? 0} active ads across ${data.countries ?? 1} market${(data.countries ?? 1) > 1 ? "s" : ""}.`,
+          });
+        }
+        if (data.videoCount) {
+          notifs.push({
+            id: "video-count", type: "info", read: false, time: now,
+            title: `${data.videoCount.toLocaleString()} video ads available`,
+            body: "Filter by video to find high-performing creatives.",
+          });
+        }
+        notifs.push({
+          id: "tip-1", type: "tip", read: false, time: now,
+          title: "Pro tip: Use AI Score filter",
+          body: "Filter by \"Elite\" (85+) to see only top-performing ads worth studying.",
+        });
+        if (data.recentAds?.length) {
+          notifs.push({
+            id: "recent", type: "update", read: false, time: now,
+            title: "Fresh ads added",
+            body: `${data.recentAds.length} new ads recently scraped and ready to explore.`,
+          });
+        }
+        setNotifications(notifs);
+      })
+      .catch(() => {});
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const markAllRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  }, []);
 
   function toggleLocale() {
     setLocale(locale === "en" ? "vi" : ("en" as Locale));
@@ -67,15 +136,86 @@ export default function Header() {
       {/* Right controls */}
       <div className="flex items-center gap-1.5">
         {/* Notifications */}
-        <button
-          className="w-7 h-7 rounded-[6px] flex items-center justify-center transition-colors"
-          style={{ color: "var(--text-muted)" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--hover-bg)"; (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
-          title="Notifications"
-        >
-          <Bell size={14} strokeWidth={1.5} />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => { setNotifOpen(v => !v); setDropdownOpen(false); }}
+            className="w-7 h-7 rounded-[6px] flex items-center justify-center transition-colors relative"
+            style={{ color: notifOpen ? "var(--text-primary)" : "var(--text-muted)", background: notifOpen ? "var(--hover-bg)" : "transparent" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--hover-bg)"; (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
+            onMouseLeave={(e) => { if (!notifOpen) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; } }}
+            title="Notifications"
+          >
+            <Bell size={14} strokeWidth={1.5} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white"
+                style={{ background: "#EF4444", lineHeight: 1 }}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {notifOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute right-0 top-full mt-1.5 w-72 rounded-[12px] z-50 overflow-hidden"
+                  style={{
+                    background: "var(--elevated-bg)",
+                    border: "1px solid var(--card-border)",
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+                  }}
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-3.5 py-2.5" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
+                    <p className="text-[12px] font-semibold" style={{ color: "var(--text-primary)" }}>Notifications</p>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllRead} className="text-[10px] font-medium" style={{ color: "var(--ai-light)" }}>
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  {/* Items */}
+                  <div className="max-h-[320px] overflow-y-auto no-scrollbar">
+                    {notifications.map(n => {
+                      const Icon = NOTIF_ICON[n.type];
+                      const color = NOTIF_COLOR[n.type];
+                      return (
+                        <div key={n.id}
+                          className="flex items-start gap-2.5 px-3.5 py-2.5"
+                          style={{
+                            background: n.read ? "transparent" : "rgba(124,58,237,0.04)",
+                            borderBottom: "1px solid rgba(255,255,255,0.04)",
+                          }}
+                        >
+                          <div className="w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
+                            <Icon size={11} style={{ color }} strokeWidth={1.8} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold" style={{ color: n.read ? "var(--text-secondary)" : "var(--text-primary)" }}>
+                              {n.title}
+                            </p>
+                            <p className="text-[10px] mt-0.5 leading-snug" style={{ color: "var(--text-muted)" }}>
+                              {n.body}
+                            </p>
+                          </div>
+                          {!n.read && (
+                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ background: "var(--ai-light)" }} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Language toggle */}
         <button
