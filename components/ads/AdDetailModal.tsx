@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Globe, Monitor, Eye, DollarSign, Bookmark, ExternalLink, Play } from "lucide-react";
+import { X, Calendar, Globe, Monitor, Eye, DollarSign, Bookmark, ExternalLink, Play, Copy } from "lucide-react";
 import type { FbAd } from "@/lib/facebook-ads";
 import { getAIInsights, getScoreBg, getScoreBorder } from "@/lib/ai-insights";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
@@ -48,11 +48,19 @@ function FlagImg({ code }: { code: string }) {
   );
 }
 
+function fmtDateRange(start?: string, end?: string): string {
+  const s = start ? new Date(start).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : null;
+  const e = end ? new Date(end).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : null;
+  if (s && e) return `${s} → ${e}`;
+  if (s) return `${s} → Present`;
+  return "—";
+}
+
 const PLATFORM_COLOR: Record<string, string> = {
-  facebook: "#60A5FA", instagram: "#F472B6", messenger: "#38BDF8", audience_network: "#A78BFA",
+  facebook: "#60A5FA", instagram: "#F472B6", messenger: "#38BDF8", audience_network: "#A78BFA", threads: "#E5E7EB",
 };
 const PLATFORM_LABEL: Record<string, string> = {
-  facebook: "Facebook", instagram: "Instagram", messenger: "Messenger", audience_network: "Audience Network",
+  facebook: "Facebook", instagram: "Instagram", messenger: "Messenger", audience_network: "Audience Network", threads: "Threads",
 };
 
 const AVATAR_PALETTE = ["#A78BFA", "#60A5FA", "#F472B6", "#34D399", "#FCD34D", "#FB923C", "#38BDF8"];
@@ -152,6 +160,8 @@ export default function AdDetailModal({ ad, onClose }: Props) {
   const platforms   = ad.publisher_platforms ?? [];
   const body        = ad.ad_creative_bodies?.[0] ?? ad.ad_creative_link_descriptions?.[0];
   const title       = ad.ad_creative_link_titles?.[0];
+  const linkDesc    = ad.ad_creative_link_descriptions?.[0];
+  const linkCaption = ad.ad_creative_link_captions?.[0];
   const countries   = ad.countries ?? (ad.country ? [ad.country] : []);
   const impressFmt  = fmtNum(ad.impressions?.lower_bound, ad.impressions?.upper_bound);
   const spendFmt    = fmtSpend(ad.spend?.lower_bound, ad.spend?.upper_bound);
@@ -182,10 +192,10 @@ export default function AdDetailModal({ ad, onClose }: Props) {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="pointer-events-auto w-full flex"
+              className="pointer-events-auto w-full flex flex-col md:flex-row"
               style={{
-                maxWidth: 920,
-                maxHeight: "90vh",
+                maxWidth: 980,
+                maxHeight: "92vh",
                 borderRadius: 16,
                 overflow: "hidden",
                 background: "var(--bg-surface)",
@@ -196,7 +206,7 @@ export default function AdDetailModal({ ad, onClose }: Props) {
               {/* ── Left: Ad Preview ─────────────────────────────────────────── */}
               <div
                 className="flex flex-col overflow-y-auto flex-shrink-0"
-                style={{ width: 300, background: "var(--bg-card)", borderRight: "1px solid var(--border)" }}
+                style={{ width: "clamp(300px, 40%, 420px)", background: "var(--bg-card)", borderRight: "1px solid var(--border)" }}
               >
                 {/* Brand header — Facebook Ads Library style */}
                 <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
@@ -228,7 +238,7 @@ export default function AdDetailModal({ ad, onClose }: Props) {
 
                 {/* Ad copy — full text */}
                 {body && (
-                  <p className="px-4 pb-3 text-[12px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-2)" }}>
+                  <p className="px-4 pb-3 text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-2)" }}>
                     {body}
                   </p>
                 )}
@@ -253,19 +263,33 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                   )}
                 </div>
 
-                {/* CTA row */}
-                {(title || ad.cta_text) && (
-                  <div className="mx-3 mt-2 mb-3 px-3 py-2 rounded-[8px] flex items-center justify-between gap-2"
+                {/* CTA row — Facebook Ads Library style */}
+                {(title || ad.cta_text || linkDesc) && (
+                  <div className="mx-3 mt-2 mb-3 px-3 py-2.5 rounded-[8px]"
                     style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
-                    <p className="font-display text-[11px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
-                      {title ?? storeName}
-                    </p>
-                    {ad.cta_text && (
-                      <span className="text-[10px] font-bold px-2 py-1 rounded-[6px] flex-shrink-0"
-                        style={{ background: "var(--ai-soft)", color: "var(--ai-light)", border: "1px solid rgba(124,58,237,0.25)" }}>
-                        {ad.cta_text}
-                      </span>
+                    {linkCaption && (
+                      <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>
+                        {linkCaption}
+                      </p>
                     )}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-[12px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
+                          {title ?? storeName}
+                        </p>
+                        {linkDesc && linkDesc !== body && (
+                          <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: "var(--text-2)" }}>
+                            {linkDesc}
+                          </p>
+                        )}
+                      </div>
+                      {ad.cta_text && (
+                        <span className="text-[10px] font-bold px-2.5 py-1.5 rounded-[6px] flex-shrink-0"
+                          style={{ background: "var(--ai-soft)", color: "var(--ai-light)", border: "1px solid rgba(124,58,237,0.25)" }}>
+                          {ad.cta_text}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -283,6 +307,14 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                     })}
                   </div>
                 )}
+
+                {/* Run dates */}
+                <div className="flex items-center gap-1.5 px-4 pb-1.5">
+                  <Calendar size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
+                  <span className="text-[10px] font-medium" style={{ color: "var(--text-2)" }}>
+                    {fmtDateRange(ad.ad_delivery_start_time, ad.ad_delivery_stop_time)}
+                  </span>
+                </div>
 
                 {/* Library ID */}
                 <div className="px-4 pb-4">
@@ -424,13 +456,24 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                   style={{ borderTop: "1px solid var(--border)" }}>
                   {ad.ad_snapshot_url && (
                     <a href={ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 py-2 rounded-[8px] text-[12px] font-semibold"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[12px] font-semibold"
                       style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}>
                       <ExternalLink size={12} />
                       View on Facebook
                     </a>
                   )}
-                  <button onClick={onClose} className="px-5 py-2 rounded-[8px] text-[12px] font-medium"
+                  {body && (
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(body); }}
+                      className="flex items-center gap-1.5 px-3 py-2.5 rounded-[8px] text-[12px] font-medium"
+                      style={{ color: "var(--text-2)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
+                      title="Copy ad text"
+                    >
+                      <Copy size={12} />
+                      Copy Text
+                    </button>
+                  )}
+                  <button onClick={onClose} className="px-4 py-2.5 rounded-[8px] text-[12px] font-medium"
                     style={{ color: "var(--text-2)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}>
                     Close
                   </button>
