@@ -159,58 +159,60 @@ export function getAIInsights(ad: FbAd): AIInsights {
   const isActive = ad.is_active !== false;
 
   // Winning Score — multi-factor heuristic (15–99)
-  // 80-85 is achievable for solid ads; 85+ requires exceptional performance.
-  // Tiers: 0-30 Weak, 31-50 Testing, 51-70 Promising, 71-84 Winning, 85+ Elite
-  let score = 18;
+  // Weighted toward signals available in our data (duration, platforms, creative, CTA).
+  // Traction data (impressions/spend/geo) is bonus when available.
+  // Max without traction: ~88. Max with traction: ~99.
+  // Tiers: 15-34 Weak, 35-50 Testing, 51-70 Promising, 71-84 Winning, 85+ Elite
+  let score = 20;
 
-  // Duration (max +22) — strongest signal of proven ROI
-  if      (days > 180) score += 22;
-  else if (days > 90)  score += 18;
-  else if (days > 60)  score += 14;
+  // Duration (max +25) — strongest signal: advertiser keeps paying = proven ROI
+  if      (days > 180) score += 25;
+  else if (days > 90)  score += 20;
+  else if (days > 60)  score += 15;
   else if (days > 30)  score += 10;
   else if (days > 14)  score += 6;
   else if (days > 7)   score += 3;
 
-  // Still active = advertiser keeps paying (+12)
-  if (isActive) score += 12;
+  // Still active = advertiser keeps paying (+14)
+  if (isActive) score += 14;
 
-  // Platform breadth (max +8)
+  // Platform breadth (max +10) — scaling across platforms = confidence
   const platCount = ad.publisher_platforms?.length ?? 0;
-  if      (platCount >= 3) score += 8;
+  if      (platCount >= 4) score += 10;
+  else if (platCount >= 3) score += 8;
   else if (platCount >= 2) score += 5;
   else if (platCount >= 1) score += 2;
 
-  // Creative quality (max +10)
-  if (ad.video_url)        score += 6;
-  else if (ad.image_url)   score += 3;
-  if (body.length > 100)   score += 4;
-  else if (body.length > 40) score += 2;
+  // Creative quality (max +12) — video + rich copy = high-effort creative
+  if (ad.video_url)        score += 7;
+  else if (ad.image_url)   score += 4;
+  if (body.length > 100)   score += 5;
+  else if (body.length > 40) score += 3;
 
-  // CTA + link signals (max +5)
-  if (ad.cta_text)                      score += 3;
-  if (ad.ad_creative_link_titles?.[0])  score += 2;
+  // CTA + link signals (max +7) — proper funnel setup
+  if (ad.cta_text)                      score += 4;
+  if (ad.ad_creative_link_titles?.[0])  score += 3;
 
-  // Traction data (max +14) — the gate to Elite (85+)
+  // Traction data — bonus when available (max +11)
   const impressLo = Number(ad.impressions?.lower_bound ?? 0);
   const impressHi = Number(ad.impressions?.upper_bound ?? 0);
   const avgImpress = (impressLo + impressHi) / 2;
-  if      (avgImpress > 500_000) score += 10;
-  else if (avgImpress > 100_000) score += 7;
-  else if (avgImpress > 10_000)  score += 4;
-  else if (avgImpress > 1_000)   score += 2;
+  if      (avgImpress > 500_000) score += 6;
+  else if (avgImpress > 100_000) score += 4;
+  else if (avgImpress > 10_000)  score += 3;
+  else if (avgImpress > 1_000)   score += 1;
 
   const spendLo = Number(ad.spend?.lower_bound ?? 0);
   const spendHi = Number(ad.spend?.upper_bound ?? 0);
   const avgSpend = (spendLo + spendHi) / 2;
-  if      (avgSpend > 10_000) score += 4;
-  else if (avgSpend > 1_000)  score += 3;
+  if      (avgSpend > 10_000) score += 3;
+  else if (avgSpend > 1_000)  score += 2;
   else if (avgSpend > 100)    score += 1;
 
-  // Geographic reach (max +4)
+  // Geographic reach (max +2) — bonus
   const countryCount = ad.countries?.length ?? (ad.country ? 1 : 0);
-  if      (countryCount >= 5) score += 4;
-  else if (countryCount >= 3) score += 2;
-  else if (countryCount >= 2) score += 1;
+  if      (countryCount >= 5) score += 2;
+  else if (countryCount >= 3) score += 1;
 
   const winningScore = Math.min(99, Math.max(15, score));
 
