@@ -465,18 +465,38 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
           )}
         </div>
 
-        {/* CTA row */}
+        {/* CTA row — gắn liền creative, giống Facebook Ads Library */}
         {(title || ad.cta_text) && (
-          <div className="mx-3 mt-2.5 px-3 py-2 rounded-[8px] flex items-center justify-between gap-2"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
-            <p className="font-display text-[11px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
-              {title ?? storeName}
-            </p>
+          <div className="px-3 py-2.5 flex items-center justify-between gap-2"
+            style={{ background: "rgba(255,255,255,0.04)", borderBottom: "1px solid var(--border)" }}>
+            <div className="flex-1 min-w-0">
+              {ad.ad_creative_link_captions?.[0] && (
+                <p className="text-[9px] uppercase tracking-wide mb-0.5" style={{ color: "var(--text-3)" }}>
+                  {ad.ad_creative_link_captions[0]}
+                </p>
+              )}
+              <p className="font-display text-[12px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
+                {title ?? storeName}
+              </p>
+              {ad.ad_creative_link_descriptions?.[0] && ad.ad_creative_link_descriptions[0] !== body && (
+                <p className="text-[10px] mt-0.5 line-clamp-1" style={{ color: "var(--text-2)" }}>
+                  {ad.ad_creative_link_descriptions[0]}
+                </p>
+              )}
+            </div>
             {ad.cta_text && (
-              <span className="text-[10px] font-bold px-2 py-1 rounded-[5px] flex-shrink-0"
-                style={{ background: "var(--ai-soft)", color: "var(--ai-light)", border: "1px solid rgba(124,58,237,0.25)" }}>
-                {ad.cta_text}
-              </span>
+              ad.ad_snapshot_url ? (
+                <a href={ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
+                  className="text-[10px] font-bold px-3 py-1.5 rounded-[6px] flex-shrink-0 hover:opacity-80 transition-opacity"
+                  style={{ background: "rgba(255,255,255,0.12)", color: "var(--text-1)", border: "1px solid rgba(255,255,255,0.18)" }}>
+                  {ad.cta_text}
+                </a>
+              ) : (
+                <span className="text-[10px] font-bold px-3 py-1.5 rounded-[6px] flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-2)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                  {ad.cta_text}
+                </span>
+              )
             )}
           </div>
         )}

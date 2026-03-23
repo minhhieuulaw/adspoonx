@@ -244,7 +244,7 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                 )}
 
                 {/* Creative */}
-                <div className="mx-3 rounded-[10px] overflow-hidden" style={{ background: "rgba(0,0,0,0.3)" }}>
+                <div className="mx-3 overflow-hidden" style={{ background: "rgba(0,0,0,0.3)", borderTopLeftRadius: 10, borderTopRightRadius: 10, borderBottomLeftRadius: (title || ad.cta_text || linkDesc) ? 0 : 10, borderBottomRightRadius: (title || ad.cta_text || linkDesc) ? 0 : 10 }}>
                   {ad.video_url ? (
                     <VideoPreview src={ad.video_url} poster={ad.thumbnail_url ?? ad.image_url} alt={storeName} />
                   ) : ad.image_url ? (
@@ -263,10 +263,10 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                   )}
                 </div>
 
-                {/* CTA row — Facebook Ads Library style */}
+                {/* CTA row — flush with creative, Facebook Ads Library style */}
                 {(title || ad.cta_text || linkDesc) && (
-                  <div className="mx-3 mt-2 mb-3 px-3 py-2.5 rounded-[8px]"
-                    style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+                  <div className="mx-3 px-3 py-2.5"
+                    style={{ background: "rgba(255,255,255,0.04)", borderBottom: "1px solid var(--border)", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)", borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }}>
                     {linkCaption && (
                       <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>
                         {linkCaption}
@@ -284,10 +284,18 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                         )}
                       </div>
                       {ad.cta_text && (
-                        <span className="text-[10px] font-bold px-2.5 py-1.5 rounded-[6px] flex-shrink-0"
-                          style={{ background: "var(--ai-soft)", color: "var(--ai-light)", border: "1px solid rgba(124,58,237,0.25)" }}>
-                          {ad.cta_text}
-                        </span>
+                        ad.ad_snapshot_url ? (
+                          <a href={ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
+                            className="text-[10px] font-bold px-2.5 py-1.5 rounded-[6px] flex-shrink-0 hover:opacity-80 transition-opacity"
+                            style={{ background: "rgba(255,255,255,0.12)", color: "var(--text-1)", border: "1px solid rgba(255,255,255,0.18)" }}>
+                            {ad.cta_text}
+                          </a>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2.5 py-1.5 rounded-[6px] flex-shrink-0"
+                            style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-2)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                            {ad.cta_text}
+                          </span>
+                        )
                       )}
                     </div>
                   </div>
