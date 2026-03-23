@@ -116,9 +116,9 @@ function MetricChip({ icon: Icon, label, value }: { icon: React.ElementType; lab
   );
 }
 
-// ── Panel content ──────────────────────────────────────────────────────────────
+// ── Panel content (exported for use in always-visible sidebar) ─────────────────
 
-function PanelContent({ ad, onClose }: { ad: FbAd; onClose: () => void }) {
+export function PanelContent({ ad, onClose }: { ad: FbAd; onClose: () => void }) {
   const { savedIds, toggleSave } = useSavedAds();
   const isSaved    = savedIds.has(ad.id);
   const ai         = getAIInsights(ad);

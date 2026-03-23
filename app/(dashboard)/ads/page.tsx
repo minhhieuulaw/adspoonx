@@ -8,7 +8,7 @@ import type { FbAd, FbAdsResponse } from "@/lib/facebook-ads";
 import { getAIInsights, getDropshippingScore } from "@/lib/ai-insights";
 import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues } from "@/components/ads/AdsFilter";
-import AdDetailPanel from "@/components/ads/AdDetailPanel";
+import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X } from "lucide-react";
 
@@ -148,14 +148,6 @@ export default function AdsPage() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
   const [userPlan, setUserPlan]     = useState<string>("free");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [isMobile, setIsMobile]     = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
 
   const [filters, setFilters] = useState<FilterValues>({
     country:      searchParams.get("country") ?? "US",
@@ -225,19 +217,17 @@ export default function AdsPage() {
     return { total: ads.length, active, topScore, countries };
   }, [ads]);
 
-  // Dynamic grid: fewer cols when right panel is open
-  const gridCols = selectedAd && !isMobile
-    ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
-    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+  // Grid: on xl+ right panel is always visible (320px), so fewer cols
+  // xl(1280): filter(192)+cards+panel(320) → 2 cols comfortable
+  // 2xl(1536): enough for 3 cols with panel
+  const gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3";
 
   return (
     // Negate parent p-5 to let filter panel sit flush at content edges
     <div className="page-enter flex" style={{ margin: "-20px", minHeight: "calc(100vh - 56px)" }}>
 
-      {/* ── Left: Filter panel — hidden on mobile, sticky on desktop ── */}
-      {!isMobile && (
-        <div
-          className="flex-shrink-0 no-scrollbar"
+      {/* ── Left: Filter panel — hidden on mobile (CSS), sticky on desktop ── */}
+      <div className="hidden md:block flex-shrink-0 no-scrollbar"
           style={{
             width: 192,
             position: "sticky",
@@ -269,10 +259,9 @@ export default function AdsPage() {
             vertical
           />
         </div>
-      )}
 
       {/* ── Mobile: filter drawer overlay ── */}
-      {isMobile && (
+      <div className="md:hidden">
         <AnimatePresence>
           {filterOpen && (
             <>
@@ -315,22 +304,20 @@ export default function AdsPage() {
             </>
           )}
         </AnimatePresence>
-      )}
+      </div>
 
       {/* ── Center: Content area ── */}
       <div className="flex-1 min-w-0 flex flex-col" style={{ padding: 16 }}>
 
         {/* Search bar */}
         <div className="mb-4 command-bar flex items-center gap-3 px-4 py-3">
-          {isMobile && (
-            <button
-              onClick={() => setFilterOpen(true)}
-              className="p-1.5 rounded-[7px] flex-shrink-0"
-              style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}
-            >
-              <SlidersHorizontal size={14} strokeWidth={1.5} />
-            </button>
-          )}
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="md:hidden p-1.5 rounded-[7px] flex-shrink-0"
+            style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}
+          >
+            <SlidersHorizontal size={14} strokeWidth={1.5} />
+          </button>
           <Search size={15} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
           <input
             type="text"
@@ -456,12 +443,66 @@ export default function AdsPage() {
         </AnimatePresence>
       </div>
 
-      {/* ── Right: Detail panel (desktop sticky / mobile overlay) ── */}
-      <AdDetailPanel
-        ad={selectedAd}
-        onClose={() => setSelectedAd(null)}
-        isMobile={isMobile}
-      />
+      {/* ── Right: Always-visible panel column (xl+) ── */}
+      <div
+        className="hidden xl:flex flex-col flex-shrink-0 no-scrollbar"
+        style={{
+          width: 320,
+          position: "sticky",
+          top: 56,
+          height: "calc(100vh - 56px)",
+          overflowY: "auto",
+          borderLeft: "1px solid var(--border)",
+          background: "var(--bg-surface)",
+        }}
+      >
+        <AnimatePresence mode="wait">
+          {selectedAd ? (
+            <motion.div
+              key={selectedAd.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              style={{ minHeight: "100%" }}
+            >
+              <PanelContent ad={selectedAd} onClose={() => setSelectedAd(null)} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center"
+              style={{ minHeight: "calc(100vh - 56px)" }}
+            >
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Sparkles size={18} style={{ color: "var(--ai-light)" }} />
+              </div>
+              <div>
+                <p className="text-[13px] font-medium mb-1" style={{ color: "var(--text-2)" }}>
+                  Ad Analysis
+                </p>
+                <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
+                  Click any ad card to see full details and AI insights
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── Mobile/tablet (< xl): overlay panel ── */}
+      <div className="xl:hidden">
+        <AdDetailPanel
+          ad={selectedAd}
+          onClose={() => setSelectedAd(null)}
+          isMobile={true}
+        />
+      </div>
     </div>
   );
 }
