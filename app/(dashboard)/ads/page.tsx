@@ -38,7 +38,7 @@ function KPIStat({
 
 // ── Client-side filter + sort ─────────────────────────────────────────────────
 
-function applyClientFilters(ads: FbAd[], filters: FilterValues): FbAd[] {
+function applyClientFilters(ads: FbAd[], filters: FilterValues, userPlan: string): FbAd[] {
   let result = [...ads];
 
   // 1. Dedup: same page + same first 40 chars of body
@@ -51,7 +51,12 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues): FbAd[] {
     return true;
   });
 
-  // 2. Client-side media type filter (video filter handled server-side, image is client-side only)
+  // 2. Hide Elite (85+) ads for non-premium users (unless explicitly filtering for elite)
+  if (userPlan !== "premium" && userPlan !== "business" && filters.aiScore !== "elite") {
+    result = result.filter(ad => getAIInsights(ad).winningScore < 85);
+  }
+
+  // 3. Client-side media type filter (video filter handled server-side, image is client-side only)
   if (filters.mediaType === "image") {
     result = result.filter(ad => !ad.video_url && !!ad.image_url);
   } else if (filters.mediaType === "video") {
@@ -159,6 +164,7 @@ export default function AdsPage() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
   const [userPlan, setUserPlan]     = useState<string>("free");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const [filters, setFilters] = useState<FilterValues>({
     country:      searchParams.get("country") ?? "US",
@@ -179,7 +185,7 @@ export default function AdsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get<FbAdsResponse & { plan?: string }>("/api/ads", { params });
+        const res = await axios.get<FbAdsResponse & { plan?: string }>("/api/ads", { params: { ...params, limit: 40 } });
         if (params.page && params.page > 1) {
           setAds(prev => [...prev, ...res.data.data]);
         } else {
@@ -198,12 +204,14 @@ export default function AdsPage() {
 
   // Re-fetch when server-side params change (image filter is client-side only)
   useEffect(() => {
+    setVisibleCount(20);
     const apiMedia = filters.mediaType === "video" ? "video" : undefined;
     fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia });
   }, [filters.country, filters.status, filters.mediaType, fetchAds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSearch(value: string) {
     setSearchTerm(value);
+    setVisibleCount(20);
     const params = new URLSearchParams({ q: value, country: filters.country, status: filters.status });
     router.push(`/ads?${params.toString()}`);
     const apiMedia = filters.mediaType === "video" ? "video" : undefined;
@@ -211,14 +219,23 @@ export default function AdsPage() {
   }
 
   function loadMore() {
+    // First: show more from already-fetched & filtered ads
+    if (visibleCount < filteredAds.length) {
+      setVisibleCount(prev => prev + 20);
+      return;
+    }
+    // Then: fetch more from API
     if (nextPage) {
       const apiMedia = filters.mediaType === "video" ? "video" : undefined;
       fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia, page: nextPage });
+      setVisibleCount(prev => prev + 20);
     }
   }
 
   // Client-side filtered + sorted ads (instant, no API call)
-  const filteredAds = useMemo(() => applyClientFilters(ads, filters), [ads, filters]);
+  const filteredAds = useMemo(() => applyClientFilters(ads, filters, userPlan), [ads, filters, userPlan]);
+  const visibleAds = useMemo(() => filteredAds.slice(0, visibleCount), [filteredAds, visibleCount]);
+  const canShowMore = visibleCount < filteredAds.length || nextPage !== null;
 
   // KPI computed from ALL fetched ads (not filtered)
   const kpi = useMemo(() => {
@@ -398,10 +415,10 @@ export default function AdsPage() {
 
         {/* Ads grid — container query responsive */}
         <AnimatePresence>
-          {filteredAds.length > 0 && (
+          {visibleAds.length > 0 && (
             <div className="ads-grid-container">
               <div className="ads-grid">
-                {filteredAds.map((ad, i) => (
+                {visibleAds.map((ad, i) => (
                   <AdCard key={ad.id} ad={ad} index={i} onSelect={setSelectedAd} />
                 ))}
                 {loading && ads.length > 0 &&
@@ -411,7 +428,7 @@ export default function AdsPage() {
               </div>
 
               {/* Free plan upgrade prompt */}
-              {userPlan === "free" && !loading && filteredAds.length > 0 && (
+              {userPlan === "free" && !loading && visibleAds.length > 0 && (
                 <div className="mt-6 rounded-[12px] p-4 flex items-center gap-4"
                   style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)" }}>
                   <div className="w-9 h-9 rounded-[9px] flex items-center justify-center flex-shrink-0"
@@ -435,7 +452,7 @@ export default function AdsPage() {
               )}
 
               {/* Load more */}
-              {nextPage && !loading && (
+              {canShowMore && !loading && (
                 <div className="flex justify-center mt-8">
                   <button
                     onClick={loadMore}
