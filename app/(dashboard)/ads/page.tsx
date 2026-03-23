@@ -332,8 +332,13 @@ export default function AdsPage() {
         }
         setNextPage(res.data.hasMore ? (params.page ?? 1) + 1 : null);
         if (res.data.plan) setUserPlan(res.data.plan);
-      } catch {
-        setError("Failed to load ads. Please try again.");
+      } catch (err: unknown) {
+        const axErr = err as { response?: { data?: { error?: string } } };
+        if (axErr?.response?.data?.error === "upgrade_required") {
+          setError("This filter requires a premium plan. Upgrade to unlock.");
+        } else {
+          setError("Failed to load ads. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
@@ -822,6 +827,35 @@ export default function AdsPage() {
             </div>
           </div>
         )}
+
+        {/* Active filter tags */}
+        {(() => {
+          const tags: string[] = [];
+          if (filters.preset) tags.push(`Preset: ${filters.preset.charAt(0).toUpperCase() + filters.preset.slice(1)}`);
+          if (filters.mediaType) tags.push(`Media: ${filters.mediaType === "video" ? "Video" : "Image"}`);
+          if (filters.duration !== "any") tags.push(`Duration: ${filters.duration}`);
+          if (filters.dropshipping !== "all") tags.push(`Type: ${filters.dropshipping === "dropshipping" ? "Dropshipping" : "Brand"}`);
+          if (filters.aiScore !== "all") tags.push(`AI: ${filters.aiScore}`);
+          if (filters.platforms.length > 0) tags.push(`Platform: ${filters.platforms.join(", ")}`);
+          if (filters.niche) tags.push(`Niche: ${filters.niche}`);
+          if (filters.language !== "all") tags.push(`Lang: ${filters.language.toUpperCase()}`);
+          if (filters.country !== "US") tags.push(`Market: ${filters.country}`);
+          if (tags.length === 0) return null;
+          return (
+            <div className="flex flex-wrap items-center gap-1.5 mb-3">
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Active:</span>
+              {tags.map(t => (
+                <span key={t} className="text-[10px] font-semibold px-2 py-1 rounded-[6px]"
+                  style={{ background: "rgba(124,58,237,0.10)", color: "var(--ai-light)", border: "1px solid rgba(124,58,237,0.20)" }}>
+                  {t}
+                </span>
+              ))}
+              <span className="text-[10px] font-medium ml-1" style={{ color: "var(--text-3)" }}>
+                → {filteredAds.length} results
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Bulk action bar */}
         {visibleAds.length > 0 && (

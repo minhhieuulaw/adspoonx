@@ -4,16 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { getUserPlan, getLimits } from "@/lib/subscription";
 import type { FbAd } from "@/lib/facebook-ads";
 
-// ── Simple hash for deterministic shuffle ────────────────────────────────────
-
-function simpleHash(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  }
-  return h;
-}
-
 // ── Search clause builder (parameterized, safe from injection) ───────────────
 
 interface SearchParams {
@@ -104,7 +94,6 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(500, requestedLimit);
   const isActive = status !== "INACTIVE";
   const seed = Number(searchParams.get("seed")) || Math.floor(Math.random() * 1_000_000);
-  const seedStr = String(seed);
 
   const sp: SearchParams = { q, searchPage, searchBody, searchNiche, useRegex };
   const { clauses: searchClauses, values: searchValues } = buildSearchClauses(sp);
@@ -135,46 +124,51 @@ export async function GET(req: NextRequest) {
     niche: string | null; rawData: Record<string, unknown>; scrapedAt: Date;
   };
 
+  // Build parameterized seed + LIMIT
+  const seedIdx = queryParams.length + 1;
+  const limitIdx = seedIdx + 1;
+  const fullParams = [...queryParams, String(seed), limit];
+
   try {
     const [rows, countResult] = await Promise.all([
       prisma.$queryRawUnsafe<RawAd[]>(
-        `SELECT DISTINCT ON (COALESCE("pageId",''), COALESCE("bodyText",''), COALESCE("imageUrl",'')) *
-         FROM "Ad" WHERE ${whereSQL}
-         ORDER BY COALESCE("pageId",''), COALESCE("bodyText",''), COALESCE("imageUrl",''), "scrapedAt" DESC`,
-        country, isActive, ...searchValues,
-      ).then(rows => {
-        // Video-first: sort videos before images, then shuffle within each group
-        const hasVideo = (r: RawAd) => {
-          const rd = r.rawData as Record<string, unknown> | null;
-          if (!rd) return false;
-          if (rd["videoUrl"]) return true;
-          const snap = rd["snapshot"] as Record<string, unknown> | undefined;
-          if (!snap) return false;
-          return !!(snap["video_hd_url"] || snap["video_sd_url"]);
-        };
-        rows.sort((a, b) => {
-          const va = hasVideo(a) ? 0 : 1;
-          const vb = hasVideo(b) ? 0 : 1;
-          if (va !== vb) return va - vb; // videos first
-          const ha = simpleHash(a.adArchiveId + seedStr);
-          const hb = simpleHash(b.adArchiveId + seedStr);
-          return ha - hb;
-        });
-        return rows.slice(0, limit);
-      }),
+        `SELECT * FROM "Ad" WHERE ${whereSQL}
+         ORDER BY md5("adArchiveId" || $${seedIdx}) LIMIT $${limitIdx}`,
+        ...fullParams,
+      ),
       prisma.$queryRawUnsafe<[{ count: bigint }]>(
-        `SELECT COUNT(*) FROM (
-          SELECT DISTINCT ON (COALESCE("pageId",''), COALESCE("bodyText",''), COALESCE("imageUrl",'')) 1
-          FROM "Ad" WHERE ${whereSQL}
-          ORDER BY COALESCE("pageId",''), COALESCE("bodyText",''), COALESCE("imageUrl",''), "scrapedAt" DESC
-        ) t`,
-        country, isActive, ...searchValues,
+        `SELECT COUNT(*) FROM "Ad" WHERE ${whereSQL}`,
+        ...queryParams,
       ),
     ]);
 
     const total      = Number(countResult[0]?.count ?? 0);
     const totalPages = Math.ceil(total / limit);
-    const data: FbAd[] = rows.map(ad => mapAdToFbAd(ad));
+
+    // Dedup: keep first occurrence per (pageId + bodyText + imageUrl)
+    const seen = new Set<string>();
+    const deduped = rows.filter(r => {
+      const key = `${r.pageId ?? ""}|${r.bodyText ?? ""}|${r.imageUrl ?? ""}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Video-first sort
+    const hasVideo = (r: RawAd) => {
+      const rd = r.rawData as Record<string, unknown> | null;
+      if (!rd) return false;
+      if (rd["videoUrl"]) return true;
+      const snap = rd["snapshot"] as Record<string, unknown> | undefined;
+      return !!(snap?.["video_hd_url"] || snap?.["video_sd_url"]);
+    };
+    deduped.sort((a, b) => {
+      const va = hasVideo(a) ? 0 : 1;
+      const vb = hasVideo(b) ? 0 : 1;
+      return va - vb;
+    });
+
+    const data: FbAd[] = deduped.map(ad => mapAdToFbAd(ad));
 
     return NextResponse.json({
       data, total, page, totalPages,
