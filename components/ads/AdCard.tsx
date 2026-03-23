@@ -611,6 +611,25 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
                 {ad.niche}
               </span>
             )}
+            {/* Dropshipping tag */}
+            {ad.ds_tag === "dropshipping" && (
+              <span className="ad-tag" style={{
+                background: "rgba(245,158,11,0.12)",
+                color: "#FCD34D",
+                borderColor: "rgba(245,158,11,0.25)",
+              }}>
+                🚀 DS
+              </span>
+            )}
+            {ad.ds_tag === "brand" && (
+              <span className="ad-tag" style={{
+                background: "rgba(52,211,153,0.10)",
+                color: "#34D399",
+                borderColor: "rgba(52,211,153,0.20)",
+              }}>
+                ✦ Brand
+              </span>
+            )}
             {/* Spacer */}
             <div className="flex-1" />
             {/* Platform icons */}

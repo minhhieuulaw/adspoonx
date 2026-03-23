@@ -315,10 +315,20 @@ export default function AdsPage() {
         const res = await axios.get<FbAdsResponse & { plan?: string; seed?: number }>("/api/ads", {
           params: apiParams,
         });
+        // Dedup: remove ads with same page + same body/image
+        const dedup = (list: FbAd[]) => {
+          const seen = new Set<string>();
+          return list.filter(ad => {
+            const key = `${ad.page_id ?? ""}|${ad.ad_creative_bodies?.[0] ?? ""}|${ad.image_url ?? ""}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        };
         if (params.page && params.page > 1) {
-          setAds(prev => [...prev, ...res.data.data]);
+          setAds(prev => dedup([...prev, ...res.data.data]));
         } else {
-          setAds(res.data.data);
+          setAds(dedup(res.data.data));
         }
         setNextPage(res.data.hasMore ? (params.page ?? 1) + 1 : null);
         if (res.data.plan) setUserPlan(res.data.plan);
@@ -339,7 +349,7 @@ export default function AdsPage() {
   // Re-fetch when server-side params change
   useEffect(() => {
     setVisibleCount(20);
-    const apiMedia = filters.mediaType === "video" ? "video" : undefined;
+    const apiMedia = filters.mediaType ?? undefined;
     fetchAds({
       q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia,
       searchPage, searchBody, searchNiche, useRegex,
@@ -354,7 +364,7 @@ export default function AdsPage() {
     if (q.trim()) { addToSearchHistory(q.trim()); setSearchHistory(loadSearchHistory()); }
     const params = new URLSearchParams({ q, country: filters.country, status: filters.status });
     router.push(`/ads?${params.toString()}`);
-    const apiMedia = filters.mediaType === "video" ? "video" : undefined;
+    const apiMedia = filters.mediaType ?? undefined;
     fetchAds({
       q, country: filters.country, status: filters.status, mediaType: apiMedia,
       searchPage, searchBody, searchNiche, useRegex,
@@ -410,7 +420,7 @@ export default function AdsPage() {
     }
     // Then: fetch more from API
     if (nextPage) {
-      const apiMedia = filters.mediaType === "video" ? "video" : undefined;
+      const apiMedia = filters.mediaType ?? undefined;
       fetchAds({
         q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia, page: nextPage,
         searchPage, searchBody, searchNiche, useRegex,

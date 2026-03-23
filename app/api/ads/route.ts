@@ -4,6 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { getUserPlan, getLimits } from "@/lib/subscription";
 import type { FbAd } from "@/lib/facebook-ads";
 
+// ── Simple hash for deterministic shuffle ────────────────────────────────────
+
+function simpleHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return h;
+}
+
 // ── Search clause builder (parameterized, safe from injection) ───────────────
 
 interface SearchParams {
@@ -102,9 +112,12 @@ export async function GET(req: NextRequest) {
   // Build WHERE
   const whereParts = [`country = $1`, `"isActive" = $2`];
 
-  // Video filter
+  // Media type filter
+  const videoExpr = `COALESCE("rawData"->>'videoUrl', "rawData"->'snapshot'->>'video_hd_url', "rawData"->'snapshot'->>'video_sd_url')`;
   if (mediaType === "video") {
-    whereParts.push(`COALESCE("rawData"->>'videoUrl', "rawData"->'snapshot'->>'video_hd_url', "rawData"->'snapshot'->>'video_sd_url') IS NOT NULL`);
+    whereParts.push(`${videoExpr} IS NOT NULL`);
+  } else if (mediaType === "image") {
+    whereParts.push(`${videoExpr} IS NULL AND "imageUrl" IS NOT NULL`);
   }
 
   // Search clauses
@@ -112,11 +125,7 @@ export async function GET(req: NextRequest) {
 
   const whereSQL = whereParts.join(" AND ");
 
-  // Parameter index for seed and limit
-  const seedIdx = 3 + searchValues.length;
-  const limitIdx = seedIdx + 1;
-
-  const baseParams = [country, isActive, ...searchValues, seedStr, limit];
+  const queryParams = [country, isActive, ...searchValues];
 
   type RawAd = {
     id: string; adArchiveId: string; pageId: string | null; pageName: string | null;
@@ -129,11 +138,36 @@ export async function GET(req: NextRequest) {
   try {
     const [rows, countResult] = await Promise.all([
       prisma.$queryRawUnsafe<RawAd[]>(
-        `SELECT * FROM "Ad" WHERE ${whereSQL} ORDER BY md5("adArchiveId" || $${seedIdx}) LIMIT $${limitIdx}`,
-        ...baseParams,
-      ),
+        `SELECT DISTINCT ON (COALESCE("pageId",''), COALESCE("bodyText",''), COALESCE("imageUrl",'')) *
+         FROM "Ad" WHERE ${whereSQL}
+         ORDER BY COALESCE("pageId",''), COALESCE("bodyText",''), COALESCE("imageUrl",''), "scrapedAt" DESC`,
+        country, isActive, ...searchValues,
+      ).then(rows => {
+        // Video-first: sort videos before images, then shuffle within each group
+        const hasVideo = (r: RawAd) => {
+          const rd = r.rawData as Record<string, unknown> | null;
+          if (!rd) return false;
+          if (rd["videoUrl"]) return true;
+          const snap = rd["snapshot"] as Record<string, unknown> | undefined;
+          if (!snap) return false;
+          return !!(snap["video_hd_url"] || snap["video_sd_url"]);
+        };
+        rows.sort((a, b) => {
+          const va = hasVideo(a) ? 0 : 1;
+          const vb = hasVideo(b) ? 0 : 1;
+          if (va !== vb) return va - vb; // videos first
+          const ha = simpleHash(a.adArchiveId + seedStr);
+          const hb = simpleHash(b.adArchiveId + seedStr);
+          return ha - hb;
+        });
+        return rows.slice(0, limit);
+      }),
       prisma.$queryRawUnsafe<[{ count: bigint }]>(
-        `SELECT COUNT(*) FROM "Ad" WHERE ${whereSQL}`,
+        `SELECT COUNT(*) FROM (
+          SELECT DISTINCT ON (COALESCE("pageId",''), COALESCE("bodyText",''), COALESCE("imageUrl",'')) 1
+          FROM "Ad" WHERE ${whereSQL}
+          ORDER BY COALESCE("pageId",''), COALESCE("bodyText",''), COALESCE("imageUrl",''), "scrapedAt" DESC
+        ) t`,
         country, isActive, ...searchValues,
       ),
     ]);
@@ -247,6 +281,25 @@ type PrismaAd = {
   niche: string | null; rawData: unknown;
 };
 
+const DS_PATTERNS = [
+  /\b(dropshipping|drop.?ship|aliexpress|dhgate|cj.?dropship)\b/i,
+  /\b(free.?shipping|ships? from (china|warehouse))\b/i,
+  /\b(limited.?stock|selling.?fast|almost.?sold.?out)\b/i,
+  /\b(order.?now.{0,5}(today|limited)|get.?yours.?now)\b/i,
+  /\b([5-9][0-9]%.?off|buy.?[23].?get)\b/i,
+  /\b(trending|viral|tiktok.?(famous|made me buy))\b/i,
+];
+
+function computeDsTag(ad: PrismaAd): "dropshipping" | "brand" | undefined {
+  const text = [ad.bodyText ?? "", ad.title ?? "", ad.description ?? "", ad.pageName ?? ""].join(" ");
+  let score = 0;
+  for (const p of DS_PATTERNS) { if (p.test(text)) score += 18; }
+  if (ad.platforms.some(p => p === "audience_network")) score += 10;
+  if (score >= 40) return "dropshipping";
+  if (score < 20) return "brand";
+  return undefined;
+}
+
 function mapAdToFbAd(ad: PrismaAd): FbAd {
   return {
     id:                            ad.adArchiveId,
@@ -269,5 +322,6 @@ function mapAdToFbAd(ad: PrismaAd): FbAd {
     cta_text:                      extractCtaText(ad.rawData),
     link_url:                      extractLinkUrl(ad.rawData),
     niche:                         ad.niche ?? undefined,
+    ds_tag:                        computeDsTag(ad),
   };
 }

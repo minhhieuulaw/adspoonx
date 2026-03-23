@@ -29,6 +29,7 @@ export interface FbAd {
   is_active?: boolean;
   cta_text?: string;
   link_url?: string;          // actual product/landing page URL
+  ds_tag?: "dropshipping" | "brand" | "spam"; // dropshipping intelligence tag
   page_profile_picture_url?: string;
   page_profile_uri?: string;
   country?: string;
