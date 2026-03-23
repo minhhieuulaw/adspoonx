@@ -485,15 +485,25 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
               )}
             </div>
             {ad.cta_text && (
-              ad.ad_snapshot_url ? (
-                <a href={ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
-                  className="text-[10px] font-bold px-3 py-1.5 rounded-[6px] flex-shrink-0 hover:opacity-80 transition-opacity"
-                  style={{ background: "rgba(255,255,255,0.12)", color: "var(--text-1)", border: "1px solid rgba(255,255,255,0.18)" }}>
+              (ad.link_url || ad.ad_snapshot_url) ? (
+                <a href={ad.link_url ?? ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
+                  className="text-[11px] font-bold px-4 py-2 rounded-[8px] flex-shrink-0 flex items-center gap-1.5"
+                  style={{
+                    background: "linear-gradient(135deg, #4F46E5, #7C3AED)",
+                    color: "#fff",
+                    border: "1px solid rgba(124,58,237,0.5)",
+                    boxShadow: "0 2px 8px rgba(124,58,237,0.25)",
+                    transition: "transform 150ms ease, box-shadow 150ms ease",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px) scale(1.04)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(124,58,237,0.4)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0) scale(1)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(124,58,237,0.25)"; }}
+                >
                   {ad.cta_text}
+                  <ExternalLink size={10} strokeWidth={2.5} />
                 </a>
               ) : (
-                <span className="text-[10px] font-bold px-3 py-1.5 rounded-[6px] flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-2)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <span className="text-[11px] font-bold px-4 py-2 rounded-[8px] flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-3)", border: "1px solid rgba(255,255,255,0.1)" }}>
                   {ad.cta_text}
                 </span>
               )

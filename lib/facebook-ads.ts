@@ -28,6 +28,7 @@ export interface FbAd {
   thumbnail_url?: string;   // poster frame for video (image even when video_url exists)
   is_active?: boolean;
   cta_text?: string;
+  link_url?: string;          // actual product/landing page URL
   page_profile_picture_url?: string;
   page_profile_uri?: string;
   country?: string;

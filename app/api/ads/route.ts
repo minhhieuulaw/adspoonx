@@ -169,6 +169,19 @@ function extractPageProfilePicture(rawData: unknown): string | undefined {
   return undefined;
 }
 
+function extractLinkUrl(rawData: unknown): string | undefined {
+  if (!rawData || typeof rawData !== "object") return undefined;
+  const snap = (rawData as Record<string, unknown>)["snapshot"] as Record<string, unknown> | undefined;
+  if (!snap) return undefined;
+  if (typeof snap["link_url"] === "string" && snap["link_url"]) return snap["link_url"] as string;
+  const cards = snap["cards"] as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(cards) && cards.length > 0) {
+    const link = cards[0]["link_url"];
+    if (typeof link === "string" && link) return link as string;
+  }
+  return undefined;
+}
+
 function extractCtaText(rawData: unknown): string | undefined {
   if (!rawData || typeof rawData !== "object") return undefined;
   const snap = (rawData as Record<string, unknown>)["snapshot"] as Record<string, unknown> | undefined;
@@ -254,6 +267,7 @@ function mapAdToFbAd(ad: PrismaAd): FbAd {
     countries:                     [ad.country],
     page_profile_picture_url:      extractPageProfilePicture(ad.rawData),
     cta_text:                      extractCtaText(ad.rawData),
+    link_url:                      extractLinkUrl(ad.rawData),
     niche:                         ad.niche ?? undefined,
   };
 }
