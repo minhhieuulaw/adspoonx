@@ -17,10 +17,11 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
 
-  accounts      Account[]
-  sessions      Session[]
-  subscription  Subscription?
-  savedAds      SavedAd[]
+  accounts       Account[]
+  sessions       Session[]
+  subscription   Subscription?
+  savedAds       SavedAd[]
+  savedSearches  SavedSearch[]
 }
 
 model Account {
@@ -114,4 +115,16 @@ model SavedAd {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, adId])
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String               // tên hiển thị, VD: "Dropship fashion ads"
+  filters   Json                 // lưu toàn bộ bộ lọc: {q, pageName, bodyText, niche, regex, ...}
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

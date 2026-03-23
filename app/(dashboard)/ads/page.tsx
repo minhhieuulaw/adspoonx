@@ -11,7 +11,7 @@ import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues, AI_SCORE_TIERS } from "@/components/ads/AdsFilter";
 import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code } from "lucide-react";
 
 // ── KPI stat card ─────────────────────────────────────────────────────────────
 
@@ -175,6 +175,20 @@ export default function AdsPage() {
   const [filterOpen, setFilterOpen]   = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
 
+  // Advanced search
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [searchPage, setSearchPage]   = useState("");
+  const [searchBody, setSearchBody]   = useState("");
+  const [searchNiche, setSearchNiche] = useState("");
+  const [useRegex, setUseRegex]       = useState(false);
+
+  // Saved searches
+  interface SavedSearchItem { id: string; name: string; filters: Record<string, unknown> }
+  const [savedSearches, setSavedSearches] = useState<SavedSearchItem[]>([]);
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [showSaveInput, setShowSaveInput] = useState(false);
+
   const [filters, setFilters] = useState<FilterValues>({
     country:      searchParams.get("country") ?? "US",
     status:       (searchParams.get("status") as FilterValues["status"]) ?? "ACTIVE",
@@ -195,14 +209,26 @@ export default function AdsPage() {
   const [seed] = useState(() => Math.floor(Math.random() * 1_000_000));
 
   const fetchAds = useCallback(
-    async (params: { q: string; country: string; status: string; mediaType?: string; page?: number }) => {
+    async (params: {
+      q: string; country: string; status: string; mediaType?: string; page?: number;
+      searchPage?: string; searchBody?: string; searchNiche?: string; useRegex?: boolean;
+    }) => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch 200 ads to have enough after dedup/filters — especially for video (only 9% of DB)
         const fetchLimit = params.mediaType === "video" ? 300 : 200;
+        const apiParams: Record<string, unknown> = {
+          ...params, limit: fetchLimit, seed,
+          ...(params.useRegex ? { useRegex: "1" } : {}),
+        };
+        // Xóa field rỗng để không gửi lên API
+        for (const key of Object.keys(apiParams)) {
+          if (apiParams[key] === "" || apiParams[key] === undefined || apiParams[key] === false) {
+            delete apiParams[key];
+          }
+        }
         const res = await axios.get<FbAdsResponse & { plan?: string; seed?: number }>("/api/ads", {
-          params: { ...params, limit: fetchLimit, seed },
+          params: apiParams,
         });
         if (params.page && params.page > 1) {
           setAds(prev => [...prev, ...res.data.data]);
@@ -220,20 +246,73 @@ export default function AdsPage() {
     [seed]
   );
 
-  // Re-fetch when server-side params change (image filter is client-side only)
+  // Fetch saved searches on mount
+  useEffect(() => {
+    fetch("/api/saved-searches").then(r => r.json()).then(d => setSavedSearches(d.data ?? [])).catch(() => {});
+  }, []);
+
+  // Re-fetch when server-side params change
   useEffect(() => {
     setVisibleCount(20);
     const apiMedia = filters.mediaType === "video" ? "video" : undefined;
-    fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia });
+    fetchAds({
+      q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia,
+      searchPage, searchBody, searchNiche, useRegex,
+    });
   }, [filters.country, filters.status, filters.mediaType, fetchAds]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleSearch(value: string) {
-    setSearchTerm(value);
+  function handleSearch(value?: string) {
+    const q = value ?? searchTerm;
+    setSearchTerm(q);
     setVisibleCount(20);
-    const params = new URLSearchParams({ q: value, country: filters.country, status: filters.status });
+    const params = new URLSearchParams({ q, country: filters.country, status: filters.status });
     router.push(`/ads?${params.toString()}`);
     const apiMedia = filters.mediaType === "video" ? "video" : undefined;
-    fetchAds({ q: value, country: filters.country, status: filters.status, mediaType: apiMedia });
+    fetchAds({
+      q, country: filters.country, status: filters.status, mediaType: apiMedia,
+      searchPage, searchBody, searchNiche, useRegex,
+    });
+  }
+
+  async function handleSaveSearch() {
+    if (!saveName.trim()) return;
+    const payload = {
+      name: saveName.trim(),
+      filters: {
+        q: searchTerm, searchPage, searchBody, searchNiche, useRegex,
+        ...filters,
+      },
+    };
+    try {
+      const res = await fetch("/api/saved-searches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.data) {
+        setSavedSearches(prev => [data.data, ...prev]);
+        setSaveName("");
+        setShowSaveInput(false);
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function handleDeleteSearch(id: string) {
+    await fetch(`/api/saved-searches?id=${id}`, { method: "DELETE" });
+    setSavedSearches(prev => prev.filter(s => s.id !== id));
+  }
+
+  function handleApplySearch(s: SavedSearchItem) {
+    const f = s.filters as Record<string, string | boolean | string[] | null>;
+    setSearchTerm((f.q as string) ?? "");
+    setSearchPage((f.searchPage as string) ?? "");
+    setSearchBody((f.searchBody as string) ?? "");
+    setSearchNiche((f.searchNiche as string) ?? "");
+    setUseRegex(!!f.useRegex);
+    setSavedOpen(false);
+    // Trigger fetch
+    setTimeout(() => handleSearch((f.q as string) ?? ""), 50);
   }
 
   function loadMore() {
@@ -245,7 +324,10 @@ export default function AdsPage() {
     // Then: fetch more from API
     if (nextPage) {
       const apiMedia = filters.mediaType === "video" ? "video" : undefined;
-      fetchAds({ q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia, page: nextPage });
+      fetchAds({
+        q: searchTerm, country: filters.country, status: filters.status, mediaType: apiMedia, page: nextPage,
+        searchPage, searchBody, searchNiche, useRegex,
+      });
       setVisibleCount(prev => prev + 20);
     }
   }
@@ -355,7 +437,7 @@ export default function AdsPage() {
       <div className="flex-1 min-w-0 flex flex-col" style={{ padding: 16 }}>
 
         {/* Search bar */}
-        <div className="mb-4 command-bar flex items-center gap-3 px-4 py-3">
+        <div className="mb-2 command-bar flex items-center gap-3 px-4 py-3">
           <button
             onClick={() => setFilterOpen(true)}
             className="md:hidden p-1.5 rounded-[7px] flex-shrink-0"
@@ -368,13 +450,182 @@ export default function AdsPage() {
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSearch(searchTerm)}
-            placeholder="Search ads, products, brands…"
+            onKeyDown={e => e.key === "Enter" && handleSearch()}
+            placeholder="Tìm ads, sản phẩm, thương hiệu…"
             className="flex-1 bg-transparent text-[13px] outline-none"
             style={{ color: "var(--text-1)" }}
           />
+          {/* Toggle regex */}
+          <button
+            onClick={() => setUseRegex(!useRegex)}
+            className="p-1.5 rounded-[6px] flex-shrink-0"
+            style={{
+              color: useRegex ? "var(--ai-light)" : "var(--text-3)",
+              background: useRegex ? "var(--ai-soft)" : "transparent",
+              border: useRegex ? "1px solid rgba(124,58,237,0.3)" : "1px solid transparent",
+            }}
+            title={useRegex ? "Regex đang bật" : "Bật chế độ Regex"}
+          >
+            <Code size={13} strokeWidth={1.8} />
+          </button>
+          {/* Toggle advanced */}
+          <button
+            onClick={() => setAdvancedOpen(!advancedOpen)}
+            className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-medium flex-shrink-0"
+            style={{
+              color: advancedOpen ? "var(--ai-light)" : "var(--text-3)",
+              background: advancedOpen ? "var(--ai-soft)" : "var(--bg-hover)",
+              border: `1px solid ${advancedOpen ? "rgba(124,58,237,0.3)" : "var(--border)"}`,
+            }}
+          >
+            <ChevronDown size={11} style={{ transform: advancedOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+            Nâng cao
+          </button>
+          {/* Saved searches */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setSavedOpen(!savedOpen)}
+              className="p-1.5 rounded-[6px] flex-shrink-0"
+              style={{
+                color: savedSearches.length > 0 ? "var(--ai-light)" : "var(--text-3)",
+                background: "var(--bg-hover)",
+                border: "1px solid var(--border)",
+              }}
+              title="Tìm kiếm đã lưu"
+            >
+              <Save size={13} strokeWidth={1.8} />
+            </button>
+            {savedOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 z-20 rounded-[10px] overflow-hidden"
+                style={{
+                  width: 280, background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-strong)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                }}
+              >
+                <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+                  <span className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>Tìm kiếm đã lưu</span>
+                  <button onClick={() => setShowSaveInput(!showSaveInput)}
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-[5px]"
+                    style={{ color: "var(--ai-light)", background: "var(--ai-soft)" }}>
+                    + Lưu hiện tại
+                  </button>
+                </div>
+                {showSaveInput && (
+                  <div className="px-3 py-2 flex gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                    <input
+                      type="text"
+                      value={saveName}
+                      onChange={e => setSaveName(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleSaveSearch()}
+                      placeholder="Tên bộ tìm kiếm…"
+                      className="flex-1 bg-transparent text-[12px] outline-none"
+                      style={{ color: "var(--text-1)" }}
+                      autoFocus
+                    />
+                    <button onClick={handleSaveSearch}
+                      className="text-[10px] font-bold px-2 py-1 rounded-[5px]"
+                      style={{ background: "var(--ai)", color: "white" }}>
+                      Lưu
+                    </button>
+                  </div>
+                )}
+                {savedSearches.length === 0 ? (
+                  <div className="px-3 py-4 text-center text-[11px]" style={{ color: "var(--text-3)" }}>
+                    Chưa có tìm kiếm nào được lưu
+                  </div>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto">
+                    {savedSearches.map(s => (
+                      <div key={s.id} className="px-3 py-2 flex items-center gap-2 group"
+                        style={{ borderBottom: "1px solid var(--border)" }}>
+                        <button onClick={() => handleApplySearch(s)}
+                          className="flex-1 text-left text-[12px] font-medium truncate"
+                          style={{ color: "var(--text-1)" }}>
+                          {s.name}
+                        </button>
+                        <button onClick={() => handleDeleteSearch(s.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity"
+                          style={{ color: "var(--red-light)" }}>
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <span className="kbd hidden sm:inline-flex">↵</span>
         </div>
+
+        {/* Advanced search panel */}
+        <AnimatePresence>
+          {advancedOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="overflow-hidden mb-4"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 rounded-[10px]"
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
+                    Tên trang (Page)
+                  </label>
+                  <input
+                    type="text"
+                    value={searchPage}
+                    onChange={e => setSearchPage(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSearch()}
+                    placeholder={useRegex ? "VD: nike|adidas" : "VD: Nike"}
+                    className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
+                    style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
+                    Nội dung (Body/Title)
+                  </label>
+                  <input
+                    type="text"
+                    value={searchBody}
+                    onChange={e => setSearchBody(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSearch()}
+                    placeholder={useRegex ? "VD: free.?shipping|sale" : "VD: free shipping"}
+                    className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
+                    style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
+                    Ngách (Niche)
+                  </label>
+                  <input
+                    type="text"
+                    value={searchNiche}
+                    onChange={e => setSearchNiche(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSearch()}
+                    placeholder={useRegex ? "VD: fashion|beauty" : "VD: Fashion"}
+                    className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
+                    style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
+                  />
+                </div>
+              </div>
+              {useRegex && (
+                <div className="mt-1.5 flex items-center gap-1.5 px-1">
+                  <Code size={10} style={{ color: "var(--ai-light)" }} />
+                  <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                    Regex đang bật — dùng cú pháp PostgreSQL: <code style={{ color: "var(--ai-light)" }}>word1|word2</code>, <code style={{ color: "var(--ai-light)" }}>free.?ship</code>, <code style={{ color: "var(--ai-light)" }}>^Sale</code>
+                  </span>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* KPI stats */}
         {ads.length > 0 && !loading && (
