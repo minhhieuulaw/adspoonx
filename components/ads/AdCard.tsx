@@ -145,6 +145,7 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleTimeUpdate = useCallback(() => {
     const v = ref.current;
@@ -165,14 +166,17 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
     };
   }, [handleTimeUpdate]);
 
-  // Auto-play on hover
+  // Auto-play only after deliberate hover (300ms delay)
   function handleMouseEnter() {
     setHovered(true);
-    ref.current?.play().then(() => setPlaying(true)).catch(() => {});
+    hoverTimerRef.current = setTimeout(() => {
+      ref.current?.play().then(() => setPlaying(true)).catch(() => {});
+    }, 300);
   }
   function handleMouseLeave() {
     setHovered(false);
     setShowMenu(false);
+    if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
     if (ref.current) { ref.current.pause(); ref.current.currentTime = 0; }
     setPlaying(false);
     setProgress(0);

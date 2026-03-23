@@ -199,6 +199,165 @@ function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle
   );
 }
 
+// ── Language dropdown (single-select) ─────────────────────────────────────────
+
+function LanguageDropdown({ selected, onSelect }: { selected: AdLanguage | "all"; onSelect: (id: AdLanguage | "all") => void }) {
+  const [open, setOpen] = useState(false);
+  const current = LANGUAGE_OPTIONS.find(l => l.id === selected) ?? LANGUAGE_OPTIONS[0];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center justify-between w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
+        style={{
+          background: selected !== "all" ? "rgba(124,58,237,0.06)" : "var(--bg-hover)",
+          border: `1px solid ${selected !== "all" ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+          color: selected !== "all" ? "var(--text-1)" : "var(--text-2)",
+          transition: "all 120ms var(--ease)",
+        }}
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="text-[13px]">{current.flag}</span>
+          <span>{current.label}</span>
+        </div>
+        <ChevronDown size={12} style={{
+          color: "var(--text-3)",
+          transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          transition: "transform 150ms ease",
+          flexShrink: 0,
+        }} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1 max-h-[240px] overflow-y-auto no-scrollbar"
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+            }}>
+            {LANGUAGE_OPTIONS.map(l => {
+              const isOn = selected === l.id;
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => { onSelect(l.id); setOpen(false); }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
+                  style={{
+                    background: isOn ? "rgba(124,58,237,0.10)" : "transparent",
+                    color: isOn ? "var(--ai-light)" : "var(--text-2)",
+                    transition: "all 100ms ease",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.15)" : "var(--bg-hover)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.10)" : "transparent"; }}
+                >
+                  <span className="text-[14px] flex-shrink-0">{l.flag}</span>
+                  <span className="flex-1 text-left">{l.label}</span>
+                  {isOn && l.id !== "all" && (
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--ai-light)" }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Niche dropdown (single-select) ────────────────────────────────────────────
+
+function NicheDropdown({ selected, onSelect }: { selected: string | null; onSelect: (id: string | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = selected ? NICHE_OPTIONS.find(n => n.id === selected) : null;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center justify-between w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
+        style={{
+          background: selected ? "rgba(124,58,237,0.06)" : "var(--bg-hover)",
+          border: `1px solid ${selected ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+          color: selected ? "var(--text-1)" : "var(--text-2)",
+          transition: "all 120ms var(--ease)",
+        }}
+      >
+        <div className="flex items-center gap-1.5">
+          {current ? (
+            <>
+              <span className="text-[13px]">{current.icon}</span>
+              <span>{current.short}</span>
+            </>
+          ) : (
+            <span>All Niches</span>
+          )}
+        </div>
+        <ChevronDown size={12} style={{
+          color: "var(--text-3)",
+          transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          transition: "transform 150ms ease",
+          flexShrink: 0,
+        }} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1 max-h-[280px] overflow-y-auto no-scrollbar"
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+            }}>
+            {/* All option */}
+            <button
+              onClick={() => { onSelect(null); setOpen(false); }}
+              className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
+              style={{
+                background: !selected ? "rgba(124,58,237,0.10)" : "transparent",
+                color: !selected ? "var(--ai-light)" : "var(--text-2)",
+                transition: "all 100ms ease",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = !selected ? "rgba(124,58,237,0.15)" : "var(--bg-hover)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = !selected ? "rgba(124,58,237,0.10)" : "transparent"; }}
+            >
+              <span className="text-[14px] flex-shrink-0">🔍</span>
+              <span className="flex-1 text-left">All Niches</span>
+            </button>
+            {NICHE_OPTIONS.map(n => {
+              const isOn = selected === n.id;
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => { onSelect(isOn ? null : n.id); setOpen(false); }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
+                  style={{
+                    background: isOn ? "rgba(124,58,237,0.10)" : "transparent",
+                    color: isOn ? "var(--ai-light)" : "var(--text-2)",
+                    transition: "all 100ms ease",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.15)" : "var(--bg-hover)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.10)" : "transparent"; }}
+                >
+                  <span className="text-[14px] flex-shrink-0">{n.icon}</span>
+                  <span className="flex-1 text-left">{n.short}</span>
+                  {isOn && (
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--ai-light)" }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function AdsFilter({
@@ -497,64 +656,22 @@ export default function AdsFilter({
 
         <Divider />
 
-        {/* Language */}
+        {/* Language — dropdown */}
         <FilterSection label="Language">
-          <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto no-scrollbar">
-            {LANGUAGE_OPTIONS.map(l => {
-              const isOn = values.language === l.id;
-              return (
-                <button
-                  key={l.id}
-                  onClick={() => onChange({ ...values, language: isOn ? "all" : l.id as AdLanguage | "all" })}
-                  className="flex items-center gap-1.5 w-full px-2 py-[5px] rounded-[6px] text-left"
-                  style={{
-                    background: isOn ? "rgba(124,58,237,0.12)" : "transparent",
-                    border: `1px solid ${isOn ? "rgba(124,58,237,0.3)" : "transparent"}`,
-                    transition: "all 120ms var(--ease)",
-                  }}
-                  onMouseEnter={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                  onMouseLeave={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = isOn ? "rgba(124,58,237,0.12)" : "transparent"; }}
-                >
-                  <span style={{ fontSize: 12, lineHeight: 1 }}>{l.flag}</span>
-                  <span className="text-[10px] font-medium flex-1" style={{ color: isOn ? "var(--ai-light)" : "var(--text-2)" }}>
-                    {l.label}
-                  </span>
-                  {isOn && l.id !== "all" && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ai-light)", flexShrink: 0 }} />}
-                </button>
-              );
-            })}
-          </div>
+          <LanguageDropdown
+            selected={values.language}
+            onSelect={(id) => onChange({ ...values, language: id })}
+          />
         </FilterSection>
 
         <Divider />
 
-        {/* Niche / Industry */}
+        {/* Niche — dropdown */}
         <FilterSection label="Niche">
-          <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto no-scrollbar">
-            {NICHE_OPTIONS.map(n => {
-              const isOn = values.niche === n.id;
-              return (
-                <button
-                  key={n.id}
-                  onClick={() => onChange({ ...values, niche: isOn ? null : n.id })}
-                  className="flex items-center gap-1.5 w-full px-2 py-[5px] rounded-[6px] text-left"
-                  style={{
-                    background: isOn ? "rgba(124,58,237,0.12)" : "transparent",
-                    border: `1px solid ${isOn ? "rgba(124,58,237,0.3)" : "transparent"}`,
-                    transition: "all 120ms var(--ease)",
-                  }}
-                  onMouseEnter={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                  onMouseLeave={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = isOn ? "rgba(124,58,237,0.12)" : "transparent"; }}
-                >
-                  <span style={{ fontSize: 11, lineHeight: 1 }}>{n.icon}</span>
-                  <span className="text-[10px] font-medium flex-1" style={{ color: isOn ? "var(--ai-light)" : "var(--text-2)" }}>
-                    {n.short}
-                  </span>
-                  {isOn && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ai-light)", flexShrink: 0 }} />}
-                </button>
-              );
-            })}
-          </div>
+          <NicheDropdown
+            selected={values.niche}
+            onSelect={(id) => onChange({ ...values, niche: id })}
+          />
         </FilterSection>
 
         <Divider />
