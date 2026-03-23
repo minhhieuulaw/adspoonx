@@ -24,7 +24,7 @@ export default function TrendingPage() {
         const results = await Promise.allSettled(
           TRENDING_KEYWORDS.map((kw) =>
             axios.get<FbAdsResponse>("/api/ads", {
-              params: { q: kw, country: "VN", status: "ACTIVE" },
+              params: { q: kw, country: "US", status: "ACTIVE" },
             })
           )
         );

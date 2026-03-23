@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import { ToastProvider } from "@/components/ui/Toast";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,7 +36,11 @@ export default function RootLayout({
     <html lang="vi" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full`}>
       <body className="h-full antialiased" suppressHydrationWarning>
         <LanguageProvider>
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <ErrorBoundary>
+              <ToastProvider>{children}</ToastProvider>
+            </ErrorBoundary>
+          </SessionProvider>
         </LanguageProvider>
       </body>
     </html>

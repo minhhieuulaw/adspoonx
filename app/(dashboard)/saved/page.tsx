@@ -145,7 +145,7 @@ export default function SavedPage() {
             <Brain size={24} style={{ color: "var(--ai-light)" }} />
           </div>
           <p className="text-[14px] font-medium mb-1" style={{ color: "var(--text-2)" }}>{t.saved.pageTitle}</p>
-          <p className="text-[12px]" style={{ color: "var(--text-3)" }}>{t.saved.comingSoon}</p>
+          <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Click the bookmark icon on any ad to save it here.</p>
           <a href="/ads"
             className="mt-4 px-4 py-2 rounded-[8px] text-[12px] font-semibold"
             style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}>

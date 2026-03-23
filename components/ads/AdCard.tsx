@@ -17,19 +17,6 @@ interface AdCardProps {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function FlagImg({ code }: { code: string }) {
-  if (!code || code.length !== 2) return null;
-  const c = code.toLowerCase();
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={`https://flagcdn.com/20x15/${c}.png`}
-      srcSet={`https://flagcdn.com/40x30/${c}.png 2x`}
-      width={14} height={10} alt={code}
-      style={{ borderRadius: 2, display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}
-    />
-  );
-}
 
 function fmtDate(iso?: string) {
   if (!iso) return null;

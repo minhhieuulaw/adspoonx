@@ -151,9 +151,15 @@ function generateCreativeStrategy(hookType: string, days: number, score: number)
   return base + longevity;
 }
 
+// ─── Memoization cache ──────────────────────────────────────────────────────
+
+const insightsCache = new Map<string, AIInsights>();
+
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 export function getAIInsights(ad: FbAd): AIInsights {
+  const cached = insightsCache.get(ad.id);
+  if (cached) return cached;
   const days = daysRunning(ad.ad_delivery_start_time);
   const body = ad.ad_creative_bodies?.[0] ?? ad.ad_creative_link_descriptions?.[0] ?? "";
   const isActive = ad.is_active !== false;
@@ -219,7 +225,7 @@ export function getAIInsights(ad: FbAd): AIInsights {
   const { hookType, hookColor, hookBg } = detectHook(body);
   const { trend, trendLabel, trendColor, trendIcon } = computeTrend(isActive, days);
 
-  return {
+  const result: AIInsights = {
     winningScore,
     scoreColor:  getScoreColor(winningScore),
     scoreGlow:   winningScore >= 80,
@@ -234,4 +240,7 @@ export function getAIInsights(ad: FbAd): AIInsights {
     targetAudience:   generateAudience(ad),
     creativeStrategy: generateCreativeStrategy(hookType, days, winningScore),
   };
+
+  insightsCache.set(ad.id, result);
+  return result;
 }

@@ -15,8 +15,7 @@ async function checkAdmin() {
   const session = await auth();
   if (!session?.user?.id) return null;
   const email = session.user.email?.toLowerCase() ?? "";
-  // Allow if ADMIN_EMAILS is set and matches, or fallback allow any logged-in user in dev
-  if (ADMIN_EMAILS.length > 0 && !ADMIN_EMAILS.includes(email)) return null;
+  if (!ADMIN_EMAILS.includes(email)) return null;
   return session;
 }
 
