@@ -31,6 +31,17 @@ const SORT_OPTIONS = [
   { id: "audience", label: "Biggest Audience" },
 ] as const;
 
+export type AIScoreTier = "all" | "weak" | "testing" | "promising" | "winning" | "elite";
+
+export const AI_SCORE_TIERS: Array<{ id: AIScoreTier; label: string; range: string; min: number; max: number; color: string; bg: string; border: string; icon: string }> = [
+  { id: "all",       label: "All Scores",  range: "",        min: 0,  max: 99, color: "var(--text-2)",  bg: "transparent",              border: "transparent",              icon: "" },
+  { id: "weak",      label: "Weak",        range: "0–30",    min: 0,  max: 30, color: "#94A3B8",        bg: "rgba(148,163,184,0.10)",   border: "rgba(148,163,184,0.25)",   icon: "○" },
+  { id: "testing",   label: "Testing",     range: "31–50",   min: 31, max: 50, color: "#60A5FA",        bg: "rgba(96,165,250,0.10)",    border: "rgba(96,165,250,0.25)",    icon: "◐" },
+  { id: "promising", label: "Promising",   range: "51–70",   min: 51, max: 70, color: "#FCD34D",        bg: "rgba(252,211,77,0.10)",    border: "rgba(252,211,77,0.25)",    icon: "◉" },
+  { id: "winning",   label: "Winning",     range: "71–84",   min: 71, max: 84, color: "#34D399",        bg: "rgba(52,211,153,0.10)",    border: "rgba(52,211,153,0.25)",    icon: "★" },
+  { id: "elite",     label: "Elite",       range: "85–99",   min: 85, max: 99, color: "#A78BFA",        bg: "rgba(167,139,250,0.12)",   border: "rgba(167,139,250,0.35)",   icon: "🔥" },
+];
+
 export interface FilterValues {
   country: string;
   status: "ACTIVE" | "INACTIVE" | "ALL";
@@ -40,6 +51,7 @@ export interface FilterValues {
   sortBy: "score" | "newest" | "longest" | "audience";
   dropshipping: "all" | "dropshipping" | "brand";
   duration: "any" | "new" | "growing" | "proven" | "evergreen";
+  aiScore: AIScoreTier;
 }
 
 interface AdsFilterProps {
@@ -86,7 +98,7 @@ export default function AdsFilter({
 
   const activeSort   = SORT_OPTIONS.find(s => s.id === values.sortBy) ?? SORT_OPTIONS[0];
   const hasFilters   = values.preset !== null || values.platforms.length > 0 || values.sortBy !== "score"
-    || values.dropshipping !== "all" || values.duration !== "any" || values.mediaType !== null;
+    || values.dropshipping !== "all" || values.duration !== "any" || values.mediaType !== null || values.aiScore !== "all";
 
   function togglePlatform(id: string) {
     const next = values.platforms.includes(id)
@@ -100,7 +112,7 @@ export default function AdsFilter({
   }
 
   function clearAll() {
-    onChange({ ...values, preset: null, platforms: [], sortBy: "score", dropshipping: "all", duration: "any", mediaType: null });
+    onChange({ ...values, preset: null, platforms: [], sortBy: "score", dropshipping: "all", duration: "any", mediaType: null, aiScore: "all" });
   }
 
   const statusOptions = [
@@ -129,6 +141,109 @@ export default function AdsFilter({
               Clear
             </button>
           )}
+        </div>
+
+        <Divider />
+
+        {/* ★ AI Score Tier — top priority filter */}
+        <div
+          className="rounded-[10px] p-2.5"
+          style={{
+            background: values.aiScore === "elite"
+              ? "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(167,139,250,0.08))"
+              : values.aiScore !== "all"
+                ? "rgba(255,255,255,0.02)"
+                : "transparent",
+            border: values.aiScore !== "all" ? "1px solid rgba(124,58,237,0.2)" : "1px solid transparent",
+            transition: "all 200ms var(--ease)",
+          }}
+        >
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-[11px]" style={{ lineHeight: 1 }}>
+              {values.aiScore === "elite" ? "🔥" : "✦"}
+            </span>
+            <span
+              className="text-[10px] font-bold uppercase"
+              style={{
+                letterSpacing: "0.09em",
+                background: "linear-gradient(135deg, var(--ai-light), var(--ai))",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              AI Score
+            </span>
+            {values.aiScore !== "all" && (
+              <span
+                className="ml-auto text-[8px] font-semibold px-1.5 py-0.5 rounded-[4px]"
+                style={{
+                  color: AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.color,
+                  background: AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.bg,
+                  border: `1px solid ${AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.border}`,
+                }}
+              >
+                {AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.range}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {AI_SCORE_TIERS.filter(t => t.id !== "all").map(tier => {
+              const isOn = values.aiScore === tier.id;
+              const isElite = tier.id === "elite";
+              return (
+                <button
+                  key={tier.id}
+                  onClick={() => onChange({ ...values, aiScore: isOn ? "all" : tier.id })}
+                  className="flex items-center gap-2 w-full px-2 py-[6px] rounded-[6px] text-left"
+                  style={{
+                    background: isOn ? tier.bg : "transparent",
+                    border: `1px solid ${isOn ? tier.border : "transparent"}`,
+                    transition: "all 120ms var(--ease)",
+                  }}
+                  onMouseEnter={e => {
+                    if (!isOn) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+                  }}
+                  onMouseLeave={e => {
+                    if (!isOn) (e.currentTarget as HTMLElement).style.background = "transparent";
+                  }}
+                >
+                  <span
+                    className="text-[10px] w-4 text-center flex-shrink-0"
+                    style={{ color: isOn ? tier.color : "var(--text-3)" }}
+                  >
+                    {tier.icon}
+                  </span>
+                  <span
+                    className="text-[10px] font-semibold flex-1"
+                    style={{ color: isOn ? tier.color : "var(--text-2)" }}
+                  >
+                    {tier.label}
+                  </span>
+                  <span
+                    className="text-[9px] font-mono tabular-nums"
+                    style={{ color: isOn ? tier.color : "var(--text-3)", opacity: 0.7 }}
+                  >
+                    {tier.range}
+                  </span>
+                  {isElite && (
+                    <span
+                      className="text-[7px] font-bold px-1 py-[1px] rounded-[3px] flex-shrink-0"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(167,139,250,0.15))",
+                        color: "#A78BFA",
+                        border: "1px solid rgba(167,139,250,0.3)",
+                      }}
+                    >
+                      PRO
+                    </span>
+                  )}
+                  {isOn && (
+                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: tier.color, flexShrink: 0 }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <Divider />

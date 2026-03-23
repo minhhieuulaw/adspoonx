@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { FbAd, FbAdsResponse } from "@/lib/facebook-ads";
 import { getAIInsights, getDropshippingScore } from "@/lib/ai-insights";
 import AdCard from "@/components/ads/AdCard";
-import AdsFilter, { type FilterValues } from "@/components/ads/AdsFilter";
+import AdsFilter, { type FilterValues, AI_SCORE_TIERS } from "@/components/ads/AdsFilter";
 import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X } from "lucide-react";
@@ -82,7 +82,18 @@ function applyClientFilters(ads: FbAd[], filters: FilterValues): FbAd[] {
     });
   }
 
-  // 5. Preset filter
+  // 5. AI Score tier filter
+  if (filters.aiScore !== "all") {
+    const tier = AI_SCORE_TIERS.find(t => t.id === filters.aiScore);
+    if (tier) {
+      result = result.filter(ad => {
+        const score = getAIInsights(ad).winningScore;
+        return score >= tier.min && score <= tier.max;
+      });
+    }
+  }
+
+  // 6. Preset filter
   if (filters.preset) {
     result = result.filter(ad => {
       const ai   = getAIInsights(ad);
@@ -158,6 +169,7 @@ export default function AdsPage() {
     sortBy:       "score",
     dropshipping: "all",
     duration:     "any",
+    aiScore:      "all",
   });
 
   const [nextPage, setNextPage] = useState<number | null>(null);
