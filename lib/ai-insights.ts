@@ -62,12 +62,12 @@ function daysRunning(iso?: string): number {
 // ─── Hook detection ──────────────────────────────────────────────────────────
 
 const HOOK_RULES: Array<{ pattern: RegExp; type: string; color: string; bg: string }> = [
-  { pattern: /\b(you|your|feel|love|hate|fear|want|dream|heart|miss|happy|sad|joy)\b/i,   type: "Emotional",        color: "#F472B6", bg: "rgba(244,114,182,0.12)" },
-  { pattern: /\b(how to|step|guide|learn|tips|easy|simple|master|tutorial)\b/i,          type: "Tutorial",         color: "#60A5FA", bg: "rgba(96,165,250,0.12)"  },
-  { pattern: /\b(problem|solution|fix|struggle|tired|finally|stop|pain|issue)\b/i,       type: "Problem-Solution", color: "#FB923C", bg: "rgba(251,146,60,0.12)"  },
-  { pattern: /\b(limited|last chance|hurry|today only|exclusive|secret|deal|offer)\b/i,  type: "FOMO",             color: "#F87171", bg: "rgba(248,113,113,0.12)" },
-  { pattern: /\b(customers|people|reviews|rated|trusted|loved|testimonial|stars)\b/i,    type: "Social Proof",     color: "#34D399", bg: "rgba(52,211,153,0.12)"  },
-  { pattern: /\b(story|journey|life|experience|real|authentic|honest|review)\b/i,        type: "UGC",              color: "#A78BFA", bg: "rgba(167,139,250,0.12)" },
+  { pattern: /\b(you|your|feel|love|hate|fear|want|dream|heart|miss|happy|sad|joy)\b/i,   type: "Emotion-Led",    color: "#F472B6", bg: "rgba(244,114,182,0.12)" },
+  { pattern: /\b(how to|step|guide|learn|tips|easy|simple|master|tutorial)\b/i,          type: "How-To",         color: "#60A5FA", bg: "rgba(96,165,250,0.12)"  },
+  { pattern: /\b(problem|solution|fix|struggle|tired|finally|stop|pain|issue)\b/i,       type: "Pain Point",     color: "#FB923C", bg: "rgba(251,146,60,0.12)"  },
+  { pattern: /\b(limited|last chance|hurry|today only|exclusive|secret|deal|offer)\b/i,  type: "Urgency",        color: "#F87171", bg: "rgba(248,113,113,0.12)" },
+  { pattern: /\b(customers|people|reviews|rated|trusted|loved|testimonial|stars)\b/i,    type: "Social Proof",   color: "#34D399", bg: "rgba(52,211,153,0.12)"  },
+  { pattern: /\b(story|journey|life|experience|real|authentic|honest|review)\b/i,        type: "UGC",            color: "#A78BFA", bg: "rgba(167,139,250,0.12)" },
 ];
 
 function detectHook(body: string): { hookType: string; hookColor: string; hookBg: string } {
@@ -76,7 +76,7 @@ function detectHook(body: string): { hookType: string; hookColor: string; hookBg
       return { hookType: rule.type, hookColor: rule.color, hookBg: rule.bg };
     }
   }
-  return { hookType: "Direct Response", hookColor: "#94A3B8", hookBg: "rgba(148,163,184,0.10)" };
+  return { hookType: "Direct", hookColor: "#94A3B8", hookBg: "rgba(148,163,184,0.10)" };
 }
 
 // ─── Score color ─────────────────────────────────────────────────────────────
@@ -105,11 +105,11 @@ export function getScoreBorder(score: number): string {
 // ─── Trend ───────────────────────────────────────────────────────────────────
 
 function computeTrend(isActive: boolean, days: number): { trend: Trend; trendLabel: string; trendColor: string; trendIcon: string } {
-  if (!isActive) return { trend: "declining", trendLabel: "Paused",    trendColor: "#F87171", trendIcon: "↓" };
-  if (days < 7)  return { trend: "rising",    trendLabel: "Launching", trendColor: "#34D399", trendIcon: "↑" };
-  if (days < 21) return { trend: "rising",    trendLabel: "Scaling",   trendColor: "#34D399", trendIcon: "↑" };
-  if (days > 90) return { trend: "stable",    trendLabel: "Evergreen", trendColor: "#FCD34D", trendIcon: "→" };
-  return           { trend: "rising",    trendLabel: "Growing",   trendColor: "#34D399", trendIcon: "↑" };
+  if (!isActive) return { trend: "declining", trendLabel: "Inactive",    trendColor: "#F87171", trendIcon: "⏸" };
+  if (days < 7)  return { trend: "rising",    trendLabel: "Just Launched", trendColor: "#34D399", trendIcon: "⚡" };
+  if (days < 21) return { trend: "rising",    trendLabel: "Scaling",      trendColor: "#34D399", trendIcon: "↗" };
+  if (days > 90) return { trend: "stable",    trendLabel: "Evergreen",    trendColor: "#FCD34D", trendIcon: "♾" };
+  return           { trend: "rising",    trendLabel: "Growing",      trendColor: "#34D399", trendIcon: "↗" };
 }
 
 // ─── AI text generation ───────────────────────────────────────────────────────
@@ -137,13 +137,13 @@ function generateAudience(ad: FbAd): string {
 
 function generateCreativeStrategy(hookType: string, days: number, score: number): string {
   const strategies: Record<string, string> = {
-    "Emotional":         "Leads with emotion to bypass rational resistance. High retention scroll-stopper.",
-    "Tutorial":          "Educational hook builds trust before the pitch. Works well for new audiences.",
-    "Problem-Solution":  "Agitates a pain point, then positions the product as the only solution.",
-    "FOMO":              "Creates artificial urgency to compress the decision-making timeline.",
-    "Social Proof":      "Leverages crowd psychology — peer validation reduces purchase anxiety.",
-    "UGC":               "Authentic user content dramatically increases trust and click-through rate.",
-    "Direct Response":   "Clear, benefit-focused copy optimized for immediate conversion action.",
+    "Emotion-Led":   "Leads with emotion to bypass rational resistance. High retention scroll-stopper.",
+    "How-To":        "Educational hook builds trust before the pitch. Works well for new audiences.",
+    "Pain Point":    "Agitates a pain point, then positions the product as the only solution.",
+    "Urgency":       "Creates artificial urgency to compress the decision-making timeline.",
+    "Social Proof":  "Leverages crowd psychology — peer validation reduces purchase anxiety.",
+    "UGC":           "Authentic user content dramatically increases trust and click-through rate.",
+    "Direct":        "Clear, benefit-focused copy optimized for immediate conversion action.",
   };
 
   const base = strategies[hookType] ?? "Straightforward direct response approach with clear value proposition.";

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Bookmark, Sparkles, Play, Eye, DollarSign, Calendar } from "lucide-react";
+import { Bookmark, Play, Pause, Eye, DollarSign, Calendar, Volume2, VolumeX } from "lucide-react";
 import type { FbAd } from "@/lib/facebook-ads";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
 import { getAIInsights, getScoreBg, getScoreBorder } from "@/lib/ai-insights";
@@ -65,7 +65,37 @@ function avatarColor(name: string): string {
   return AVATAR_PALETTE[h % AVATAR_PALETTE.length];
 }
 
-// ── Fade image (lazy load + smooth reveal) ─────────────────────────────────────
+// Platform icon SVGs (compact)
+function PlatformIcon({ platform }: { platform: string }) {
+  const p = platform.toLowerCase();
+  if (p === "facebook")
+    return (
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#1877F2" }}>
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    );
+  if (p === "instagram")
+    return (
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#E4405F" }}>
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+      </svg>
+    );
+  if (p === "audience_network")
+    return (
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#6B7280" }}>
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+      </svg>
+    );
+  if (p === "messenger")
+    return (
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#0084FF" }}>
+        <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.975 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.2l3.131 3.259L19.752 8.2l-6.561 6.763z"/>
+      </svg>
+    );
+  return null;
+}
+
+// ── Fade image ─────────────────────────────────────────────────────────────────
 
 function FadeImage({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -83,39 +113,119 @@ function FadeImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-// ── Video creative ─────────────────────────────────────────────────────────────
+// ── Video creative with controls ──────────────────────────────────────────────
 
 function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt: string }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [progress, setProgress] = useState(0);
+
+  const handleTimeUpdate = useCallback(() => {
+    const v = ref.current;
+    if (v && v.duration) setProgress((v.currentTime / v.duration) * 100);
+  }, []);
+
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    v.addEventListener("timeupdate", handleTimeUpdate);
+    return () => v.removeEventListener("timeupdate", handleTimeUpdate);
+  }, [handleTimeUpdate]);
+
+  function togglePlay(e: React.MouseEvent) {
+    e.stopPropagation();
+    const v = ref.current;
+    if (!v) return;
+    if (playing) { v.pause(); setPlaying(false); }
+    else { v.play().then(() => setPlaying(true)).catch(() => {}); }
+  }
+
+  function toggleMute(e: React.MouseEvent) {
+    e.stopPropagation();
+    const v = ref.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  }
+
+  function seekTo(e: React.MouseEvent) {
+    e.stopPropagation();
+    const v = ref.current;
+    const bar = progressRef.current;
+    if (!v || !bar || !v.duration) return;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    v.currentTime = pct * v.duration;
+  }
 
   return (
-    <div
-      className="ad-creative-wrap"
-      onMouseEnter={() => { ref.current?.play().then(() => setPlaying(true)).catch(() => {}); }}
-      onMouseLeave={() => {
-        if (ref.current) { ref.current.pause(); ref.current.currentTime = 0; }
-        setPlaying(false);
-      }}
-    >
+    <div className="ad-creative-wrap group">
       <video
         ref={ref} src={src} poster={poster} muted playsInline loop preload="metadata"
         className="w-full h-full object-cover"
         style={{ pointerEvents: "none" }}
         aria-label={alt}
       />
-      {!playing && (
-        <div className="absolute inset-0 flex items-center justify-center" style={{ pointerEvents: "none" }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: "50%",
-            background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)",
-            border: "1.5px solid rgba(255,255,255,0.35)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Play size={13} fill="white" color="white" style={{ marginLeft: 1 }} />
-          </div>
+
+      {/* Center play/pause — only visible when paused or on hover */}
+      <div
+        className="absolute inset-0 flex items-center justify-center transition-opacity"
+        style={{ opacity: playing ? 0 : 1, pointerEvents: playing ? "none" : "auto" }}
+      >
+        <button onClick={togglePlay} style={{
+          width: 40, height: 40, borderRadius: "50%",
+          background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)",
+          border: "1.5px solid rgba(255,255,255,0.25)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+        }}>
+          {playing
+            ? <Pause size={14} fill="white" color="white" />
+            : <Play size={14} fill="white" color="white" style={{ marginLeft: 2 }} />
+          }
+        </button>
+      </div>
+
+      {/* Bottom controls bar */}
+      <div
+        className="absolute bottom-0 left-0 right-0 flex items-center gap-1.5 px-1.5 py-1 transition-opacity"
+        style={{
+          background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+          opacity: playing ? 1 : 0,
+          pointerEvents: playing ? "auto" : "none",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Play/pause mini */}
+        <button onClick={togglePlay} className="flex-shrink-0" style={{ color: "white", cursor: "pointer", background: "none", border: "none", padding: 2 }}>
+          {playing ? <Pause size={10} fill="white" /> : <Play size={10} fill="white" style={{ marginLeft: 1 }} />}
+        </button>
+
+        {/* Progress bar */}
+        <div
+          ref={progressRef}
+          onClick={seekTo}
+          className="flex-1 h-1 rounded-full cursor-pointer"
+          style={{ background: "rgba(255,255,255,0.2)" }}
+        >
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${progress}%`,
+              background: "var(--ai-light)",
+              transition: "width 100ms linear",
+            }}
+          />
         </div>
-      )}
+
+        {/* Mute/unmute */}
+        <button onClick={toggleMute} className="flex-shrink-0" style={{ color: "white", cursor: "pointer", background: "none", border: "none", padding: 2 }}>
+          {muted ? <VolumeX size={10} strokeWidth={2} /> : <Volume2 size={10} strokeWidth={2} />}
+        </button>
+      </div>
+
       {/* VIDEO badge */}
       <div style={{
         position: "absolute", top: 6, left: 6, pointerEvents: "none",
@@ -131,26 +241,51 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   );
 }
 
-// ── AI Score badge (compact) ──────────────────────────────────────────────────
+// ── AI Score Ribbon (prominent flag design) ─────────────────────────────────────
 
-function AIScoreBadge({
-  score, color, bg, border, glow,
-}: { score: number; color: string; bg: string; border: string; glow: boolean }) {
-  const r = 5.5;
-  const circ = 2 * Math.PI * r;
-  const fill = circ * (score / 100);
+function AIScoreRibbon({ score }: { score: number }) {
+  // Tier-based gradient
+  let gradient: string;
+  let shadow: string;
+  if (score >= 80) {
+    gradient = "linear-gradient(135deg, #7C3AED, #A78BFA)";
+    shadow = "0 2px 12px rgba(124,58,237,0.5)";
+  } else if (score >= 65) {
+    gradient = "linear-gradient(135deg, #2563EB, #60A5FA)";
+    shadow = "0 2px 12px rgba(37,99,235,0.4)";
+  } else if (score >= 50) {
+    gradient = "linear-gradient(135deg, #D97706, #FCD34D)";
+    shadow = "0 2px 12px rgba(217,119,6,0.4)";
+  } else {
+    gradient = "linear-gradient(135deg, #475569, #94A3B8)";
+    shadow = "0 2px 8px rgba(71,85,105,0.3)";
+  }
+
   return (
     <div
-      className={`flex items-center gap-0.5 px-1 py-[2px] rounded-[4px] flex-shrink-0 ${glow ? "ai-glow" : ""}`}
-      style={{ background: bg, border: `1px solid ${border}` }}
-      title={`AI Score: ${score}`}
+      className="ai-score-ribbon"
+      style={{
+        position: "absolute",
+        top: -1,
+        right: 10,
+        zIndex: 5,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "4px 8px 6px",
+        background: gradient,
+        borderRadius: "0 0 6px 6px",
+        boxShadow: shadow,
+        minWidth: 32,
+      }}
+      title={`AI Performance Score: ${score}/100`}
     >
-      <svg width={12} height={12} viewBox="0 0 12 12" style={{ flexShrink: 0 }}>
-        <circle cx={6} cy={6} r={r} fill="none" stroke={`${color}22`} strokeWidth={1.5} />
-        <circle cx={6} cy={6} r={r} fill="none" stroke={color} strokeWidth={1.5}
-          strokeDasharray={`${fill} ${circ - fill}`} strokeLinecap="round" transform="rotate(-90 6 6)" />
-      </svg>
-      <span className="font-data text-[9px] font-bold tabular-nums" style={{ color }}>{score}</span>
+      <span style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.08em", lineHeight: 1 }}>
+        AI
+      </span>
+      <span className="font-data" style={{ fontSize: 14, fontWeight: 800, color: "#fff", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+        {score}
+      </span>
     </div>
   );
 }
@@ -173,6 +308,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
   const impressFmt = fmtImpressions(ad.impressions?.lower_bound, ad.impressions?.upper_bound);
   const spendFmt   = fmtSpend(ad.spend?.lower_bound, ad.spend?.upper_bound);
   const ai         = getAIInsights(ad);
+  const platforms  = ad.publisher_platforms ?? [];
 
   function handleInspect() {
     if (onSelect) onSelect(ad);
@@ -184,9 +320,13 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0, transition: { duration: 0.18, delay: Math.min(index * 0.02, 0.3) } }}
-        className="ad-card rounded-[10px] overflow-hidden flex flex-col cursor-pointer"
+        whileHover={{ y: -4, scale: 1.015, transition: { type: "spring", stiffness: 400, damping: 22 } }}
+        className="ad-card rounded-[10px] overflow-hidden flex flex-col cursor-pointer relative"
         onClick={handleInspect}
       >
+        {/* ── AI Score Ribbon — top right flag ── */}
+        <AIScoreRibbon score={ai.winningScore} />
+
         {/* ── Creative (full-bleed, square aspect) ── */}
         <div className="overflow-hidden relative" style={{ background: "rgba(0,0,0,0.25)" }}>
           {ad.video_url ? (
@@ -202,18 +342,9 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             </div>
           )}
 
-          {/* AI score overlay — top right */}
-          <div style={{ position: "absolute", top: 6, right: 6 }}>
-            <AIScoreBadge
-              score={ai.winningScore} color={ai.scoreColor}
-              bg={getScoreBg(ai.winningScore)} border={getScoreBorder(ai.winningScore)}
-              glow={ai.scoreGlow}
-            />
-          </div>
-
           {/* LIVE badge overlay — bottom left */}
           <div style={{
-            position: "absolute", bottom: 6, left: 6,
+            position: "absolute", bottom: ad.video_url ? 28 : 6, left: 6,
             display: "flex", alignItems: "center", gap: 4,
             background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
             borderRadius: 4, padding: "2px 6px",
@@ -240,9 +371,9 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
           </div>
         </div>
 
-        {/* ── Footer: all info compact ── */}
+        {/* ── Footer ── */}
         <div className="px-2.5 py-2 flex flex-col gap-1.5">
-          {/* Brand row */}
+          {/* Brand row + bookmark */}
           <div className="flex items-center gap-1.5 min-w-0">
             {ad.page_profile_picture_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -270,7 +401,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
               }}
               title={isSaved ? "Saved" : "Save"}
             >
-              <Bookmark size={11} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? "currentColor" : "none"} />
+              <Bookmark size={12} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? "currentColor" : "none"} />
             </button>
           </div>
 
@@ -300,30 +431,32 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             )}
           </div>
 
-          {/* AI tags + Analyze button */}
-          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-            <span className="text-[8px] font-semibold px-1.5 py-[2px] rounded-[4px]"
-              style={{ background: ai.hookBg, color: ai.hookColor, border: `1px solid ${ai.hookColor}22` }}>
+          {/* Strategy + Performance tags + Platform icons */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {/* Strategy tag — what type of ad */}
+            <span className="ad-tag" style={{
+              background: `${ai.hookColor}10`,
+              color: ai.hookColor,
+              borderColor: `${ai.hookColor}20`,
+            }}>
               {ai.hookType}
             </span>
-            <span className="text-[8px] font-semibold px-1.5 py-[2px] rounded-[4px]"
-              style={{ background: `${ai.trendColor}12`, color: ai.trendColor, border: `1px solid ${ai.trendColor}22` }}>
+            {/* Performance tag — how it's doing */}
+            <span className="ad-tag" style={{
+              background: `${ai.trendColor}10`,
+              color: ai.trendColor,
+              borderColor: `${ai.trendColor}20`,
+            }}>
               {ai.trendIcon} {ai.trendLabel}
             </span>
+            {/* Spacer */}
             <div className="flex-1" />
-            <button
-              onClick={e => { e.stopPropagation(); handleInspect(); }}
-              className="flex items-center gap-1 px-2 py-[3px] rounded-[4px] text-[9px] font-semibold"
-              style={{
-                background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.2)",
-                color: "var(--ai-light)", transition: "background 100ms",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.2)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--ai-soft)"; }}
-            >
-              <Sparkles size={8} strokeWidth={2} />
-              Analyze
-            </button>
+            {/* Platform icons */}
+            <div className="flex items-center gap-0.5">
+              {platforms.map(p => (
+                <PlatformIcon key={p} platform={p} />
+              ))}
+            </div>
           </div>
         </div>
       </motion.div>
