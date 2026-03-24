@@ -14,7 +14,6 @@ RUN npm ci && npx prisma generate
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=deps /app/node_modules ./node_modules
