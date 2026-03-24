@@ -2,6 +2,8 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 
+ENV NODE_ENV=development
+
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./
@@ -12,11 +14,11 @@ RUN npm ci && npx prisma generate
 FROM node:22-alpine AS builder
 WORKDIR /app
 
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
 
 RUN npm run build
 
