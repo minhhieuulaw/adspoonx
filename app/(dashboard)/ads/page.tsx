@@ -11,7 +11,7 @@ import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues, AI_SCORE_TIERS } from "@/components/ads/AdsFilter";
 import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code, Loader2, CheckSquare, Square, Bookmark } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code, Loader2, CheckSquare, Square, Bookmark, Play } from "lucide-react";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
 
 // ── Filter persistence (localStorage) ─────────────────────────────────────────
@@ -791,18 +791,37 @@ export default function AdsPage() {
           )}
         </AnimatePresence>
 
-        {/* KPI stats */}
+        {/* Compact stats bar */}
         {ads.length > 0 && !loading && (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-4 flex-wrap mb-3 px-1"
           >
-            <KPIStat label="Total Ads"    value={kpi.total}    sub="in current filter" icon={Sparkles} iconColor="#A78BFA" iconBg="rgba(124,58,237,0.12)" />
-            <KPIStat label="Active"       value={kpi.active}   sub="currently live"    icon={Zap}      iconColor="#34D399" iconBg="rgba(52,211,153,0.12)"  />
-            <KPIStat label="Top AI Score" value={kpi.topScore} sub="highest performer" icon={Brain}    iconColor="#60A5FA" iconBg="rgba(59,130,246,0.12)"  />
-            <KPIStat label="With Video"   value={kpi.videoCount} sub="video creatives" icon={Globe}    iconColor="#FCD34D" iconBg="rgba(245,158,11,0.12)" />
+            <div className="flex items-center gap-1.5">
+              <Sparkles size={12} style={{ color: "#A78BFA" }} strokeWidth={2} />
+              <span className="text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{kpi.total}</span>
+              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>ads</span>
+            </div>
+            <div style={{ width: 1, height: 12, background: "var(--border)" }} />
+            <div className="flex items-center gap-1.5">
+              <span className="live-dot" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--green-light)", flexShrink: 0 }} />
+              <span className="text-[12px] font-semibold tabular-nums" style={{ color: "#34D399" }}>{kpi.active}</span>
+              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>live</span>
+            </div>
+            <div style={{ width: 1, height: 12, background: "var(--border)" }} />
+            <div className="flex items-center gap-1.5">
+              <Brain size={12} style={{ color: "#60A5FA" }} strokeWidth={2} />
+              <span className="text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{kpi.topScore}</span>
+              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>top score</span>
+            </div>
+            <div style={{ width: 1, height: 12, background: "var(--border)" }} />
+            <div className="flex items-center gap-1.5">
+              <Play size={11} style={{ color: "#FCD34D" }} strokeWidth={2} fill="#FCD34D" />
+              <span className="text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{kpi.videoCount}</span>
+              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>videos</span>
+            </div>
           </motion.div>
         )}
 
