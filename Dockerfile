@@ -39,9 +39,9 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # Prisma generated client (needed at runtime)
+# Prisma 7.x + @prisma/adapter-pg uses JS adapter, no native binary engine
+# lib/generated contains the full generated client; standalone bundles the rest
 COPY --from=builder /app/lib/generated ./lib/generated
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 USER nextjs
 
