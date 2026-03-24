@@ -85,7 +85,7 @@ function PlatformIcon({ platform }: { platform: string }) {
 
 // ── Fade image ─────────────────────────────────────────────────────────────────
 
-function FadeImage({ src, alt }: { src: string; alt: string }) {
+function FadeImage({ src, alt, priority = false }: { src: string; alt: string; priority?: boolean }) {
   const [loaded, setLoaded] = useState(false);
 
   function handleDownload(e: React.MouseEvent) {
@@ -102,9 +102,11 @@ function FadeImage({ src, alt }: { src: string; alt: string }) {
     <div className="ad-creative-wrap group">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={src} alt={alt} loading="lazy"
+        src={src} alt={alt} loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+        decoding={priority ? "sync" : "async"}
         className="w-full h-full object-cover"
-        style={{ display: "block", opacity: loaded ? 1 : 0, transition: "opacity 350ms" }}
+        style={{ display: "block", opacity: loaded ? 1 : 0, transition: "opacity 300ms ease" }}
         onLoad={() => setLoaded(true)}
       />
       {!loaded && <div className="absolute inset-0 skeleton" />}

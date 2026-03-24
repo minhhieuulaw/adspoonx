@@ -207,6 +207,43 @@ function LiveStatsBar({ topScore }: { topScore: number }) {
   );
 }
 
+/** Skeleton ad card — mimics real AdCard layout */
+function SkeletonAdCard({ delay = 0 }: { delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, delay }}
+      className="rounded-[10px] overflow-hidden flex flex-col"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+    >
+      {/* Creative area */}
+      <div className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 0 }} />
+
+      {/* Footer */}
+      <div className="px-2.5 py-2.5 flex flex-col gap-2">
+        {/* Brand row */}
+        <div className="flex items-center gap-2">
+          <div className="skeleton-circle" style={{ width: 22, height: 22, flexShrink: 0 }} />
+          <div className="skeleton-line" style={{ width: "65%", height: 9 }} />
+        </div>
+        {/* Stats row */}
+        <div className="flex items-center gap-2">
+          <div className="skeleton-line" style={{ width: 28, height: 7 }} />
+          <div className="skeleton-line" style={{ width: 40, height: 7 }} />
+          <div className="skeleton-line" style={{ width: 50, height: 7 }} />
+        </div>
+        {/* Tags row */}
+        <div className="flex items-center gap-1.5">
+          <div className="skeleton-line" style={{ width: 52, height: 16, borderRadius: 4 }} />
+          <div className="skeleton-line" style={{ width: 44, height: 16, borderRadius: 4 }} />
+          <div className="skeleton-line" style={{ width: 36, height: 16, borderRadius: 4 }} />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Infinite scroll sentinel ──────────────────────────────────────────────────
 
 function InfiniteScrollSentinel({ onVisible, loading }: { onVisible: () => void; loading: boolean }) {
@@ -957,12 +994,12 @@ export default function AdsPage() {
           </motion.div>
         )}
 
-        {/* Skeleton loading */}
+        {/* Skeleton loading — staggered card placeholders */}
         {loading && ads.length === 0 && (
           <div className="ads-grid-container">
             <div className="ads-grid">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={`sk-${i}`} className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 10 }} />
+              {Array.from({ length: 12 }).map((_, i) => (
+                <SkeletonAdCard key={`sk-${i}`} delay={i * 0.04} />
               ))}
             </div>
           </div>
@@ -1065,8 +1102,8 @@ export default function AdsPage() {
                   </div>
                 ))}
                 {loading && ads.length > 0 &&
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <div key={`sk-more-${i}`} className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 10 }} />
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <SkeletonAdCard key={`sk-more-${i}`} delay={i * 0.05} />
                   ))}
               </div>
 

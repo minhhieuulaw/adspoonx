@@ -182,6 +182,10 @@ export async function GET(req: NextRequest) {
       data, total, page, totalPages,
       hasMore: page < totalPages,
       plan, maxResults: limits.maxResults, seed,
+    }, {
+      headers: {
+        "Cache-Control": "private, s-maxage=30, stale-while-revalidate=60",
+      },
     });
   } catch (err) {
     console.error("[api/ads] query error:", err);
