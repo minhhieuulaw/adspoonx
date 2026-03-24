@@ -349,12 +349,17 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
   const totalShopAds = allAds.filter(a => a.page_name === ad.page_name).length;
   const activeShopAds = allAds.filter(a => a.page_name === ad.page_name && a.is_active !== false).length;
 
-  // Estimated daily revenue (heuristic from spend)
+  // Estimated revenue (heuristic from spend + days running + active ads count)
   const spendLo = Number(ad.spend?.lower_bound ?? 0);
   const spendHi = Number(ad.spend?.upper_bound ?? 0);
   const avgSpend = (spendLo + spendHi) / 2;
-  const estDailyRevenue = days && days > 0 && avgSpend > 0
-    ? Math.round((avgSpend / days) * 3.5) // 3.5x ROAS estimate
+  const dailySpend = days && days > 0 ? avgSpend / days : 0;
+  const roas = 3.5; // industry average ROAS estimate
+  const estDailyRevenue = dailySpend > 0 ? Math.round(dailySpend * roas) : null;
+  const estMonthlyRevenue = estDailyRevenue ? estDailyRevenue * 30 : null;
+  // Store-level estimate: multiply by active ads count
+  const estStoreMonthly = estMonthlyRevenue && activeShopAds > 1
+    ? estMonthlyRevenue * Math.min(activeShopAds, 10) * 0.7 // discount for overlap
     : null;
 
   // Fake sparkline data from days (shows activity pattern)
@@ -645,29 +650,52 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
           </div>
         )}
 
-        {/* Section: Shop Details — Estimated Revenue */}
+        {/* Section: Revenue Intelligence */}
         {(estDailyRevenue || spendFmt) && (
           <div className="mx-3 mt-4 rounded-[10px] p-3"
             style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2.5">
               <ShoppingBag size={12} strokeWidth={1.5} style={{ color: "var(--green-light)" }} />
-              <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>Shop Intelligence</span>
+              <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>Revenue Intelligence</span>
             </div>
 
             {estDailyRevenue && (
-              <div className="rounded-[8px] p-2.5 mb-2"
-                style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
-                <p className="text-[9px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--green-light)" }}>
-                  Estimated daily revenue
-                </p>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-display text-[22px] font-black" style={{ color: "var(--green-light)" }}>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="rounded-[8px] p-2.5"
+                  style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--green-light)" }}>
+                    Daily est.
+                  </p>
+                  <span className="font-display text-[18px] font-black" style={{ color: "var(--green-light)" }}>
                     ${estDailyRevenue >= 1000 ? `${(estDailyRevenue / 1000).toFixed(1)}k` : estDailyRevenue}
                   </span>
+                </div>
+                <div className="rounded-[8px] p-2.5"
+                  style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--green-light)" }}>
+                    Monthly est.
+                  </p>
+                  <span className="font-display text-[18px] font-black" style={{ color: "var(--green-light)" }}>
+                    ${estMonthlyRevenue! >= 1000 ? `${(estMonthlyRevenue! / 1000).toFixed(1)}k` : estMonthlyRevenue}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {estStoreMonthly && (
+              <div className="rounded-[8px] p-2.5 mb-2"
+                style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.20)" }}>
+                <p className="text-[8px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--ai-light)" }}>
+                  Store monthly est. ({activeShopAds} active ads)
+                </p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-display text-[20px] font-black" style={{ color: "var(--ai-light)" }}>
+                    ${estStoreMonthly >= 1000 ? `${(estStoreMonthly / 1000).toFixed(1)}k` : estStoreMonthly}
+                  </span>
                   <div className="flex items-center gap-0.5">
-                    <TrendingUp size={10} style={{ color: "var(--green-light)" }} />
-                    <span className="text-[9px] font-bold" style={{ color: "var(--green-light)" }}>
-                      ~{((avgSpend / (days || 1)) * 3.5).toFixed(0)}/day
+                    <TrendingUp size={10} style={{ color: "var(--ai-light)" }} />
+                    <span className="text-[9px] font-semibold" style={{ color: "var(--ai-light)" }}>
+                      ~{roas}x ROAS
                     </span>
                   </div>
                 </div>
@@ -675,9 +703,8 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
             )}
 
             {spendFmt && <StatRow icon={DollarSign} label="Total ad spend" value={spendFmt} highlight />}
-            {days && spendFmt && (
-              <StatRow icon={TrendingUp} label="Daily spend"
-                value={`$${(avgSpend / days).toFixed(0)}/day`} />
+            {days && dailySpend > 0 && (
+              <StatRow icon={TrendingUp} label="Daily spend" value={`$${dailySpend.toFixed(0)}/day`} />
             )}
           </div>
         )}
@@ -753,19 +780,22 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
           </div>
         </div>
 
-        {/* Ads from this shop */}
+        {/* Ads from this shop — grid layout for wider panel */}
         {shopAds.length > 0 && (
-          <div className="mt-4 mb-6">
-            <div className="flex items-center justify-between px-4 mb-2">
-              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
-                Ads from this shop
-              </p>
+          <div className="mt-4 mb-6 px-3">
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-2">
+                <Monitor size={12} style={{ color: "var(--ai-light)" }} strokeWidth={1.8} />
+                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
+                  More from {storeName}
+                </p>
+              </div>
               <span className="text-[9px] px-1.5 py-0.5 rounded-[4px]"
                 style={{ background: "var(--ai-soft)", color: "var(--ai-light)", fontWeight: 600 }}>
-                {shopAds.length} more
+                {totalShopAds} total
               </span>
             </div>
-            <div className="flex gap-2 px-3 pb-2 overflow-x-auto no-scrollbar">
+            <div className="grid grid-cols-2 gap-2">
               {shopAds.map(a => (
                 <MiniAdCard key={a.id} ad={a} onClick={() => setSelectedShopAd(a.id)} />
               ))}

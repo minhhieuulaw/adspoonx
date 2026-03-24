@@ -1101,11 +1101,12 @@ export default function AdsPage() {
         </AnimatePresence>
       </div>
 
-      {/* ── Right: Always-visible panel column (xl+) ── */}
-      <div
+      {/* ── Right: Expandable panel column (xl+) ── */}
+      <motion.div
         className="hidden xl:flex flex-col flex-shrink-0 no-scrollbar"
+        animate={{ width: selectedAd ? 520 : 280 }}
+        transition={{ type: "spring", stiffness: 350, damping: 32 }}
         style={{
-          width: 320,
           position: "sticky",
           top: 56,
           height: "calc(100vh - 56px)",
@@ -1151,7 +1152,7 @@ export default function AdsPage() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
 
       {/* ── Mobile/tablet (< xl): overlay panel ── */}
       <div className="xl:hidden">
