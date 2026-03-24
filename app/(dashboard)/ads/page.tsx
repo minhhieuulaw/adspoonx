@@ -67,22 +67,22 @@ function useUsersOnline() {
     targetRef.current = base;
     setCount(base);
 
-    // Pick new target every 3–8 seconds
+    // Pick new target every 8–20 seconds (slow drift)
     const pickTarget = () => {
-      const drift = (Math.random() - 0.45) * 300; // slight upward bias
+      const drift = (Math.random() - 0.48) * 120; // small, slight upward bias
       const next = Math.max(50, Math.min(5000, Math.round(targetRef.current + drift)));
       targetRef.current = next;
     };
-    const targetInterval = setInterval(pickTarget, 3000 + Math.random() * 5000);
+    const targetInterval = setInterval(pickTarget, 8000 + Math.random() * 12000);
 
-    // Smooth animation tick every 200ms
+    // Smooth animation tick every 2 seconds — slow, natural feel
     const tick = setInterval(() => {
       const diff = targetRef.current - currentRef.current;
       if (Math.abs(diff) < 2) return;
-      const step = Math.sign(diff) * Math.max(1, Math.floor(Math.abs(diff) * 0.15));
+      const step = Math.sign(diff) * Math.max(1, Math.ceil(Math.abs(diff) * 0.08));
       currentRef.current += step;
       setCount(currentRef.current);
-    }, 200);
+    }, 2000);
 
     return () => { clearInterval(targetInterval); clearInterval(tick); };
   }, []);
