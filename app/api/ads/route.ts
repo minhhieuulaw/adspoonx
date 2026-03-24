@@ -133,29 +133,19 @@ export async function GET(req: NextRequest) {
   const fullParams = [...queryParams, String(seed), limit];
 
   try {
-    // Fetch ads — skip COUNT(*) for performance (estimated count instead)
-    const rows = await prisma.$queryRawUnsafe<RawAd[]>(
-      `SELECT * FROM "Ad" WHERE ${whereSQL}
-       ORDER BY md5("adArchiveId" || $${seedIdx}) LIMIT $${limitIdx}`,
-      ...fullParams,
-    );
+    const [rows, countResult] = await Promise.all([
+      prisma.$queryRawUnsafe<RawAd[]>(
+        `SELECT * FROM "Ad" WHERE ${whereSQL}
+         ORDER BY md5("adArchiveId" || $${seedIdx}) LIMIT $${limitIdx}`,
+        ...fullParams,
+      ),
+      prisma.$queryRawUnsafe<[{ count: bigint }]>(
+        `SELECT COUNT(*) FROM "Ad" WHERE ${whereSQL}`,
+        ...queryParams,
+      ),
+    ]);
 
-    // Use estimated count from pg_class stats (instant, no full scan)
-    // Falls back to rows.length if stats unavailable
-    let total = rows.length;
-    try {
-      const hasFilters = searchClauses.length > 0 || mediaType;
-      if (!hasFilters) {
-        // No filters = use fast estimated count
-        const est = await prisma.$queryRawUnsafe<[{ estimate: bigint }]>(
-          `SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'Ad'`
-        );
-        total = Math.max(Number(est[0]?.estimate ?? 0), rows.length);
-      } else {
-        // With filters = just report hasMore based on whether we got full page
-        total = rows.length >= limit ? rows.length * 10 : rows.length; // rough estimate
-      }
-    } catch { /* use rows.length */ }
+    const total = Number(countResult[0]?.count ?? 0);
 
     const totalPages = Math.ceil(total / limit);
 
