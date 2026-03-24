@@ -170,17 +170,13 @@ main { position: relative; z-index: 1; }
   background: rgba(255,255,255,0.02);
 }
 
-/* Container queries for ads grid */
+/* Container queries for ads grid — auto-fill adapts to any screen size */
 .ads-grid-container { container-type: inline-size; container-name: adsgrid; }
 .ads-grid {
   display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(1, 1fr);
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
 }
-@container adsgrid (min-width: 420px)  { .ads-grid { grid-template-columns: repeat(2, 1fr); } }
-@container adsgrid (min-width: 680px)  { .ads-grid { grid-template-columns: repeat(3, 1fr); } }
-@container adsgrid (min-width: 960px)  { .ads-grid { grid-template-columns: repeat(4, 1fr); } }
-@container adsgrid (min-width: 1280px) { .ads-grid { grid-template-columns: repeat(5, 1fr); } }
 
 /* Command / search bar */
 .command-bar {

@@ -5,8 +5,8 @@ import { ChevronDown, Globe, SlidersHorizontal } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { LANGUAGE_OPTIONS, type AdLanguage } from "@/lib/detect-language";
 
-// Only show countries that actually exist in our database
-const COUNTRY_CODES = ["US"] as const;
+// Target markets: US, EU, AU, CA
+const COUNTRY_CODES = ["ALL", "US", "GB", "DE", "FR", "NL", "AU", "CA"] as const;
 
 export const PRESETS = [
   { id: "top",          label: "Top Performers", icon: "🏆", desc: "AI Score ≥ 80" },
@@ -84,8 +84,15 @@ interface AdsFilterProps {
   vertical?: boolean;
 }
 
-const EXTRA_COUNTRIES: Record<string, string> = {
-  SG: "Singapore", GB: "United Kingdom", AU: "Australia", CA: "Canada",
+const COUNTRY_INFO: Record<string, { label: string; flag: string }> = {
+  ALL: { label: "All Countries", flag: "🌍" },
+  US:  { label: "United States", flag: "🇺🇸" },
+  GB:  { label: "United Kingdom", flag: "🇬🇧" },
+  DE:  { label: "Germany", flag: "🇩🇪" },
+  FR:  { label: "France", flag: "🇫🇷" },
+  NL:  { label: "Netherlands", flag: "🇳🇱" },
+  AU:  { label: "Australia", flag: "🇦🇺" },
+  CA:  { label: "Canada", flag: "🇨🇦" },
 };
 
 // ── Section wrapper for vertical sidebar ──────────────────────────────────────
@@ -368,8 +375,10 @@ export default function AdsFilter({
   const [showCountryDrop, setShowCountryDrop] = useState(false);
   const [showSortDrop, setShowSortDrop]       = useState(false);
 
-  const getCountryLabel = (code: string) =>
-    (t.filter.countries as Record<string, string>)[code] ?? EXTRA_COUNTRIES[code] ?? code;
+  const getCountryLabel = (code: string) => {
+    const info = COUNTRY_INFO[code];
+    return info ? `${info.flag} ${info.label}` : code;
+  };
 
   const activeSort   = SORT_OPTIONS.find(s => s.id === values.sortBy) ?? SORT_OPTIONS[0];
   const hasFilters   = values.preset !== null || values.platforms.length > 0 || values.sortBy !== "mixed"
@@ -577,50 +586,61 @@ export default function AdsFilter({
 
         <Divider />
 
-        {/* Status — hidden: 99.7% active, only 41 inactive ads */}
-
-        {/* Country — only show when multiple countries exist */}
-        {COUNTRY_CODES.length > 1 && (
-          <>
-            <FilterSection label="Country">
-              <div className="relative">
-                <button
-                  onClick={() => { setShowCountryDrop(v => !v); setShowSortDrop(false); }}
-                  className="flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium"
-                  style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+        {/* Country */}
+        <FilterSection label="Country">
+          <div className="relative">
+            <button
+              onClick={() => { setShowCountryDrop(v => !v); setShowSortDrop(false); }}
+              className="flex items-center gap-1.5 w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
+              style={{
+                background: values.country !== "US" ? "rgba(124,58,237,0.06)" : "var(--bg-hover)",
+                border: `1px solid ${values.country !== "US" ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+                color: values.country !== "US" ? "var(--text-1)" : "var(--text-2)",
+                transition: "all 120ms var(--ease)",
+              }}
+            >
+              <span className="text-[13px]">{COUNTRY_INFO[values.country]?.flag ?? "🌐"}</span>
+              <span className="flex-1 text-left">{COUNTRY_INFO[values.country]?.label ?? values.country}</span>
+              <ChevronDown size={12} style={{ color: "var(--text-3)", transform: showCountryDrop ? "rotate(180deg)" : "none", transition: "transform 150ms", flexShrink: 0 }} />
+            </button>
+            {showCountryDrop && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowCountryDrop(false)} />
+                <div
+                  className="absolute top-full left-0 right-0 mt-1 rounded-[10px] py-1 z-20 max-h-[280px] overflow-y-auto no-scrollbar"
+                  style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}
                 >
-                  <Globe size={12} style={{ color: "var(--text-3)" }} />
-                  <span className="flex-1 text-left">{getCountryLabel(values.country)}</span>
-                  <ChevronDown size={11} style={{ color: "var(--text-3)", transform: showCountryDrop ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
-                </button>
-                {showCountryDrop && (
-                  <div
-                    className="absolute top-full left-0 right-0 mt-1 rounded-[10px] py-1 z-20"
-                    style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
-                  >
-                    {COUNTRY_CODES.map(code => (
+                  {COUNTRY_CODES.map(code => {
+                    const isOn = values.country === code;
+                    const info = COUNTRY_INFO[code];
+                    return (
                       <button
                         key={code}
                         onClick={() => { onChange({ ...values, country: code }); setShowCountryDrop(false); }}
-                        className="w-full text-left px-3 py-1.5 text-[12px]"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
                         style={{
-                          color:      values.country === code ? "var(--ai-light)" : "var(--text-2)",
-                          fontWeight: values.country === code ? 500 : 400,
+                          background: isOn ? "rgba(124,58,237,0.10)" : "transparent",
+                          color: isOn ? "var(--ai-light)" : "var(--text-2)",
+                          transition: "all 100ms ease",
                         }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.15)" : "var(--bg-hover)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.10)" : "transparent"; }}
                       >
-                        {getCountryLabel(code)}
+                        <span className="text-[14px] flex-shrink-0">{info?.flag ?? "🌐"}</span>
+                        <span className="flex-1 text-left">{info?.label ?? code}</span>
+                        {isOn && (
+                          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--ai-light)" }} />
+                        )}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
+              </>
                 )}
               </div>
             </FilterSection>
-            <Divider />
-          </>
-        )}
 
+        <Divider />
 
         {/* Platform — dropdown multi-select */}
         <FilterSection label="Platform">

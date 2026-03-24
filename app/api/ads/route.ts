@@ -102,7 +102,11 @@ export async function GET(req: NextRequest) {
   const { clauses: searchClauses, values: searchValues } = buildSearchClauses(sp);
 
   // Build WHERE
-  const whereParts = [`country = $1`, `"isActive" = $2`];
+  const whereParts: string[] = [];
+  if (country !== "ALL") {
+    whereParts.push(`country = $1`);
+  }
+  whereParts.push(`"isActive" = $2`);
 
   // Media type filter
   const videoExpr = `COALESCE("rawData"->>'videoUrl', "rawData"->'snapshot'->>'video_hd_url', "rawData"->'snapshot'->>'video_sd_url')`;
