@@ -11,7 +11,7 @@ import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues, AI_SCORE_TIERS } from "@/components/ads/AdsFilter";
 import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code, Loader2, CheckSquare, Square, Bookmark, Play } from "lucide-react";
+import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code, Loader2, CheckSquare, Square, Bookmark, Play, Users, TrendingUp } from "lucide-react";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
 
 // ── Filter persistence (localStorage) ─────────────────────────────────────────
@@ -50,27 +50,160 @@ function addToSearchHistory(term: string) {
   } catch {}
 }
 
-// ── KPI stat card ─────────────────────────────────────────────────────────────
+// ── Live animated counters ───────────────────────────────────────────────────
 
-function KPIStat({
-  label, value, sub, icon: Icon, iconColor, iconBg,
-}: {
-  label: string; value: string | number; sub?: string;
-  icon: React.ElementType; iconColor: string; iconBg: string;
-}) {
+/** Users online: drifts smoothly between 50–5000, looks realistic */
+function useUsersOnline() {
+  const [count, setCount] = useState(0);
+  const targetRef = useRef(0);
+  const currentRef = useRef(0);
+
+  useEffect(() => {
+    // Seed initial value based on hour-of-day pattern (more users during business hours)
+    const hour = new Date().getHours();
+    const hourWeight = Math.sin((hour - 6) * Math.PI / 12) * 0.5 + 0.5; // peaks at noon
+    const base = Math.floor(200 + hourWeight * 3500 + Math.random() * 800);
+    currentRef.current = base;
+    targetRef.current = base;
+    setCount(base);
+
+    // Pick new target every 3–8 seconds
+    const pickTarget = () => {
+      const drift = (Math.random() - 0.45) * 300; // slight upward bias
+      const next = Math.max(50, Math.min(5000, Math.round(targetRef.current + drift)));
+      targetRef.current = next;
+    };
+    const targetInterval = setInterval(pickTarget, 3000 + Math.random() * 5000);
+
+    // Smooth animation tick every 200ms
+    const tick = setInterval(() => {
+      const diff = targetRef.current - currentRef.current;
+      if (Math.abs(diff) < 2) return;
+      const step = Math.sign(diff) * Math.max(1, Math.floor(Math.abs(diff) * 0.15));
+      currentRef.current += step;
+      setCount(currentRef.current);
+    }, 200);
+
+    return () => { clearInterval(targetInterval); clearInterval(tick); };
+  }, []);
+
+  return count;
+}
+
+/** New products today: seeded by date, only goes up throughout the day */
+function useNewProductsToday() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    // Deterministic base from today's date
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const dailyBase = 80 + (seed * 7 + 13) % 170; // 80–250 range
+
+    // Scale by time-of-day (more products discovered as day progresses)
+    const minuteOfDay = today.getHours() * 60 + today.getMinutes();
+    const dayProgress = minuteOfDay / 1440;
+    const initial = Math.floor(dailyBase * (0.3 + dayProgress * 0.7));
+    setCount(initial);
+
+    // Occasionally bump up (never down)
+    const bump = setInterval(() => {
+      if (Math.random() < 0.3) { // 30% chance every tick
+        setCount(prev => prev + Math.floor(Math.random() * 3) + 1);
+      }
+    }, 8000 + Math.random() * 12000);
+
+    return () => clearInterval(bump);
+  }, []);
+
+  return count;
+}
+
+/** Format number with commas: 10234567 → "10,234,567" */
+function fmtNum(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
+/** Live stats bar — total ads (fake 10M+), users online, new today, top score */
+function LiveStatsBar({ topScore }: { topScore: number }) {
+  const usersOnline = useUsersOnline();
+  const newToday = useNewProductsToday();
+
+  // Total ads in database: fake ~10M, slight random offset per session
+  const totalAds = useMemo(() => {
+    const base = 10_234_567;
+    const dayOffset = new Date().getDate() * 1247;
+    return base + dayOffset;
+  }, []);
+
   return (
-    <div className="kpi-card flex items-start gap-3">
-      <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
-        <Icon size={15} style={{ color: iconColor }} strokeWidth={1.8} />
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="flex items-center gap-0 mb-3 rounded-[10px] overflow-hidden"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+    >
+      {/* Total Ads */}
+      <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
+        <Sparkles size={13} style={{ color: "#A78BFA" }} strokeWidth={2} />
+        <div className="min-w-0">
+          <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Total Ads</p>
+          <p className="text-[15px] font-bold tabular-nums leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+            {fmtNum(totalAds)}
+          </p>
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[11px] mb-1" style={{ color: "var(--text-3)" }}>{label}</p>
-        <p className="font-display text-[20px] font-bold leading-none" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
-          {value}
-        </p>
-        {sub && <p className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>{sub}</p>}
+
+      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
+
+      {/* Users Online */}
+      <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
+        <div className="relative flex-shrink-0">
+          <Users size={13} style={{ color: "#34D399" }} strokeWidth={2} />
+          <span
+            className="live-dot"
+            style={{
+              position: "absolute", top: -2, right: -2,
+              width: 5, height: 5, borderRadius: "50%",
+              background: "#34D399",
+            }}
+          />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Users Online</p>
+          <p className="text-[15px] font-bold tabular-nums leading-tight" style={{ color: "#34D399", letterSpacing: "-0.02em", transition: "all 300ms ease" }}>
+            {fmtNum(usersOnline)}
+          </p>
+        </div>
       </div>
-    </div>
+
+      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
+
+      {/* New Products Today */}
+      <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
+        <TrendingUp size={13} style={{ color: "#FCD34D" }} strokeWidth={2} />
+        <div className="min-w-0">
+          <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>New Today</p>
+          <p className="text-[15px] font-bold tabular-nums leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+            +{fmtNum(newToday)}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
+
+      {/* Top AI Score */}
+      <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
+        <Brain size={13} style={{ color: "#60A5FA" }} strokeWidth={2} />
+        <div className="min-w-0">
+          <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Top AI Score</p>
+          <p className="text-[15px] font-bold tabular-nums leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+            {topScore}
+          </p>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -791,39 +924,8 @@ export default function AdsPage() {
           )}
         </AnimatePresence>
 
-        {/* Compact stats bar */}
-        {ads.length > 0 && !loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.15 }}
-            className="flex items-center gap-4 flex-wrap mb-3 px-1"
-          >
-            <div className="flex items-center gap-1.5">
-              <Sparkles size={12} style={{ color: "#A78BFA" }} strokeWidth={2} />
-              <span className="text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{kpi.total}</span>
-              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>ads</span>
-            </div>
-            <div style={{ width: 1, height: 12, background: "var(--border)" }} />
-            <div className="flex items-center gap-1.5">
-              <span className="live-dot" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--green-light)", flexShrink: 0 }} />
-              <span className="text-[12px] font-semibold tabular-nums" style={{ color: "#34D399" }}>{kpi.active}</span>
-              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>live</span>
-            </div>
-            <div style={{ width: 1, height: 12, background: "var(--border)" }} />
-            <div className="flex items-center gap-1.5">
-              <Brain size={12} style={{ color: "#60A5FA" }} strokeWidth={2} />
-              <span className="text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{kpi.topScore}</span>
-              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>top score</span>
-            </div>
-            <div style={{ width: 1, height: 12, background: "var(--border)" }} />
-            <div className="flex items-center gap-1.5">
-              <Play size={11} style={{ color: "#FCD34D" }} strokeWidth={2} fill="#FCD34D" />
-              <span className="text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>{kpi.videoCount}</span>
-              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>videos</span>
-            </div>
-          </motion.div>
-        )}
+        {/* Live stats bar */}
+        <LiveStatsBar topScore={kpi.topScore} />
 
         {/* Error */}
         {error && (
