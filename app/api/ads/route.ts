@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getUserPlan, getLimits } from "@/lib/subscription";
+import { getUserPlan, getLimits, deductScan } from "@/lib/subscription";
 import type { FbAd } from "@/lib/facebook-ads";
 
 // ── Search clause builder (parameterized, safe from injection) ───────────────
@@ -93,6 +93,18 @@ export async function GET(req: NextRequest) {
   }
 
   const page  = Math.max(1, Number(searchParams.get("page") ?? "1"));
+
+  // Deduct 1 scan per new search (page 1 only — pagination is free)
+  if (page === 1) {
+    const ok = await deductScan(session.user.id);
+    if (!ok) {
+      return NextResponse.json(
+        { error: "no_scans", message: "You've used all your Scans for this month. Buy more to keep searching." },
+        { status: 402 }
+      );
+    }
+  }
+
   const requestedLimit = Math.max(1, Number(searchParams.get("limit") ?? "40"));
   const limit = Math.min(limits.maxResults, requestedLimit); // enforce plan limit
   const isActive = status !== "INACTIVE";

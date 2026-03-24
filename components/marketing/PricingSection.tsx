@@ -40,17 +40,17 @@ const plans: Plan[] = [
     highlighted: false,
     description: "Perfect for solo marketers",
     cta: "Upgrade to Starter",
-    price: { monthly: 44, quarterly: 34, yearly: 29 },
+    price: { monthly: 39, quarterly: 31, yearly: 26 },
     variantId: VARIANT_IDS.starter,
     savingNote: {
       monthly: null,
-      quarterly: "or $34 per month if paid quarterly",
-      yearly: "You are saving $180 per year",
+      quarterly: "or $31 per month if paid quarterly",
+      yearly: "You are saving $156 per year",
     },
     features: [
       "Facebook Ads Library access",
       "Basic filters (country, status)",
-      "10,000 ad searches / month",
+      "500 Scans / month",
       "Save up to 50 ads",
       "Daily Top 10 Trending Ads",
       "Email support",
@@ -59,19 +59,19 @@ const plans: Plan[] = [
   {
     name: "Premium",
     highlighted: true,
-    badge: "72% of users upgrade to this plan",
+    badge: "Most popular",
     description: "For serious media buyers",
     cta: "Upgrade to Premium",
-    price: { monthly: 94, quarterly: 74, yearly: 64 },
+    price: { monthly: 89, quarterly: 71, yearly: 59 },
     variantId: VARIANT_IDS.premium,
     savingNote: {
       monthly: null,
-      quarterly: "or $74 per month if paid quarterly",
+      quarterly: "or $71 per month if paid quarterly",
       yearly: "You are saving $360 per year",
     },
     features: [
       "All Starter features, plus:",
-      "Unlimited ad searches",
+      "5,000 Scans / month",
       "Advanced filters + date range",
       "Trending Shops analysis",
       "AI-powered winning ad detection",
@@ -83,15 +83,16 @@ const plans: Plan[] = [
     highlighted: false,
     description: "For agencies & teams",
     cta: "Upgrade to Business",
-    price: { monthly: 394, quarterly: 344, yearly: 294 },
+    price: { monthly: 389, quarterly: 311, yearly: 259 },
     variantId: VARIANT_IDS.business,
     savingNote: {
       monthly: null,
-      quarterly: "or $344 per month if paid quarterly",
-      yearly: "You are saving $1,200 per year",
+      quarterly: "or $311 per month if paid quarterly",
+      yearly: "You are saving $1,560 per year",
     },
     features: [
       "All Premium features, plus:",
+      "25,000 Scans / month",
       "Success Radar (market intel)",
       "API access",
       "Team accounts (up to 5 users)",
@@ -266,13 +267,13 @@ export default function PricingSection() {
                     {plan.cta}
                   </button>
 
-                  {/* Credits note */}
+                  {/* Scans note */}
                   <p className="text-xs font-medium mb-5 flex items-center gap-1.5"
                     style={{ color: "var(--text-muted)" }}>
                     <Zap size={12} className="text-orange-400" />
-                    {plan.name === "Starter" && "10,000 Credits · Cancel anytime"}
-                    {plan.name === "Premium" && "100,000 Credits · Cancel anytime"}
-                    {plan.name === "Business" && "150,000 Credits · Cancel anytime"}
+                    {plan.name === "Starter" && "500 Scans / month · Cancel anytime"}
+                    {plan.name === "Premium" && "5,000 Scans / month · Cancel anytime"}
+                    {plan.name === "Business" && "25,000 Scans / month · Cancel anytime"}
                   </p>
 
                   {/* Divider */}

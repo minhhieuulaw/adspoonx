@@ -1,5 +1,5 @@
 /**
- * Subscription helpers — plan limits & DB queries
+ * Subscription helpers — plan limits, DB queries, scan management
  */
 import { prisma } from "./prisma";
 
@@ -17,6 +17,14 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   starter:  { maxResults: 200, maxSavedAds: 100,  canFilterVideo: true,  canExport: false },
   premium:  { maxResults: 500, maxSavedAds: 500,  canFilterVideo: true,  canExport: true  },
   business: { maxResults: 1000, maxSavedAds: 9999, canFilterVideo: true,  canExport: true  },
+};
+
+/** Scans allocated per month per plan */
+export const PLAN_SCANS: Record<Plan, number> = {
+  free:     50,
+  starter:  500,
+  premium:  5000,
+  business: 25000,
 };
 
 export const PLAN_LABELS: Record<Plan, string> = {
@@ -45,4 +53,82 @@ export async function getUserPlan(userId: string): Promise<Plan> {
 
 export function getLimits(plan: Plan): PlanLimits {
   return PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+}
+
+// ── Scan management ───────────────────────────────────────────────────────────
+
+/**
+ * Get current scan balance for a user, auto-resetting if the reset date has passed.
+ * Initialises scansResetAt on first call.
+ */
+export async function getUserScans(userId: string): Promise<{ balance: number; resetAt: Date }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { scansBalance: true, scansResetAt: true },
+  });
+
+  const now = new Date();
+
+  // If reset date has passed (or never set), refresh the balance
+  if (!user?.scansResetAt || user.scansResetAt < now) {
+    const plan = await getUserPlan(userId);
+    const newBalance = PLAN_SCANS[plan];
+    const nextReset = new Date(now);
+    nextReset.setMonth(nextReset.getMonth() + 1);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { scansBalance: newBalance, scansResetAt: nextReset },
+    });
+
+    return { balance: newBalance, resetAt: nextReset };
+  }
+
+  return {
+    balance: user.scansBalance,
+    resetAt: user.scansResetAt,
+  };
+}
+
+/**
+ * Atomically deduct 1 scan. Returns true if successful, false if balance was 0.
+ */
+export async function deductScan(userId: string): Promise<boolean> {
+  // First ensure the reset cycle is current
+  const { balance } = await getUserScans(userId);
+  if (balance <= 0) return false;
+
+  const { count } = await prisma.user.updateMany({
+    where: { id: userId, scansBalance: { gt: 0 } },
+    data: { scansBalance: { decrement: 1 } },
+  });
+
+  return count > 0;
+}
+
+/**
+ * Add scans to a user's balance (e.g. after a purchase).
+ */
+export async function addScans(userId: string, amount: number): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { scansBalance: { increment: amount } },
+  });
+}
+
+/**
+ * Grant plan scans when a subscription activates/renews.
+ * Sets balance to plan allocation and advances reset date.
+ */
+export async function grantPlanScans(userId: string, plan: Plan): Promise<void> {
+  const nextReset = new Date();
+  nextReset.setMonth(nextReset.getMonth() + 1);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      scansBalance: PLAN_SCANS[plan],
+      scansResetAt: nextReset,
+    },
+  });
 }

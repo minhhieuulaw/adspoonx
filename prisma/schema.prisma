@@ -16,12 +16,15 @@ model User {
   emailVerified DateTime?
   image         String?
   createdAt     DateTime  @default(now())
+  scansBalance  Int       @default(50)  // free tier: 50 scans/month
+  scansResetAt  DateTime?               // when balance resets next
 
   accounts       Account[]
   sessions       Session[]
   subscription   Subscription?
   savedAds       SavedAd[]
   savedSearches  SavedSearch[]
+  scanPurchases  ScanPurchase[]
 }
 
 model Account {
@@ -123,6 +126,19 @@ model SavedSearch {
   name      String               // tên hiển thị, VD: "Dropship fashion ads"
   filters   Json                 // lưu toàn bộ bộ lọc: {q, pageName, bodyText, niche, regex, ...}
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ScanPurchase {
+  id          String   @id @default(cuid())
+  userId      String
+  scans       Int                   // number of scans purchased
+  amountCents Int                   // price paid in cents
+  lsOrderId   String?               // LemonSqueezy order ID
+  createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
