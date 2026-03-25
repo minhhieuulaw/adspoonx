@@ -82,31 +82,65 @@ model Subscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Ads scraped by Apify and stored for fast search
+// ─── Shop (aggregated from Ads by pageId) ─────────────────────
+model Shop {
+  id              String    @id @default(cuid())
+  pageId          String    @unique
+  pageName        String
+  profilePicture  String?
+  website         String?
+  platforms       String[]
+  countries       String[]
+
+  totalAds        Int       @default(0)
+  activeAds       Int       @default(0)
+  pausedAds       Int       @default(0)
+
+  firstSeenAt     DateTime  @default(now())
+  lastAdSeenAt    DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  ads             Ad[]
+
+  @@index([pageName])
+  @@index([activeAds(sort: Desc)])
+  @@index([lastAdSeenAt])
+}
+
+// Ads scraped from Facebook Ads Library
 model Ad {
-  id          String   @id @default(cuid())
-  adArchiveId String   @unique // Facebook ad_archive_id
-  pageId      String?
-  pageName    String?
-  bodyText    String?
-  title       String?
-  description String?
-  imageUrl    String?
-  adLibraryUrl String?
-  platforms   String[] // ["FACEBOOK", "INSTAGRAM"]
-  country     String   @default("US")
-  isActive    Boolean  @default(true)
-  startDate   DateTime?
-  endDate     DateTime?
-  niche       String?  // auto-detected niche (e.g. "Fashion", "Health & Beauty")
-  rawData     Json     // full Apify output for future use
-  scrapedAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  adArchiveId   String   @unique
+  pageId        String?
+  pageName      String?
+  bodyText      String?
+  title         String?
+  description   String?
+  imageUrl      String?
+  videoUrl      String?
+  adLibraryUrl  String?
+  ctaType       String?
+  platforms     String[]
+  country       String   @default("US")
+  isActive      Boolean  @default(true)
+  startDate     DateTime?
+  endDate       DateTime?
+  pausedAt      DateTime?
+  lastCheckedAt DateTime?
+  checkCount    Int      @default(0)
+  niche         String?
+  rawData       Json
+  scrapedAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  shop          Shop?    @relation(fields: [pageId], references: [pageId])
 
   @@index([country, isActive])
   @@index([pageName])
   @@index([scrapedAt])
   @@index([niche])
+  @@index([isActive, lastCheckedAt])
+  @@index([pageId])
 }
 
 model SavedAd {

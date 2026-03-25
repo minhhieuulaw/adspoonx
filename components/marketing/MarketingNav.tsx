@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Zap } from "lucide-react";
+
+
 
 export default function MarketingNav() {
   return (
@@ -18,13 +19,9 @@ export default function MarketingNav() {
       }}
     >
       {/* Logo */}
-      <Link href="/home" className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-          <Zap size={14} className="text-white" />
-        </div>
-        <span className="font-bold text-base" style={{ color: "var(--text-primary)" }}>
-          adspoon<span className="text-indigo-400">X</span>
-        </span>
+      <Link href="/home">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-transparent.png" alt="AdSpoonX" className="h-7" style={{ filter: "invert(1)", objectFit: "contain" }} />
       </Link>
 
       {/* Nav links */}

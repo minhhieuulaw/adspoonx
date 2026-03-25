@@ -13,48 +13,40 @@ export async function GET(
 
   const { pageId } = await params;
 
-  // Get all ads for this store
-  const ads = await prisma.ad.findMany({
+  const shop = await prisma.shop.findUnique({
     where: { pageId },
-    orderBy: { scrapedAt: "desc" },
-    take: 200,
+    select: {
+      pageId: true,
+      pageName: true,
+      profilePicture: true,
+      totalAds: true,
+      activeAds: true,
+      pausedAds: true,
+      platforms: true,
+      countries: true,
+      firstSeenAt: true,
+      lastAdSeenAt: true,
+    },
   });
 
-  if (ads.length === 0) {
+  if (!shop) {
     return NextResponse.json({ error: "Store not found" }, { status: 404 });
   }
 
-  // Store-level analytics
-  const pageName = ads[0].pageName ?? "Unknown";
-  const activeCount = ads.filter((a) => a.isActive).length;
+  // Get ads, sorted: active first, then by date
+  const ads = await prisma.ad.findMany({
+    where: { pageId },
+    orderBy: [{ isActive: "desc" }, { scrapedAt: "desc" }],
+    take: 500,
+  });
+
   const niches = [...new Set(ads.map((a) => a.niche).filter(Boolean))];
-  const platforms = [...new Set(ads.flatMap((a) => a.platforms))];
-
-  // Extract first available profile picture
-  let profilePicture: string | undefined;
-  for (const ad of ads) {
-    const raw = ad.rawData as Record<string, unknown> | null;
-    if (!raw) continue;
-    const snap = raw["snapshot"] as Record<string, unknown> | undefined;
-    if (typeof snap?.["page_profile_picture_url"] === "string" && snap["page_profile_picture_url"]) {
-      profilePicture = snap["page_profile_picture_url"] as string;
-      break;
-    }
-  }
-
-  // Earliest start date
-  const startDates = ads.map((a) => a.startDate).filter(Boolean) as Date[];
-  const earliestStart = startDates.length > 0 ? new Date(Math.min(...startDates.map((d) => d.getTime()))) : null;
 
   return NextResponse.json({
-    pageId,
-    pageName,
-    profilePicture,
-    totalAds: ads.length,
-    activeAds: activeCount,
+    ...shop,
+    firstSeenAt: shop.firstSeenAt?.toISOString() ?? null,
+    lastAdSeenAt: shop.lastAdSeenAt?.toISOString() ?? null,
     niches,
-    platforms,
-    earliestStart: earliestStart?.toISOString() ?? null,
     ads: ads.map((ad) => ({
       adArchiveId: ad.adArchiveId,
       pageName: ad.pageName,
@@ -63,12 +55,15 @@ export async function GET(
       title: ad.title,
       description: ad.description,
       imageUrl: ad.imageUrl,
+      videoUrl: ad.videoUrl,
       adLibraryUrl: ad.adLibraryUrl,
+      ctaType: ad.ctaType,
       platforms: ad.platforms,
       country: ad.country,
       isActive: ad.isActive,
       startDate: ad.startDate?.toISOString() ?? null,
       endDate: ad.endDate?.toISOString() ?? null,
+      pausedAt: ad.pausedAt?.toISOString() ?? null,
       niche: ad.niche,
       rawData: ad.rawData,
     })),

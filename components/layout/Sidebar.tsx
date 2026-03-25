@@ -44,14 +44,9 @@ function NavContent({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 flex-shrink-0"
         style={{ borderBottom: "1px solid var(--sidebar-border)", height: 56 }}>
-        <div className="w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, var(--purple), var(--accent))", boxShadow: "0 0 12px rgba(124,58,237,0.4)" }}>
-          <Zap size={13} className="text-white" strokeWidth={2.5} />
-        </div>
-        <span className="font-display text-[15px] font-bold flex-1"
-          style={{ color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
-          adspoon<span style={{ color: "var(--accent)" }}>X</span>
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-transparent.png" alt="AdSpoonX" className="h-7 flex-shrink-0" style={{ filter: "invert(1)", objectFit: "contain" }} />
+        <span className="flex-1" />
         {onClose && (
           <button onClick={onClose} className="p-1 rounded-[6px] md:hidden"
             style={{ color: "var(--text-muted)", background: "var(--hover-bg)" }}>

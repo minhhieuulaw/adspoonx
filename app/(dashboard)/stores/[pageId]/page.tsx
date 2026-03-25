@@ -5,12 +5,33 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
-  ArrowLeft, Store, Zap, BarChart2, Calendar, Globe,
-  ExternalLink,
+  ArrowLeft, Store, Zap, BarChart2, Calendar, Pause,
+  ExternalLink, Play,
 } from "lucide-react";
 import type { FbAd } from "@/lib/facebook-ads";
 import { getAIInsights } from "@/lib/ai-insights";
 import AdCard from "@/components/ads/AdCard";
+
+interface StoreAd {
+  adArchiveId: string;
+  pageName: string | null;
+  pageId: string | null;
+  bodyText: string | null;
+  title: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  videoUrl: string | null;
+  adLibraryUrl: string | null;
+  ctaType: string | null;
+  platforms: string[];
+  country: string;
+  isActive: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  pausedAt: string | null;
+  niche: string | null;
+  rawData: unknown;
+}
 
 interface StoreData {
   pageId: string;
@@ -18,27 +39,16 @@ interface StoreData {
   profilePicture?: string;
   totalAds: number;
   activeAds: number;
+  pausedAds: number;
   niches: string[];
   platforms: string[];
-  earliestStart: string | null;
-  ads: Array<{
-    adArchiveId: string;
-    pageName: string | null;
-    pageId: string | null;
-    bodyText: string | null;
-    title: string | null;
-    description: string | null;
-    imageUrl: string | null;
-    adLibraryUrl: string | null;
-    platforms: string[];
-    country: string;
-    isActive: boolean;
-    startDate: string | null;
-    endDate: string | null;
-    niche: string | null;
-    rawData: unknown;
-  }>;
+  countries: string[];
+  firstSeenAt: string | null;
+  lastAdSeenAt: string | null;
+  ads: StoreAd[];
 }
+
+type TabKey = "active" | "paused" | "all";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -89,7 +99,7 @@ function extractCtaText(rawData: unknown): string | undefined {
   return undefined;
 }
 
-function mapToFbAd(ad: StoreData["ads"][number]): FbAd {
+function mapToFbAd(ad: StoreAd): FbAd {
   return {
     id: ad.adArchiveId,
     page_id: ad.pageId ?? undefined,
@@ -99,7 +109,7 @@ function mapToFbAd(ad: StoreData["ads"][number]): FbAd {
     ad_creative_link_descriptions: ad.description ? [ad.description] : undefined,
     ad_snapshot_url: ad.adLibraryUrl ?? undefined,
     image_url: ad.imageUrl ?? extractThumbnailUrl(ad.rawData) ?? undefined,
-    video_url: extractVideoUrl(ad.rawData),
+    video_url: ad.videoUrl ?? extractVideoUrl(ad.rawData),
     thumbnail_url: extractThumbnailUrl(ad.rawData) ?? ad.imageUrl ?? undefined,
     publisher_platforms: ad.platforms.length ? ad.platforms : undefined,
     ad_delivery_start_time: ad.startDate ?? undefined,
@@ -108,7 +118,7 @@ function mapToFbAd(ad: StoreData["ads"][number]): FbAd {
     country: ad.country,
     countries: [ad.country],
     page_profile_picture_url: extractProfilePic(ad.rawData),
-    cta_text: extractCtaText(ad.rawData),
+    cta_text: ad.ctaType ?? extractCtaText(ad.rawData),
     niche: ad.niche ?? undefined,
   };
 }
@@ -127,6 +137,12 @@ const PLATFORM_COLORS: Record<string, string> = {
   audience_network: "#A78BFA", threads: "#E5E7EB",
 };
 
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "active", label: "Active" },
+  { key: "paused", label: "Paused" },
+  { key: "all", label: "All" },
+];
+
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function StoreProfilePage() {
@@ -134,41 +150,39 @@ export default function StoreProfilePage() {
   const [store, setStore] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabKey>("active");
 
   useEffect(() => {
     if (!pageId) return;
     setLoading(true);
     fetch(`/api/stores/${encodeURIComponent(pageId)}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Not found");
-        return r.json();
-      })
+      .then((r) => { if (!r.ok) throw new Error("Not found"); return r.json(); })
       .then(setStore)
       .catch(() => setError("Store not found"))
       .finally(() => setLoading(false));
   }, [pageId]);
 
-  const fbAds = useMemo(() => store?.ads.map(mapToFbAd) ?? [], [store]);
+  const allAds = useMemo(() => store?.ads.map(mapToFbAd) ?? [], [store]);
+  const activeAds = useMemo(() => allAds.filter((a) => a.is_active), [allAds]);
+  const pausedAds = useMemo(() => allAds.filter((a) => !a.is_active), [allAds]);
+
+  const displayAds = tab === "active" ? activeAds : tab === "paused" ? pausedAds : allAds;
 
   const avgScore = useMemo(() => {
-    if (!fbAds.length) return 0;
-    const sum = fbAds.reduce((acc, ad) => acc + getAIInsights(ad).winningScore, 0);
-    return Math.round(sum / fbAds.length);
-  }, [fbAds]);
+    if (!activeAds.length) return 0;
+    const sum = activeAds.reduce((acc, ad) => acc + getAIInsights(ad).winningScore, 0);
+    return Math.round(sum / activeAds.length);
+  }, [activeAds]);
 
   if (loading) {
     return (
       <div className="max-w-6xl page-enter">
         <div className="h-32 rounded-[14px] skeleton mb-5" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 rounded-[12px] skeleton" />
-          ))}
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-20 rounded-[12px] skeleton" />)}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 10 }} />
-          ))}
+          {Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 10 }} />)}
         </div>
       </div>
     );
@@ -187,18 +201,18 @@ export default function StoreProfilePage() {
   }
 
   const color = avatarColor(store.pageName);
-  const daysActive = store.earliestStart
-    ? Math.floor((Date.now() - new Date(store.earliestStart).getTime()) / 86_400_000)
+  const daysActive = store.firstSeenAt
+    ? Math.floor((Date.now() - new Date(store.firstSeenAt).getTime()) / 86_400_000)
     : null;
 
   return (
     <div className="max-w-6xl page-enter">
-      {/* Back link */}
+      {/* Back */}
       <Link href="/stores" className="inline-flex items-center gap-1.5 text-[12px] font-medium mb-4" style={{ color: "var(--text-3)" }}>
         <ArrowLeft size={13} /> All Stores
       </Link>
 
-      {/* ── Store Header ── */}
+      {/* ── Header ── */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -237,6 +251,12 @@ export default function StoreProfilePage() {
                 {n}
               </span>
             ))}
+            {store.countries.length > 0 && (
+              <span className="text-[10px] font-medium px-2 py-[2px] rounded-[5px]"
+                style={{ color: "var(--text-muted)", background: "var(--content-bg)", border: "1px solid var(--sidebar-border)" }}>
+                {store.countries.join(", ")}
+              </span>
+            )}
           </div>
         </div>
         <a href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&media_type=all&search_type=page&q=${encodeURIComponent(store.pageName)}`}
@@ -252,32 +272,32 @@ export default function StoreProfilePage() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
           className="rounded-[12px] p-4 flex items-center gap-3"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: "var(--ai-soft)" }}>
-            <BarChart2 size={16} strokeWidth={1.8} style={{ color: "var(--ai-light)" }} />
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: "rgba(52,211,153,0.12)" }}>
+            <Play size={16} strokeWidth={1.8} fill="#34D399" style={{ color: "#34D399" }} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Total Ads</p>
-            <p className="font-display text-[22px] font-bold leading-none mt-0.5" style={{ color: "var(--text-1)" }}>{store.totalAds}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Active</p>
+            <p className="font-display text-[22px] font-bold leading-none mt-0.5" style={{ color: "#34D399" }}>{store.activeAds}</p>
           </div>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}
           className="rounded-[12px] p-4 flex items-center gap-3"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: "rgba(52,211,153,0.12)" }}>
-            <Zap size={16} strokeWidth={1.8} style={{ color: "#34D399" }} />
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: "rgba(239,68,68,0.12)" }}>
+            <Pause size={16} strokeWidth={1.8} style={{ color: "#EF4444" }} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Active</p>
-            <p className="font-display text-[22px] font-bold leading-none mt-0.5" style={{ color: "var(--text-1)" }}>{store.activeAds}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Paused</p>
+            <p className="font-display text-[22px] font-bold leading-none mt-0.5" style={{ color: "var(--text-1)" }}>{store.pausedAds}</p>
           </div>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
           className="rounded-[12px] p-4 flex items-center gap-3"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: "rgba(59,130,246,0.12)" }}>
-            <Globe size={16} strokeWidth={1.8} style={{ color: "#60A5FA" }} />
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: "var(--ai-soft)" }}>
+            <Zap size={16} strokeWidth={1.8} style={{ color: "var(--ai-light)" }} />
           </div>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Avg AI Score</p>
@@ -292,7 +312,7 @@ export default function StoreProfilePage() {
             <Calendar size={16} strokeWidth={1.8} style={{ color: "#FCD34D" }} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Active Since</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Tracking</p>
             <p className="font-display text-[16px] font-bold leading-none mt-0.5" style={{ color: "var(--text-1)" }}>
               {daysActive !== null ? `${daysActive}d` : "—"}
             </p>
@@ -300,19 +320,51 @@ export default function StoreProfilePage() {
         </motion.div>
       </div>
 
+      {/* ── Tabs ── */}
+      <div className="flex items-center gap-1 mb-4 p-1 rounded-[10px] w-fit"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+        {TABS.map((t) => {
+          const count = t.key === "active" ? activeAds.length : t.key === "paused" ? pausedAds.length : allAds.length;
+          const isActive = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-semibold transition-all"
+              style={{
+                background: isActive ? "rgba(124,58,237,0.15)" : "transparent",
+                color: isActive ? "var(--ai-light)" : "var(--text-muted)",
+              }}
+            >
+              {t.label}
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: isActive ? "rgba(124,58,237,0.2)" : "var(--content-bg)",
+                  color: isActive ? "var(--ai-light)" : "var(--text-muted)",
+                }}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── Ads Grid ── */}
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
-          All Ads ({fbAds.length})
-        </h2>
-      </div>
-      <div className="ads-grid-container">
-        <div className="ads-grid">
-          {fbAds.map((ad, i) => (
-            <AdCard key={ad.id} ad={ad} index={i} />
-          ))}
+      {displayAds.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            {tab === "paused" ? "No paused ads found yet" : "No ads found"}
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="ads-grid-container">
+          <div className="ads-grid">
+            {displayAds.map((ad, i) => (
+              <AdCard key={ad.id} ad={ad} index={i} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
