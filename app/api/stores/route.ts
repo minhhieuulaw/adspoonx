@@ -21,41 +21,50 @@ export async function GET(req: NextRequest) {
     '"activeAds"';
 
   try {
-    const whereClause = q
-      ? `WHERE "pageName" ILIKE '%' || $3 || '%'`
-      : "";
+    let shops: Array<Record<string, unknown>>;
+    let total: number;
 
-    const params: unknown[] = [limit, offset];
-    if (q) params.push(q);
+    if (q) {
+      shops = await prisma.$queryRawUnsafe(
+        `SELECT "pageId", "pageName", "profilePicture", "activeAds", "pausedAds", "totalAds",
+                platforms, countries, "firstSeenAt", "lastAdSeenAt"
+         FROM "Shop"
+         WHERE "pageName" ILIKE '%' || $1 || '%'
+         ORDER BY ${orderCol} DESC NULLS LAST
+         LIMIT $2 OFFSET $3`,
+        q, limit, offset,
+      );
+      const cnt = await prisma.$queryRawUnsafe<[{ count: bigint }]>(
+        `SELECT COUNT(*) as count FROM "Shop" WHERE "pageName" ILIKE '%' || $1 || '%'`,
+        q,
+      );
+      total = Number(cnt[0]?.count ?? 0);
+    } else {
+      shops = await prisma.$queryRawUnsafe(
+        `SELECT "pageId", "pageName", "profilePicture", "activeAds", "pausedAds", "totalAds",
+                platforms, countries, "firstSeenAt", "lastAdSeenAt"
+         FROM "Shop"
+         ORDER BY ${orderCol} DESC NULLS LAST
+         LIMIT $1 OFFSET $2`,
+        limit, offset,
+      );
+      const cnt = await prisma.$queryRawUnsafe<[{ count: bigint }]>(
+        `SELECT COUNT(*) as count FROM "Shop"`,
+      );
+      total = Number(cnt[0]?.count ?? 0);
+    }
 
-    const shops = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
-      `SELECT "pageId", "pageName", "profilePicture", "activeAds", "pausedAds", "totalAds",
-              platforms, countries, "firstSeenAt", "lastAdSeenAt"
-       FROM "Shop"
-       ${whereClause}
-       ORDER BY ${orderCol} DESC NULLS LAST
-       LIMIT $1 OFFSET $2`,
-      ...params,
-    );
-
-    const countResult = await prisma.$queryRawUnsafe<[{ count: bigint }]>(
-      `SELECT COUNT(*) as count FROM "Shop" ${whereClause}`,
-      ...(q ? [q] : []),
-    );
-    const total = Number(countResult[0]?.count ?? 0);
-
-    // Convert BigInt and Date for JSON serialization
     const data = shops.map((s) => ({
-      pageId: s.pageId,
-      pageName: s.pageName,
-      profilePicture: s.profilePicture ?? null,
+      pageId: String(s.pageId ?? ""),
+      pageName: String(s.pageName ?? ""),
+      profilePicture: s.profilePicture ? String(s.profilePicture) : null,
       activeAds: Number(s.activeAds ?? 0),
       pausedAds: Number(s.pausedAds ?? 0),
       totalAds: Number(s.totalAds ?? 0),
-      platforms: s.platforms ?? [],
-      countries: s.countries ?? [],
-      firstSeenAt: s.firstSeenAt ? new Date(s.firstSeenAt as string).toISOString() : null,
-      lastAdSeenAt: s.lastAdSeenAt ? new Date(s.lastAdSeenAt as string).toISOString() : null,
+      platforms: Array.isArray(s.platforms) ? s.platforms : [],
+      countries: Array.isArray(s.countries) ? s.countries : [],
+      firstSeenAt: s.firstSeenAt instanceof Date ? s.firstSeenAt.toISOString() : null,
+      lastAdSeenAt: s.lastAdSeenAt instanceof Date ? s.lastAdSeenAt.toISOString() : null,
     }));
 
     return NextResponse.json({
