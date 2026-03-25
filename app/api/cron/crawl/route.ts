@@ -7,6 +7,11 @@ import { startAllRunsWithWebhooks, cleanOldAds, DEFAULT_CRAWL_JOBS } from "@/lib
 export const maxDuration = 10;
 
 export async function GET(req: NextRequest) {
+  // DISABLED: tạm tắt auto-crawl để kiểm soát chi phí Apify
+  if (process.env.CRON_DISABLED === "true") {
+    return NextResponse.json({ ok: false, message: "Cron disabled" }, { status: 503 });
+  }
+
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
