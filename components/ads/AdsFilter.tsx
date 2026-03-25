@@ -68,7 +68,7 @@ export interface FilterValues {
   preset: PresetId;
   platforms: string[];
   sortBy: "mixed" | "score" | "newest" | "longest";
-  dropshipping: "all" | "dropshipping" | "brand";
+  dropshipping?: string;
   duration: "any" | "new" | "growing" | "proven" | "evergreen";
   aiScore: AIScoreTier;
   niche: string | null;
@@ -724,31 +724,6 @@ export default function AdsFilter({
                 </button>
               );
             })}
-          </div>
-        </FilterSection>
-
-        <Divider />
-
-        {/* Ad type: dropshipping vs brand */}
-        <FilterSection label="Ad Type">
-          <div
-            className="flex items-center p-0.5 rounded-[8px] gap-0.5 w-full"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}
-          >
-            {([{ id: "all", label: "All" }, { id: "dropshipping", label: "DS" }, { id: "brand", label: "Brand" }] as const).map(opt => (
-              <button
-                key={opt.id}
-                onClick={() => onChange({ ...values, dropshipping: opt.id })}
-                className="flex-1 py-1.5 rounded-[6px] text-[10px] font-medium"
-                style={
-                  values.dropshipping === opt.id
-                    ? { background: "var(--bg-active)", color: "var(--text-1)" }
-                    : { color: "var(--text-3)" }
-                }
-              >
-                {opt.label}
-              </button>
-            ))}
           </div>
         </FilterSection>
 
