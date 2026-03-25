@@ -225,12 +225,20 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
       snap?.video_sd_url ||
       null;
 
-    // ── Quality filter: chỉ lưu ads có đủ nội dung hiển thị ────────────────
-    // Phải có: (1) page name, (2) body text >= 10 ký tự, (3) image HOẶC video
+    // ── Quality filter (thống nhất 2026-03-25) ──────────────────────────────
+    // Phải có: (1) pageName, (2) bodyText >= 10 ký tự, (3) media, (4) CTA hợp lệ
     const pageName = raw.page_name ?? snap?.page_name ?? null;
     const hasMedia = !!(imageUrl || videoUrl);
     const hasBody  = !!(bodyText && bodyText.trim().length >= 10);
-    if (!pageName || !hasMedia || !hasBody) continue;
+
+    const ctaRaw =
+      firstCard?.cta_text ??
+      (snap?.cards?.[0] as { cta_text?: string } | undefined)?.cta_text ??
+      null;
+    const ALLOWED_CTA = ["shop now", "learn more", "order now"];
+    const hasCta = ctaRaw ? ALLOWED_CTA.includes(ctaRaw.trim().toLowerCase()) : false;
+
+    if (!pageName || !hasMedia || !hasBody || !hasCta) continue;
 
     // Store enriched rawData so extractors in api/ads/route.ts can pull video+thumbnail
     const enrichedRaw = {
