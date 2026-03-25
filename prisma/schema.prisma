@@ -100,8 +100,6 @@ model Shop {
   lastAdSeenAt    DateTime?
   updatedAt       DateTime  @updatedAt
 
-  ads             Ad[]
-
   @@index([pageName])
   @@index([activeAds(sort: Desc)])
   @@index([lastAdSeenAt])
@@ -132,8 +130,6 @@ model Ad {
   rawData       Json
   scrapedAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  shop          Shop?    @relation(fields: [pageId], references: [pageId])
 
   @@index([country, isActive])
   @@index([pageName])
