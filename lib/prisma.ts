@@ -6,9 +6,9 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  // Priority: DIRECT_URL (local dev) > POOLER_URL (Supabase pooler) > DATABASE_URL (Hetzner PgBouncer / default)
+  // DIRECT_URL is for migrations only — runtime always uses PgBouncer (DATABASE_URL)
   const connectionString =
-    process.env.DIRECT_URL ?? process.env.POOLER_URL ?? process.env.DATABASE_URL!;
+    process.env.POOLER_URL ?? process.env.DATABASE_URL!;
 
   // SSL: required for Supabase connections, not needed for Hetzner localhost
   const needsSsl = connectionString.includes("supabase");
