@@ -15,6 +15,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# Dummy build-time value so Prisma client initializes without error during `next build`
+ENV DATABASE_URL="postgresql://build:build@localhost/build"
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
