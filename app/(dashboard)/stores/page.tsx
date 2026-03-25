@@ -43,13 +43,19 @@ export default function StoresPage() {
 
   const fetchStores = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: "30", sort });
-    if (query.trim()) params.set("q", query.trim());
-    const r = await fetch(`/api/stores?${params}`);
-    const d = await r.json();
-    setStores(d.data ?? []);
-    setTotalPages(d.pagination?.pages ?? 1);
-    setLoading(false);
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: "30", sort });
+      if (query.trim()) params.set("q", query.trim());
+      const r = await fetch(`/api/stores?${params}`);
+      const d = await r.json();
+      setStores(d.data ?? []);
+      setTotalPages(d.pagination?.pages ?? 1);
+    } catch (e) {
+      console.error("Failed to fetch stores:", e);
+      setStores([]);
+    } finally {
+      setLoading(false);
+    }
   }, [page, sort, query]);
 
   useEffect(() => { fetchStores(); }, [fetchStores]);

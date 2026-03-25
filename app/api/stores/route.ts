@@ -26,30 +26,35 @@ export async function GET(req: NextRequest) {
         ? { lastAdSeenAt: "desc" as const }
         : { activeAds: "desc" as const };
 
-  const [shops, total] = await Promise.all([
-    prisma.shop.findMany({
-      where,
-      orderBy,
-      skip: (page - 1) * limit,
-      take: limit,
-      select: {
-        pageId: true,
-        pageName: true,
-        profilePicture: true,
-        activeAds: true,
-        pausedAds: true,
-        totalAds: true,
-        platforms: true,
-        countries: true,
-        firstSeenAt: true,
-        lastAdSeenAt: true,
-      },
-    }),
-    prisma.shop.count({ where }),
-  ]);
+  try {
+    const [shops, total] = await Promise.all([
+      prisma.shop.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          pageId: true,
+          pageName: true,
+          profilePicture: true,
+          activeAds: true,
+          pausedAds: true,
+          totalAds: true,
+          platforms: true,
+          countries: true,
+          firstSeenAt: true,
+          lastAdSeenAt: true,
+        },
+      }),
+      prisma.shop.count({ where }),
+    ]);
 
-  return NextResponse.json({
-    data: shops,
-    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-  });
+    return NextResponse.json({
+      data: shops,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (e) {
+    console.error("Stores API error:", e);
+    return NextResponse.json({ error: "Internal server error", detail: String(e) }, { status: 500 });
+  }
 }
