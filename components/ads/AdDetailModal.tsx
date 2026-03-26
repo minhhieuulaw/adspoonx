@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Globe, Monitor, Eye, DollarSign, Bookmark, ExternalLink, Play, Copy, Sparkles, ChevronDown, ChevronUp, Zap, AlertCircle } from "lucide-react";
+import {
+  X, Calendar, Eye, DollarSign, Globe, Monitor, Bookmark,
+  ExternalLink, Play, Pause, ChevronDown, TrendingUp,
+  Volume2, VolumeX, Package, ShoppingBag, Sparkles, Zap, AlertCircle, ChevronUp,
+} from "lucide-react";
 import type { FbAd } from "@/lib/facebook-ads";
 import { getAIInsights, getScoreBg, getScoreBorder } from "@/lib/ai-insights";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
 import type { AdAnalysisResult } from "@/app/api/ai/analyze-ad/route";
 
-interface Props {
-  ad: FbAd | null;
-  onClose: () => void;
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function daysRunning(iso?: string) {
   if (!iso) return null;
@@ -36,33 +35,8 @@ function fmtSpend(lower?: string, upper?: string): string | null {
   if (!lo && !hi) return null;
   const avg = (lo + hi) / 2;
   if (avg < 0.1) return null;
-  return avg >= 1000 ? `$${(avg / 1000).toFixed(1)}k` : `$${avg.toFixed(1)}`;
+  return avg >= 1000 ? `$${(avg / 1000).toFixed(1)}k` : `$${avg.toFixed(0)}`;
 }
-
-function FlagImg({ code }: { code: string }) {
-  if (!code || code.length !== 2) return null;
-  const c = code.toLowerCase();
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={`https://flagcdn.com/20x15/${c}.png`} srcSet={`https://flagcdn.com/40x30/${c}.png 2x`}
-      width={16} height={12} alt={code} style={{ borderRadius: 2, display: "inline-block" }} />
-  );
-}
-
-function fmtDateRange(start?: string, end?: string): string {
-  const s = start ? new Date(start).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : null;
-  const e = end ? new Date(end).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : null;
-  if (s && e) return `${s} → ${e}`;
-  if (s) return `${s} → Present`;
-  return "—";
-}
-
-const PLATFORM_COLOR: Record<string, string> = {
-  facebook: "#60A5FA", instagram: "#F472B6", messenger: "#38BDF8", audience_network: "#A78BFA", threads: "#E5E7EB",
-};
-const PLATFORM_LABEL: Record<string, string> = {
-  facebook: "Facebook", instagram: "Instagram", messenger: "Messenger", audience_network: "Audience Network", threads: "Threads",
-};
 
 const AVATAR_PALETTE = ["#A78BFA", "#60A5FA", "#F472B6", "#34D399", "#FCD34D", "#FB923C", "#38BDF8"];
 function avatarColor(name: string): string {
@@ -71,155 +45,227 @@ function avatarColor(name: string): string {
   return AVATAR_PALETTE[h % AVATAR_PALETTE.length];
 }
 
-// ── Video preview ──────────────────────────────────────────────────────────────
+const PLATFORM_LABEL: Record<string, string> = {
+  facebook: "Facebook", instagram: "Instagram", messenger: "Messenger",
+  audience_network: "Audience Network", threads: "Threads",
+};
+const PLATFORM_COLOR: Record<string, string> = {
+  facebook: "#60A5FA", instagram: "#F472B6", messenger: "#38BDF8",
+  audience_network: "#A78BFA", threads: "#E2E8F0",
+};
+
+function FlagImg({ code }: { code: string }) {
+  if (!code || code.length !== 2) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={`https://flagcdn.com/20x15/${code.toLowerCase()}.png`}
+      srcSet={`https://flagcdn.com/40x30/${code.toLowerCase()}.png 2x`}
+      width={16} height={12} alt={code}
+      style={{ borderRadius: 2, display: "inline-block", verticalAlign: "middle" }} />
+  );
+}
+
+// ── Stat row ──────────────────────────────────────────────────────────────────
+
+function StatRow({ icon: Icon, label, value, highlight }: {
+  icon: React.ElementType; label: string; value: string | React.ReactNode; highlight?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5"
+      style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      <div className="flex items-center gap-1.5">
+        <Icon size={11} strokeWidth={1.5} style={{ color: highlight ? "var(--ai-light)" : "var(--text-3)" }} />
+        <span className="text-[11px]" style={{ color: "var(--text-2)" }}>{label}</span>
+      </div>
+      <span className="font-data text-[11px] font-semibold" style={{ color: highlight ? "var(--ai-light)" : "var(--text-1)" }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// ── Expandable text ──────────────────────────────────────────────────────────
+
+function ExpandableText({ text, maxLines = 5 }: { text: string; maxLines?: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 220;
+  return (
+    <div>
+      <p className="text-[12px] leading-relaxed whitespace-pre-wrap"
+        style={{
+          color: "var(--text-2)",
+          ...(isLong && !expanded ? {
+            display: "-webkit-box", WebkitLineClamp: maxLines,
+            WebkitBoxOrient: "vertical" as const, overflow: "hidden",
+          } : {}),
+        }}>
+        {text}
+      </p>
+      {isLong && (
+        <button onClick={() => setExpanded(!expanded)}
+          className="text-[11px] font-medium mt-1 flex items-center gap-0.5"
+          style={{ color: "var(--ai-light)" }}>
+          {expanded ? "Show less" : "See more"}
+          <ChevronDown size={10} style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Video player ──────────────────────────────────────────────────────────────
 
 function VideoPreview({ src, poster, alt }: { src: string; poster?: string; alt: string }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [showVolume, setShowVolume] = useState(false);
+  const [volume, setVolume] = useState(0.7);
 
   function toggle() {
     if (playing) { ref.current?.pause(); setPlaying(false); }
     else ref.current?.play().then(() => setPlaying(true)).catch(() => {});
   }
+  function handleTimeUpdate() {
+    const v = ref.current;
+    if (v && v.duration) setProgress((v.currentTime / v.duration) * 100);
+  }
+  function seekTo(e: React.MouseEvent) {
+    e.stopPropagation();
+    const v = ref.current; const bar = progressRef.current;
+    if (!v || !bar || !v.duration) return;
+    const rect = bar.getBoundingClientRect();
+    v.currentTime = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * v.duration;
+  }
+  function handleVol(val: number) {
+    const v = ref.current; if (!v) return;
+    setVolume(val); v.volume = val;
+    if (val === 0) { v.muted = true; setMuted(true); }
+    else { v.muted = false; setMuted(false); }
+  }
+  function toggleMute(e: React.MouseEvent) {
+    e.stopPropagation();
+    const v = ref.current; if (!v) return;
+    v.muted = !v.muted; setMuted(v.muted);
+    if (!v.muted && volume === 0) { setVolume(0.5); v.volume = 0.5; }
+  }
 
   return (
-    <div
-      style={{ position: "relative", overflow: "hidden", borderRadius: 10, cursor: "pointer" }}
-      onClick={toggle}
-    >
-      <video
-        ref={ref} src={src} poster={poster} muted playsInline loop preload="metadata"
-        className="w-full object-cover" style={{ display: "block" }} aria-label={alt}
-      />
-      {/* Overlay */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: playing ? "rgba(0,0,0,0)" : "rgba(0,0,0,0.3)",
-        transition: "background 300ms",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <div style={{
-          width: 52, height: 52, borderRadius: "50%",
-          background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)",
-          border: "1.5px solid rgba(255,255,255,0.45)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          opacity: playing ? 0 : 1, transition: "opacity 200ms",
-        }}>
-          <Play size={20} fill="white" color="white" style={{ marginLeft: 3 }} />
+    <div style={{ position: "relative", cursor: "pointer" }} onClick={toggle}>
+      <video ref={ref} src={src} poster={poster} muted playsInline loop preload="metadata"
+        className="w-full object-cover" style={{ display: "block", maxHeight: 420 }} aria-label={alt}
+        onTimeUpdate={handleTimeUpdate} />
+      {!playing && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1.5px solid rgba(255,255,255,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Play size={20} fill="white" color="white" style={{ marginLeft: 2 }} />
+          </div>
         </div>
-      </div>
-      {/* Playing indicator */}
+      )}
       {playing && (
-        <div style={{
-          position: "absolute", bottom: 10, right: 10,
-          background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
-          borderRadius: 5, padding: "2px 7px",
-          fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.85)", letterSpacing: "0.06em",
-          border: "1px solid rgba(255,255,255,0.12)",
-        }}>
-          ▶ PLAYING
+        <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-2 py-1.5"
+          style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.7))" }}
+          onClick={e => e.stopPropagation()}>
+          <button onClick={toggle} style={{ color: "white", background: "none", border: "none", cursor: "pointer", padding: 2 }}>
+            <Pause size={12} fill="white" />
+          </button>
+          <div ref={progressRef} onClick={seekTo} className="flex-1 h-1 rounded-full cursor-pointer" style={{ background: "rgba(255,255,255,0.2)" }}>
+            <div className="h-full rounded-full" style={{ width: `${progress}%`, background: "var(--ai-light)", transition: "width 100ms linear" }} />
+          </div>
+          <div className="relative" onMouseEnter={() => setShowVolume(true)} onMouseLeave={() => setShowVolume(false)}>
+            <button onClick={toggleMute} style={{ color: "white", background: "none", border: "none", cursor: "pointer", padding: 2 }}>
+              {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+            </button>
+            {showVolume && (
+              <div style={{ position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)", marginBottom: 4, padding: "8px 6px", borderRadius: 6, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <input type="range" min="0" max="1" step="0.05" value={volume}
+                  onChange={e => handleVol(parseFloat(e.target.value))} onClick={e => e.stopPropagation()}
+                  className="volume-slider"
+                  style={{ writingMode: "vertical-lr", direction: "rtl", width: 4, height: 60, appearance: "none", WebkitAppearance: "none", background: `linear-gradient(to top, var(--ai-light) ${volume * 100}%, rgba(255,255,255,0.2) ${volume * 100}%)`, borderRadius: 2, outline: "none", cursor: "pointer" }} />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// ── Metric chip ────────────────────────────────────────────────────────────────
+// ── Mini ad card ──────────────────────────────────────────────────────────────
 
-function MetricChip({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+function MiniAdCard({ ad }: { ad: FbAd }) {
+  const isActive = ad.is_active !== false;
+  const days = daysRunning(ad.ad_delivery_start_time);
   return (
-    <div className="flex flex-col gap-0.5 px-3 py-2.5 rounded-[10px]"
-      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
-      <div className="flex items-center gap-1" style={{ color: "var(--text-3)" }}>
-        <Icon size={10} strokeWidth={1.5} />
-        <span className="text-[9px] uppercase tracking-wide font-semibold">{label}</span>
+    <div className="cursor-pointer rounded-[8px] overflow-hidden"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border)", transition: "border-color 150ms" }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(124,58,237,0.35)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; }}>
+      <div style={{ aspectRatio: "1/1", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+        {(ad.image_url || ad.thumbnail_url) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={ad.thumbnail_url ?? ad.image_url!} alt="" loading="lazy" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[9px]" style={{ color: "var(--text-3)" }}>No preview</div>
+        )}
       </div>
-      <span className="font-data text-[13px] font-bold" style={{ color: "var(--text-1)" }}>{value}</span>
-    </div>
-  );
-}
-
-// ── Claude section helper ──────────────────────────────────────────────────────
-
-function ClaudeSection({
-  label, text, tag, highlight, dim,
-}: {
-  label: string; text: string; tag?: boolean; highlight?: boolean; dim?: boolean;
-}) {
-  if (tag) {
-    return (
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>{label}</p>
-        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold"
-          style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }}>
-          {text}
-        </span>
-      </div>
-    );
-  }
-  const textColor = highlight ? "#6ee7b7" : dim ? "#F87171" : "var(--text-2)";
-  const bg        = highlight ? "rgba(52,211,153,0.05)" : dim ? "rgba(248,113,113,0.05)" : "rgba(255,255,255,0.02)";
-  const border    = highlight ? "rgba(52,211,153,0.15)"  : dim ? "rgba(248,113,113,0.15)"  : "rgba(255,255,255,0.06)";
-  return (
-    <div>
-      <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>{label}</p>
-      <div className="rounded-[8px] px-3 py-2" style={{ background: bg, border: `1px solid ${border}` }}>
-        <p className="text-[12px] leading-relaxed" style={{ color: textColor }}>{text}</p>
+      <div className="px-1.5 py-1.5">
+        <div className="flex items-center gap-1">
+          <span className={isActive ? "live-dot" : ""} style={{ width: 4, height: 4, borderRadius: "50%", display: "inline-block", flexShrink: 0, background: isActive ? "var(--green-light)" : "rgba(255,255,255,0.2)" }} />
+          <span style={{ fontSize: 8, fontWeight: 700, color: isActive ? "var(--green-light)" : "var(--text-3)" }}>
+            {isActive ? "Active" : "Paused"}
+          </span>
+          {days !== null && <span className="font-data ml-auto" style={{ fontSize: 8, color: "var(--text-3)" }}>{days}d</span>}
+        </div>
+        {ad.ad_creative_bodies?.[0] && (
+          <p className="text-[8px] line-clamp-2 leading-tight mt-0.5" style={{ color: "var(--text-3)" }}>
+            {ad.ad_creative_bodies[0]}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-// ── Main modal ─────────────────────────────────────────────────────────────────
+// ── Sparkline ─────────────────────────────────────────────────────────────────
 
-export default function AdDetailModal({ ad, onClose }: Props) {
-  const { savedIds, toggleSave } = useSavedAds();
-  const [claudeResult,  setClaudeResult]  = useState<AdAnalysisResult | null>(null);
-  const [claudeLoading, setClaudeLoading] = useState(false);
-  const [claudeError,   setClaudeError]   = useState("");
-  const [claudeOpen,    setClaudeOpen]    = useState(false);
+function MiniSparkline({ values, color }: { values: number[]; color: string }) {
+  const max = Math.max(...values, 1);
+  return (
+    <div className="flex items-end gap-[2px]" style={{ height: 20 }}>
+      {values.map((v, i) => (
+        <div key={i} className="rounded-sm" style={{ flex: 1, height: `${Math.max(8, (v / max) * 100)}%`, background: i === values.length - 1 ? color : `${color}40`, minWidth: 3 }} />
+      ))}
+    </div>
+  );
+}
 
-  // Reset when ad changes
+// ── Main export ───────────────────────────────────────────────────────────────
+
+interface Props { ad: FbAd | null; onClose: () => void; allAds?: FbAd[]; }
+
+export default function AdDetailModal({ ad, onClose, allAds = [] }: Props) {
   useEffect(() => {
-    setClaudeResult(null);
-    setClaudeError("");
-    setClaudeOpen(false);
-  }, [ad?.id]);
-
-  async function runClaudeAnalysis() {
-    if (!ad) return;
-    setClaudeLoading(true);
-    setClaudeError("");
-    setClaudeOpen(true);
-    try {
-      const r = await fetch("/api/ai/analyze-ad", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ adArchiveId: ad.id }),
-      });
-      const data = await r.json() as AdAnalysisResult & { error?: string };
-      if (!r.ok) {
-        setClaudeError(data.error ?? "Analysis failed");
-      } else {
-        setClaudeResult(data);
-      }
-    } catch {
-      setClaudeError("Network error. Vui lòng thử lại.");
-    } finally {
-      setClaudeLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  if (!ad) return null;
+  return (
+    <AnimatePresence>
+      {ad && <ModalInner ad={ad} onClose={onClose} allAds={allAds} />}
+    </AnimatePresence>
+  );
+}
 
-  const ai          = getAIInsights(ad);
+// ── Modal content ─────────────────────────────────────────────────────────────
+
+function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; allAds: FbAd[] }) {
+  const { savedIds, toggleSave } = useSavedAds();
   const isSaved     = savedIds.has(ad.id);
+  const ai          = getAIInsights(ad);
   const storeName   = ad.page_name ?? "Unknown";
   const color       = avatarColor(storeName);
   const isActive    = ad.is_active !== false;
@@ -227,8 +273,6 @@ export default function AdDetailModal({ ad, onClose }: Props) {
   const platforms   = ad.publisher_platforms ?? [];
   const body        = ad.ad_creative_bodies?.[0] ?? ad.ad_creative_link_descriptions?.[0];
   const title       = ad.ad_creative_link_titles?.[0];
-  const linkDesc    = ad.ad_creative_link_descriptions?.[0];
-  const linkCaption = ad.ad_creative_link_captions?.[0];
   const countries   = ad.countries ?? (ad.country ? [ad.country] : []);
   const impressFmt  = fmtNum(ad.impressions?.lower_bound, ad.impressions?.upper_bound);
   const spendFmt    = fmtSpend(ad.spend?.lower_bound, ad.spend?.upper_bound);
@@ -237,496 +281,537 @@ export default function AdDetailModal({ ad, onClose }: Props) {
     ad.estimated_audience_size?.upper_bound?.toString()
   );
 
+  // Shop data
+  const shopAds       = allAds.filter(a => a.page_name === ad.page_name && a.id !== ad.id).slice(0, 12);
+  const totalShopAds  = allAds.filter(a => a.page_name === ad.page_name).length;
+  const activeShopAds = allAds.filter(a => a.page_name === ad.page_name && a.is_active !== false).length;
+
+  // Revenue estimate
+  const spendLo    = Number(ad.spend?.lower_bound ?? 0);
+  const spendHi    = Number(ad.spend?.upper_bound ?? 0);
+  const avgSpend   = (spendLo + spendHi) / 2;
+  const dailySpend = days && days > 0 ? avgSpend / days : 0;
+  const roas       = 3.5;
+  const estDailyRev   = dailySpend > 0 ? Math.round(dailySpend * roas) : null;
+  const estMonthlyRev = estDailyRev ? estDailyRev * 30 : null;
+  const estStoreRev   = estMonthlyRev && activeShopAds > 1
+    ? estMonthlyRev * Math.min(activeShopAds, 10) * 0.7 : null;
+
+  const sparkData = Array.from({ length: 7 }, (_, i) =>
+    Math.max(10, ai.winningScore + Math.sin(i * 1.2) * 15 + i * 2)
+  );
+
+  // Claude AI
+  const [claudeResult,  setClaudeResult]  = useState<AdAnalysisResult | null>(null);
+  const [claudeLoading, setClaudeLoading] = useState(false);
+  const [claudeError,   setClaudeError]   = useState("");
+  const [claudeOpen,    setClaudeOpen]    = useState(true);
+
+  async function runClaudeAnalysis() {
+    setClaudeLoading(true); setClaudeError(""); setClaudeOpen(true);
+    try {
+      const r = await fetch("/api/ai/analyze-ad", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adArchiveId: ad.id }),
+      });
+      const data = await r.json() as AdAnalysisResult & { error?: string };
+      if (!r.ok) setClaudeError(data.error ?? "Analysis failed");
+      else setClaudeResult(data);
+    } catch { setClaudeError("Network error."); }
+    finally { setClaudeLoading(false); }
+  }
+
   return (
-    <AnimatePresence>
-      {ad && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-50"
-            style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}
-            onClick={onClose}
-          />
+    <>
+      {/* Backdrop */}
+      <motion.div
+        key="modal-bg"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 z-50"
+        style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(3px)" }}
+        onClick={onClose}
+      />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
-            animate={{ opacity: 1, scale: 1,    y: 0 }}
-            exit={{ opacity: 0, scale: 0.96,    y: 16 }}
-            transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
-          >
-            <div
-              className="pointer-events-auto w-full flex flex-col md:flex-row"
-              style={{
-                maxWidth: 980,
-                maxHeight: "92vh",
-                borderRadius: 16,
-                overflow: "hidden",
-                background: "var(--bg-surface)",
-                border: "1px solid rgba(255,255,255,0.09)",
-                boxShadow: "0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(124,58,237,0.08)",
-              }}
-            >
-              {/* ── Left: Ad Preview ─────────────────────────────────────────── */}
-              <div
-                className="flex flex-col overflow-y-auto flex-shrink-0"
-                style={{ width: "clamp(300px, 40%, 420px)", background: "var(--bg-card)", borderRight: "1px solid var(--border)" }}
-              >
-                {/* Brand header — Facebook Ads Library style */}
-                <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
-                  {ad.page_profile_picture_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={ad.page_profile_picture_url} alt={storeName}
-                      className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                      style={{ border: `1.5px solid ${color}40` }} />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                      style={{ background: `${color}20`, color, border: `1.5px solid ${color}35` }}>
-                      {storeName.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display text-[13px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
-                      {storeName}
+      {/* Modal */}
+      <motion.div
+        key="modal-body"
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ type: "spring", stiffness: 400, damping: 34 }}
+        className="fixed z-50"
+        style={{
+          top: "50%", left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "min(980px, calc(100vw - 24px))",
+          height: "min(880px, calc(100vh - 32px))",
+          borderRadius: 16,
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-strong)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.72), 0 0 0 1px rgba(255,255,255,0.04)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+
+        {/* ── Header ── */}
+        <div className="flex items-center gap-3 px-4 py-2.5 flex-shrink-0"
+          style={{ background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
+
+          {/* Brand info */}
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            {ad.page_profile_picture_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={ad.page_profile_picture_url} alt={storeName}
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                style={{ border: `1.5px solid ${color}50` }} />
+            ) : (
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                style={{ background: `${color}20`, color, border: `1.5px solid ${color}35` }}>
+                {storeName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="font-display text-[13px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{storeName}</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px]" style={{ color: "var(--text-3)" }}>Sponsored ·</span>
+                <span className="flex items-center gap-1 text-[9px]" style={{ color: isActive ? "var(--green-light)" : "var(--text-3)" }}>
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: isActive ? "var(--green-light)" : "rgba(255,255,255,0.2)", display: "inline-block" }} />
+                  {isActive ? "Live" : "Paused"}
+                  {days !== null && <span className="font-data font-bold ml-0.5">{days}d</span>}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={() => toggleSave(ad)} data-tip={isSaved ? "Unsave" : "Save ad"}
+              className="panel-btn p-1.5 rounded-[7px]"
+              style={{ color: isSaved ? "var(--ai-light)" : "var(--text-3)", background: isSaved ? "var(--ai-soft)" : "var(--bg-hover)", border: `1px solid ${isSaved ? "rgba(124,58,237,0.3)" : "var(--border)"}` }}>
+              <Bookmark size={13} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? "currentColor" : "none"} />
+            </button>
+            {ad.ad_snapshot_url && (
+              <a href={ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
+                data-tip="Open in library" className="panel-btn p-1.5 rounded-[7px]"
+                style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)", display: "flex" }}>
+                <ExternalLink size={13} strokeWidth={1.5} />
+              </a>
+            )}
+            <button onClick={() => void runClaudeAnalysis()} disabled={claudeLoading}
+              data-tip="AI deep analysis"
+              className="panel-btn flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[11px] font-semibold disabled:opacity-50"
+              style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.35)", color: "var(--ai-light)" }}>
+              {claudeLoading
+                ? <><div className="w-3 h-3 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />Analyzing...</>
+                : <><Sparkles size={11} />AI</>}
+            </button>
+            <button onClick={onClose} data-tip="Close" className="panel-btn p-1.5 rounded-[7px]"
+              style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+              <X size={13} strokeWidth={2} />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Body: 2-column ── */}
+        <div className="flex flex-1 min-h-0">
+
+          {/* LEFT: Creative + copy (fixed width, scrollable) */}
+          <div className="flex flex-col flex-shrink-0 overflow-y-auto no-scrollbar"
+            style={{ width: 360, borderRight: "1px solid var(--border)", background: "var(--bg-base)" }}>
+
+            {/* Creative */}
+            <div style={{ background: "rgba(0,0,0,0.35)", flexShrink: 0 }}>
+              {ad.video_url ? (
+                <VideoPreview src={ad.video_url} poster={ad.thumbnail_url ?? ad.image_url} alt={storeName} />
+              ) : ad.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={ad.image_url} alt={storeName} loading="lazy"
+                  className="w-full object-cover" style={{ display: "block", maxHeight: 400 }} />
+              ) : ad.ad_snapshot_url ? (
+                <div style={{ height: 260 }}>
+                  <iframe src={ad.ad_snapshot_url} className="w-full h-full border-0 pointer-events-none"
+                    title={storeName} sandbox="allow-scripts allow-same-origin" />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center text-xs" style={{ height: 160, color: "var(--text-3)" }}>
+                  No preview
+                </div>
+              )}
+            </div>
+
+            {/* CTA row */}
+            {(title || ad.cta_text) && (
+              <div className="px-3 py-2.5 flex items-center justify-between gap-2 flex-shrink-0"
+                style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid var(--border)" }}>
+                <div className="flex-1 min-w-0">
+                  {ad.ad_creative_link_captions?.[0] && (
+                    <p className="text-[9px] uppercase tracking-wide mb-0.5" style={{ color: "var(--text-3)" }}>
+                      {ad.ad_creative_link_captions[0]}
                     </p>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Sponsored ·</span>
-                      <span className="flex items-center gap-1 text-[10px]" style={{ color: isActive ? "var(--green-light)" : "var(--text-3)" }}>
-                        <span style={{ display: "inline-block", width: 4, height: 4, borderRadius: "50%", background: isActive ? "var(--green-light)" : "rgba(255,255,255,0.2)", flexShrink: 0 }} />
-                        {isActive ? "Live" : "Paused"}
-                        {days !== null && <span className="font-data font-bold">{days}d</span>}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ad copy — full text */}
-                {body && (
-                  <p className="px-4 pb-3 text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-2)" }}>
-                    {body}
+                  )}
+                  <p className="font-display text-[12px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
+                    {title ?? storeName}
                   </p>
-                )}
-
-                {/* Creative */}
-                <div className="mx-3 overflow-hidden" style={{ background: "rgba(0,0,0,0.3)", borderTopLeftRadius: 10, borderTopRightRadius: 10, borderBottomLeftRadius: (title || ad.cta_text || linkDesc) ? 0 : 10, borderBottomRightRadius: (title || ad.cta_text || linkDesc) ? 0 : 10 }}>
-                  {ad.video_url ? (
-                    <VideoPreview src={ad.video_url} poster={ad.thumbnail_url ?? ad.image_url} alt={storeName} />
-                  ) : ad.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={ad.image_url} alt={storeName} loading="lazy" className="w-full object-cover"
-                      style={{ display: "block" }} />
-                  ) : ad.ad_snapshot_url ? (
-                    <div style={{ height: 200 }}>
-                      <iframe src={ad.ad_snapshot_url} className="w-full h-full border-0 pointer-events-none"
-                        title={storeName} sandbox="allow-scripts allow-same-origin" />
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center text-xs" style={{ height: 140, color: "var(--text-3)" }}>
-                      No preview
-                    </div>
+                  {ad.ad_creative_link_descriptions?.[0] && ad.ad_creative_link_descriptions[0] !== body && (
+                    <p className="text-[10px] mt-0.5 line-clamp-1" style={{ color: "var(--text-2)" }}>
+                      {ad.ad_creative_link_descriptions[0]}
+                    </p>
                   )}
                 </div>
-
-                {/* CTA row — flush with creative, Facebook Ads Library style */}
-                {(title || ad.cta_text || linkDesc) && (
-                  <div className="mx-3 px-3 py-2.5"
-                    style={{ background: "rgba(255,255,255,0.04)", borderBottom: "1px solid var(--border)", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)", borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }}>
-                    {linkCaption && (
-                      <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>
-                        {linkCaption}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-display text-[12px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
-                          {title ?? storeName}
-                        </p>
-                        {linkDesc && linkDesc !== body && (
-                          <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: "var(--text-2)" }}>
-                            {linkDesc}
-                          </p>
-                        )}
-                      </div>
-                      {ad.cta_text && (
-                        (ad.link_url || ad.ad_snapshot_url) ? (
-                          <a href={ad.link_url ?? ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
-                            className="cta-btn text-[11px] font-bold px-4 py-2 rounded-[8px] flex-shrink-0 flex items-center gap-1.5"
-                            style={{
-                              background: "linear-gradient(135deg, #4F46E5, #7C3AED)",
-                              color: "#fff",
-                              border: "1px solid rgba(124,58,237,0.5)",
-                              boxShadow: "0 2px 8px rgba(124,58,237,0.25)",
-                              transition: "transform 150ms ease, box-shadow 150ms ease",
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px) scale(1.04)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(124,58,237,0.4)"; }}
-                            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0) scale(1)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(124,58,237,0.25)"; }}
-                          >
-                            {ad.cta_text}
-                            <ExternalLink size={10} strokeWidth={2.5} />
-                          </a>
-                        ) : (
-                          <span className="text-[11px] font-bold px-4 py-2 rounded-[8px] flex-shrink-0"
-                            style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-3)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                            {ad.cta_text}
-                          </span>
-                        )
-                      )}
-                    </div>
-                  </div>
+                {ad.cta_text && (
+                  (ad.link_url || ad.ad_snapshot_url) ? (
+                    <a href={ad.link_url ?? ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
+                      className="text-[11px] font-bold px-3 py-1.5 rounded-[7px] flex-shrink-0 flex items-center gap-1"
+                      style={{ background: "linear-gradient(135deg,#4F46E5,#7C3AED)", color: "#fff", border: "1px solid rgba(124,58,237,0.5)", boxShadow: "0 2px 8px rgba(124,58,237,0.25)", transition: "transform 150ms, box-shadow 150ms" }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px) scale(1.04)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
+                      {ad.cta_text}<ExternalLink size={9} strokeWidth={2.5} />
+                    </a>
+                  ) : (
+                    <span className="text-[11px] font-bold px-3 py-1.5 rounded-[7px] flex-shrink-0"
+                      style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-3)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      {ad.cta_text}
+                    </span>
+                  )
                 )}
+              </div>
+            )}
 
-                {/* Platforms */}
-                {platforms.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 px-4 pb-2">
-                    {platforms.map(p => {
-                      const c = PLATFORM_COLOR[p.toLowerCase()] ?? "#94A3B8";
-                      return (
-                        <span key={p} className="text-[9px] font-bold px-2 py-[3px] rounded-[5px]"
-                          style={{ color: c, background: `${c}15`, border: `1px solid ${c}30` }}>
-                          {PLATFORM_LABEL[p.toLowerCase()] ?? p}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
+            {/* Ad copy */}
+            {body && (
+              <div className="px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>Ad Copy</p>
+                <ExpandableText text={body} maxLines={7} />
+              </div>
+            )}
 
-                {/* Run dates */}
-                <div className="flex items-center gap-1.5 px-4 pb-1.5">
-                  <Calendar size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-                  <span className="text-[10px] font-medium" style={{ color: "var(--text-2)" }}>
-                    {fmtDateRange(ad.ad_delivery_start_time, ad.ad_delivery_stop_time)}
+            {/* Platforms */}
+            {platforms.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                {platforms.map(p => {
+                  const c = PLATFORM_COLOR[p.toLowerCase()] ?? "#94A3B8";
+                  return (
+                    <span key={p} className="text-[9px] font-bold px-2 py-[3px] rounded-[5px]"
+                      style={{ color: c, background: `${c}15`, border: `1px solid ${c}30` }}>
+                      {PLATFORM_LABEL[p.toLowerCase()] ?? p}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Countries */}
+            {countries.length > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2.5 flex-shrink-0">
+                <Globe size={11} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                <div className="flex items-center gap-1 flex-wrap">
+                  {countries.slice(0, 10).map(c => <FlagImg key={c} code={c} />)}
+                  {countries.length > 10 && <span className="text-[9px] font-semibold" style={{ color: "var(--text-3)" }}>+{countries.length - 10}</span>}
+                </div>
+              </div>
+            )}
+
+            {/* Library ID */}
+            <div className="px-4 py-3 mt-auto flex-shrink-0">
+              <span className="font-data text-[9px]" style={{ color: "var(--text-3)" }}>ID: {ad.id}</span>
+            </div>
+          </div>
+
+          {/* RIGHT: Analytics (scrollable) */}
+          <div className="flex-1 overflow-y-auto no-scrollbar" style={{ background: "var(--bg-surface)" }}>
+            <div className="p-4 flex flex-col gap-3">
+
+              {/* Ad Details stats */}
+              <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <Monitor size={12} strokeWidth={1.5} style={{ color: "var(--ai-light)" }} />
+                  <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>Ad Details</span>
+                  <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: isActive ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)", color: isActive ? "var(--green-light)" : "#F87171", border: `1px solid ${isActive ? "rgba(52,211,153,0.25)" : "rgba(248,113,113,0.25)"}` }}>
+                    ● {isActive ? "LIVE" : "PAUSED"}
                   </span>
                 </div>
-
-                {/* Library ID */}
-                <div className="px-4 pb-4">
-                  <span className="font-data text-[9px]" style={{ color: "var(--text-3)" }}>
-                    Library ID: {ad.id}
-                  </span>
+                <div className="grid grid-cols-2 gap-x-6">
+                  <div>
+                    <StatRow icon={Calendar} label="Started" value={fmtDate(ad.ad_delivery_start_time)} />
+                    <StatRow icon={Calendar} label="Days running" value={days !== null ? `${days}d` : "—"} highlight={(days ?? 0) > 60} />
+                    {impressFmt && <StatRow icon={Eye} label="Reach" value={impressFmt} />}
+                  </div>
+                  <div>
+                    {spendFmt && <StatRow icon={DollarSign} label="Spend" value={spendFmt} />}
+                    {audienceFmt && <StatRow icon={Globe} label="Audience" value={audienceFmt} />}
+                    {days !== null && dailySpend > 0 && <StatRow icon={TrendingUp} label="Daily spend" value={`$${dailySpend.toFixed(0)}/d`} />}
+                  </div>
                 </div>
               </div>
 
-              {/* ── Right: AI Analysis ───────────────────────────────────────── */}
-              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
-                  style={{ borderBottom: "1px solid var(--border)" }}>
+              {/* AI Score */}
+              <div className="rounded-[10px] p-3"
+                style={{ background: getScoreBg(ai.winningScore), border: `1px solid ${getScoreBorder(ai.winningScore)}` }}>
+                <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="font-display text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
-                      Ad Analysis
-                    </p>
-                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
-                      AI-powered insights
-                    </p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest mb-0.5" style={{ color: ai.scoreColor, opacity: 0.7 }}>AI Performance Score</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="font-display text-[34px] font-black leading-none" style={{ color: ai.scoreColor }}>{ai.winningScore}</span>
+                      <span className="text-[12px]" style={{ color: ai.scoreColor, opacity: 0.5 }}>/100</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => toggleSave(ad)}
-                      className="p-2 rounded-[8px]"
-                      style={{
-                        color: isSaved ? "var(--ai-light)" : "var(--text-3)",
-                        background: isSaved ? "var(--ai-soft)" : "var(--bg-hover)",
-                        border: `1px solid ${isSaved ? "rgba(124,58,237,0.3)" : "var(--border)"}`,
-                      }}>
-                      <Bookmark size={14} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? "currentColor" : "none"} />
-                    </button>
-                    <button onClick={onClose} className="p-2 rounded-[8px]"
-                      style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
-                      <X size={14} strokeWidth={2} />
-                    </button>
+                  <div className="text-right">
+                    <p className="font-display text-[12px] font-semibold mb-1.5" style={{ color: ai.scoreColor }}>
+                      {ai.winningScore >= 80 ? "Top Performer" : ai.winningScore >= 65 ? "Strong" : ai.winningScore >= 50 ? "Moderate" : "Early Stage"}
+                    </p>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span className="ad-tag" style={{ background: ai.hookBg, color: ai.hookColor, borderColor: `${ai.hookColor}28` }}>{ai.hookType}</span>
+                      <span className="ad-tag" style={{ background: `${ai.trendColor}15`, color: ai.trendColor, borderColor: `${ai.trendColor}28` }}>{ai.trendIcon} {ai.trendLabel}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.2)" }}>
+                  <div className="score-bar h-full rounded-full"
+                    style={{ width: `${ai.winningScore}%`, background: `linear-gradient(90deg, ${ai.scoreColor}80, ${ai.scoreColor})` }} />
+                </div>
+              </div>
+
+              {/* Page + Revenue — 2 col */}
+              {(totalShopAds > 1 || estDailyRev) && (
+                <div className="grid grid-cols-2 gap-3">
+                  {totalShopAds > 1 && (
+                    <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package size={11} strokeWidth={1.5} style={{ color: "var(--ai-light)" }} />
+                        <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>Page</span>
+                      </div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex flex-col items-center rounded-[7px] p-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", minWidth: 52 }}>
+                          <span className="font-display text-[18px] font-black" style={{ color: "var(--ai-light)" }}>{activeShopAds}</span>
+                          <span className="text-[8px]" style={{ color: "var(--text-3)" }}>/ {totalShopAds} ads</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[8px] mb-1" style={{ color: "var(--text-3)" }}>Activity</p>
+                          <MiniSparkline values={sparkData} color="var(--ai-light)" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {estDailyRev && (
+                    <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <ShoppingBag size={11} strokeWidth={1.5} style={{ color: "var(--green-light)" }} />
+                        <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>Revenue Est.</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div className="rounded-[7px] p-2" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                          <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--green-light)" }}>Daily</p>
+                          <span className="font-display text-[15px] font-black" style={{ color: "var(--green-light)" }}>
+                            ${estDailyRev >= 1000 ? `${(estDailyRev / 1000).toFixed(1)}k` : estDailyRev}
+                          </span>
+                        </div>
+                        <div className="rounded-[7px] p-2" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                          <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--green-light)" }}>Monthly</p>
+                          <span className="font-display text-[15px] font-black" style={{ color: "var(--green-light)" }}>
+                            ${estMonthlyRev! >= 1000 ? `${(estMonthlyRev! / 1000).toFixed(1)}k` : estMonthlyRev}
+                          </span>
+                        </div>
+                      </div>
+                      {estStoreRev && (
+                        <div className="rounded-[7px] p-2 mt-1.5" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)" }}>
+                          <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--ai-light)" }}>Store monthly ({activeShopAds} ads)</p>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-display text-[15px] font-black" style={{ color: "var(--ai-light)" }}>
+                              ${estStoreRev >= 1000 ? `${(estStoreRev / 1000).toFixed(1)}k` : estStoreRev}
+                            </span>
+                            <span className="text-[9px]" style={{ color: "var(--ai-light)", opacity: 0.7 }}>~{roas}x ROAS</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Seller Takeaway */}
+              <div className="rounded-[10px] p-3" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.22)" }}>
+                <div className="flex items-start gap-2">
+                  <span className="text-[14px] flex-shrink-0">💡</span>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--ai-light)" }}>Seller Takeaway</p>
+                    <p className="text-[12px] leading-relaxed font-medium" style={{ color: "var(--text-1)" }}>{ai.sellerTakeaway}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Signals + Strategy/Compete — 2 col */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                  <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>Performance Signals</p>
+                  <div className="flex flex-col gap-2">
+                    {ai.performanceSignals.slice(0, 5).map((s, i) => (
+                      <div key={i} className="flex items-start gap-1.5">
+                        <span className="text-[11px] flex-shrink-0 mt-px">{s.icon}</span>
+                        <div>
+                          <p className="text-[10px] font-bold leading-tight" style={{ color: s.color ?? "var(--text-1)" }}>{s.label}</p>
+                          <p className="text-[9px] leading-snug" style={{ color: "var(--text-3)" }}>{s.detail}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Scrollable body */}
-                <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+                <div className="flex flex-col gap-2">
+                  <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="text-[11px]">🎨</span>
+                      <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Creative Strategy</p>
+                    </div>
+                    <p className="text-[10px] leading-snug" style={{ color: "var(--text-2)" }}>{ai.creativeStrategy}</p>
+                  </div>
+                  <div className="rounded-[10px] p-3" style={{ background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="text-[11px]">⚔️</span>
+                      <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#34D399" }}>How to Compete</p>
+                    </div>
+                    <p className="text-[10px] leading-snug" style={{ color: "var(--text-2)" }}>{ai.competitiveEdge}</p>
+                  </div>
+                </div>
+              </div>
 
-                  {/* AI Score */}
-                  <div className="rounded-[12px] p-4" style={{ background: getScoreBg(ai.winningScore), border: `1px solid ${getScoreBorder(ai.winningScore)}` }}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: ai.scoreColor, opacity: 0.75 }}>
-                          AI Winning Score
-                        </p>
-                        <span className="font-display text-[36px] font-black leading-none" style={{ color: ai.scoreColor }}>
-                          {ai.winningScore}
+              {/* Claude AI Analysis */}
+              <div className="rounded-[10px] overflow-hidden" style={{ border: "1px solid rgba(124,58,237,0.25)", background: "rgba(124,58,237,0.04)" }}>
+                <div className="flex items-center justify-between px-3 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles size={12} style={{ color: "#A78BFA" }} />
+                    <span className="text-[11px] font-semibold" style={{ color: "#A78BFA" }}>Claude AI Analysis</span>
+                    {claudeResult?.cached && (
+                      <span className="text-[8px] px-1.5 py-0.5 rounded-full font-semibold"
+                        style={{ background: "rgba(52,211,153,0.12)", color: "#34D399" }}>cached</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {!claudeResult && !claudeLoading && (
+                      <span className="text-[9px] flex items-center gap-0.5" style={{ color: "var(--text-3)" }}>
+                        <Zap size={8} style={{ color: "#A78BFA" }} />3 scans
+                      </span>
+                    )}
+                    {claudeResult && (
+                      <button onClick={() => setClaudeOpen(o => !o)} style={{ color: "var(--text-3)" }}>
+                        {claudeOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {!claudeResult && !claudeLoading && (
+                  <div className="px-3 pb-3">
+                    <button onClick={() => void runClaudeAnalysis()}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-[8px] text-[11px] font-semibold transition-opacity hover:opacity-80"
+                      style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}>
+                      <Sparkles size={11} />Generate AI Analysis
+                    </button>
+                    {claudeError && (
+                      <div className="mt-1.5 flex items-center gap-1 text-[10px]" style={{ color: "#F87171" }}>
+                        <AlertCircle size={10} />{claudeError}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {claudeLoading && (
+                  <div className="px-3 pb-3 flex items-center gap-2 text-[11px]" style={{ color: "var(--text-3)" }}>
+                    <div className="w-3 h-3 rounded-full border-2 border-[#A78BFA] border-t-transparent animate-spin flex-shrink-0" />
+                    Analyzing with Claude...
+                  </div>
+                )}
+
+                {claudeResult && claudeOpen && (
+                  <div className="px-3 pb-3 border-t flex flex-col gap-2" style={{ borderColor: "rgba(124,58,237,0.15)" }}>
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="font-display text-[24px] font-black leading-none" style={{ color: "#A78BFA" }}>{claudeResult.score}</span>
+                        <span className="text-[10px]" style={{ color: "#A78BFA", opacity: 0.5 }}>/100</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>
+                          {claudeResult.productCategory}
                         </span>
-                        <span className="text-[14px] font-medium ml-1" style={{ color: ai.scoreColor, opacity: 0.5 }}>/100</span>
                       </div>
-                      <div className="text-right">
-                        <p className="font-display text-[13px] font-semibold" style={{ color: ai.scoreColor }}>
-                          {ai.winningScore >= 80 ? "High Performer" : ai.winningScore >= 65 ? "Solid" : "Early Stage"}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-1.5 justify-end">
-                          <span className="text-[9px] font-semibold px-2 py-[3px] rounded-[5px]"
-                            style={{ background: ai.hookBg, color: ai.hookColor, border: `1px solid ${ai.hookColor}28` }}>
-                            🧠 {ai.hookType}
-                          </span>
-                          <span className="text-[9px] font-semibold px-2 py-[3px] rounded-[5px]"
-                            style={{ background: `${ai.trendColor}15`, color: ai.trendColor, border: `1px solid ${ai.trendColor}28` }}>
-                            {ai.trendIcon} {ai.trendLabel}
-                          </span>
-                        </div>
-                      </div>
+                      <p className="text-[9px] text-right max-w-[140px] leading-snug" style={{ color: "var(--text-3)" }}>{claudeResult.scoreReason}</p>
                     </div>
-                    {/* Score bar */}
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.2)" }}>
-                      <div className="score-bar h-full rounded-full"
-                        style={{ width: `${ai.winningScore}%`, background: `linear-gradient(90deg, ${ai.scoreColor}80, ${ai.scoreColor})` }} />
+                    <div className="flex flex-wrap gap-1">
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(167,139,250,0.2)", color: "#C4B5FD", border: "1px solid rgba(167,139,250,0.3)" }}>
+                        {claudeResult.offerType}
+                      </span>
+                      {claudeResult.emotionalTriggers.map(t => (
+                        <span key={t} className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold"
+                          style={{ background: "rgba(167,139,250,0.08)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.15)" }}>
+                          {t}
+                        </span>
+                      ))}
                     </div>
-                  </div>
-
-                  {/* Delivery metrics */}
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: "var(--text-3)" }}>
-                      Delivery Metrics
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <MetricChip icon={Calendar} label="Days live" value={days !== null ? `${days}d` : "—"} />
-                      {impressFmt && <MetricChip icon={Eye} label="Impressions" value={impressFmt} />}
-                      {spendFmt   && <MetricChip icon={DollarSign} label="Est. spend" value={spendFmt} />}
-                      {audienceFmt && <MetricChip icon={Globe} label="Audience" value={audienceFmt} />}
-                      {countries[0] && (
-                        <div className="flex flex-col gap-0.5 px-3 py-2.5 rounded-[10px]"
-                          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
-                          <span className="text-[9px] uppercase tracking-wide font-semibold" style={{ color: "var(--text-3)" }}>Market</span>
-                          <span className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: "var(--text-1)" }}>
-                            <FlagImg code={countries[0]} />
-                            {countries[0]}
-                            {countries.length > 1 && <span className="text-[10px]" style={{ color: "var(--text-3)" }}>+{countries.length - 1}</span>}
-                          </span>
-                        </div>
-                      )}
-                      <MetricChip icon={Monitor} label="Start date" value={fmtDate(ad.ad_delivery_start_time)} />
-                    </div>
-                  </div>
-
-                  {/* Seller Takeaway */}
-                  <div className="rounded-[10px] p-3.5"
-                    style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.25)" }}>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[14px] flex-shrink-0">💡</span>
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--ai-light)" }}>
-                          Seller Takeaway
-                        </p>
-                        <p className="text-[12px] leading-relaxed font-medium" style={{ color: "var(--text-1)" }}>
-                          {ai.sellerTakeaway}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Performance Signals */}
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "var(--text-3)" }}>
-                      Performance Signals
-                    </p>
-                    <div className="flex flex-col gap-2.5">
-                      {ai.performanceSignals.map((s, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <span className="text-[12px] flex-shrink-0 mt-px">{s.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-bold" style={{ color: s.color ?? "var(--text-1)" }}>
-                              {s.label}
-                            </p>
-                            <p className="text-[11px] leading-snug" style={{ color: "var(--text-2)" }}>
-                              {s.detail}
-                            </p>
-                          </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { label: "Hook", text: claudeResult.hookAnalysis, bg: "rgba(255,255,255,0.02)", border: "rgba(255,255,255,0.06)", tc: "var(--text-2)", lc: "var(--text-3)" },
+                        { label: "Audience", text: claudeResult.targetAudience, bg: "rgba(255,255,255,0.02)", border: "rgba(255,255,255,0.06)", tc: "var(--text-2)", lc: "var(--text-3)" },
+                        { label: "Why Works", text: claudeResult.whyItWorks, bg: "rgba(52,211,153,0.05)", border: "rgba(52,211,153,0.12)", tc: "#6ee7b7", lc: "#34D399" },
+                        { label: "Weakness", text: claudeResult.weaknesses, bg: "rgba(248,113,113,0.05)", border: "rgba(248,113,113,0.12)", tc: "#FCA5A5", lc: "#F87171" },
+                      ].map(({ label, text, bg, border, tc, lc }) => (
+                        <div key={label} className="rounded-[7px] px-2 py-1.5" style={{ background: bg, border: `1px solid ${border}` }}>
+                          <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: lc }}>{label}</p>
+                          <p className="text-[10px] leading-snug line-clamp-3" style={{ color: tc }}>{text}</p>
                         </div>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Creative Strategy */}
-                  <div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[12px] flex-shrink-0 mt-0.5">🎨</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[11px] flex-shrink-0">🎯</span>
                       <div>
-                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>
-                          Creative Strategy
-                        </p>
-                        <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-                          {ai.creativeStrategy}
-                        </p>
+                        <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "#34D399" }}>Strategy</p>
+                        <p className="text-[10px] leading-snug" style={{ color: "#6ee7b7" }}>{claudeResult.replicationStrategy}</p>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Competitive Edge */}
-                  <div className="rounded-[10px] p-3.5"
-                    style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
-                    <div className="flex items-start gap-2">
-                      <span className="text-[12px] flex-shrink-0 mt-0.5">⚔️</span>
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "#34D399" }}>
-                          How to Compete
+                    <div>
+                      <p className="text-[8px] font-bold uppercase mb-1" style={{ color: "var(--text-3)" }}>Tips</p>
+                      {claudeResult.recommendations.map((r, i) => (
+                        <p key={i} className="text-[10px] leading-snug mb-0.5" style={{ color: "var(--text-2)" }}>
+                          <span className="font-bold" style={{ color: "#A78BFA" }}>{i + 1}.</span> {r}
                         </p>
-                        <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-                          {ai.competitiveEdge}
-                        </p>
-                      </div>
+                      ))}
                     </div>
+                    <p className="text-[9px] text-right" style={{ color: "var(--text-3)" }}>
+                      {claudeResult.scansCharged} scan{claudeResult.scansCharged > 1 ? "s" : ""} · claude-sonnet-4-6
+                    </p>
                   </div>
-
-                  {/* ── Claude AI Deep Analysis ── */}
-                  <div className="rounded-[12px] overflow-hidden"
-                    style={{ border: "1px solid rgba(124,58,237,0.25)", background: "rgba(124,58,237,0.04)" }}>
-
-                    {/* Header row */}
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Sparkles size={13} style={{ color: "#A78BFA" }} />
-                        <span className="text-[12px] font-semibold" style={{ color: "#A78BFA" }}>Claude AI Deep Analysis</span>
-                        {claudeResult?.cached && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-                            style={{ background: "rgba(52,211,153,0.12)", color: "#34D399" }}>cached</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {!claudeResult && !claudeLoading && (
-                          <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
-                            <Zap size={9} className="inline mr-0.5" style={{ color: "#A78BFA" }} />
-                            3 scans
-                          </span>
-                        )}
-                        {claudeResult && (
-                          <button onClick={() => setClaudeOpen(o => !o)} style={{ color: "var(--text-3)" }}>
-                            {claudeOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Generate button or result */}
-                    {!claudeResult && !claudeLoading && (
-                      <div className="px-4 pb-4">
-                        <button
-                          onClick={() => void runClaudeAnalysis()}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[12px] font-semibold transition-opacity hover:opacity-80"
-                          style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}
-                        >
-                          <Sparkles size={12} />
-                          Generate AI Analysis
-                        </button>
-                        {claudeError && (
-                          <div className="mt-2 flex items-center gap-1.5 text-[11px]" style={{ color: "#F87171" }}>
-                            <AlertCircle size={11} />
-                            {claudeError}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {claudeLoading && (
-                      <div className="px-4 pb-4 flex items-center gap-2 text-[12px]" style={{ color: "var(--text-3)" }}>
-                        <div className="w-3 h-3 rounded-full border-2 border-[#A78BFA] border-t-transparent animate-spin flex-shrink-0" />
-                        Claude đang phân tích ad...
-                      </div>
-                    )}
-
-                    {claudeResult && claudeOpen && (
-                      <div className="px-4 pb-4 flex flex-col gap-3 border-t" style={{ borderColor: "rgba(124,58,237,0.15)" }}>
-
-                        {/* Score */}
-                        <div className="flex items-center justify-between pt-3">
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: "#A78BFA", opacity: 0.7 }}>AI Score</p>
-                            <span className="font-display text-[32px] font-black leading-none" style={{ color: "#A78BFA" }}>{claudeResult.score}</span>
-                            <span className="text-[12px] ml-1" style={{ color: "#A78BFA", opacity: 0.5 }}>/100</span>
-                          </div>
-                          <div className="text-right text-[11px]" style={{ color: "var(--text-2)" }}>
-                            <p className="font-semibold" style={{ color: "var(--text-1)" }}>{claudeResult.productCategory}</p>
-                            <p style={{ color: "var(--text-3)" }}>{claudeResult.scoreReason}</p>
-                          </div>
-                        </div>
-
-                        {/* Emotion triggers */}
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Emotional Triggers</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {claudeResult.emotionalTriggers.map(t => (
-                              <span key={t} className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                                style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Hook */}
-                        <ClaudeSection label="Hook Analysis" text={claudeResult.hookAnalysis} />
-                        <ClaudeSection label="Target Audience" text={claudeResult.targetAudience} />
-                        <ClaudeSection label="Offer Type" text={claudeResult.offerType} tag />
-                        <ClaudeSection label="Why It Works" text={claudeResult.whyItWorks} highlight />
-                        <ClaudeSection label="Weaknesses" text={claudeResult.weaknesses} dim />
-
-                        {/* Replication Strategy */}
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Replication Strategy</p>
-                          <div className="rounded-[8px] px-3 py-2.5"
-                            style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
-                            <p className="text-[12px] leading-relaxed" style={{ color: "#6ee7b7" }}>{claudeResult.replicationStrategy}</p>
-                          </div>
-                        </div>
-
-                        {/* Recommendations */}
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Recommendations</p>
-                          <div className="flex flex-col gap-1.5">
-                            {claudeResult.recommendations.map((r, i) => (
-                              <div key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "var(--text-2)" }}>
-                                <span className="text-[10px] font-bold mt-0.5 flex-shrink-0" style={{ color: "#A78BFA" }}>{i + 1}.</span>
-                                {r}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <p className="text-[10px] text-right" style={{ color: "var(--text-3)" }}>
-                          {claudeResult.scansCharged} scan{claudeResult.scansCharged > 1 ? "s" : ""} charged · claude-sonnet-4-6
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-
-                {/* Footer actions */}
-                <div className="px-6 py-4 flex items-center gap-2 flex-shrink-0"
-                  style={{ borderTop: "1px solid var(--border)" }}>
-                  {ad.ad_snapshot_url && (
-                    <a href={ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[12px] font-semibold"
-                      style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}>
-                      <ExternalLink size={12} />
-                      View on Facebook
-                    </a>
-                  )}
-                  {body && (
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(body); }}
-                      className="flex items-center gap-1.5 px-3 py-2.5 rounded-[8px] text-[12px] font-medium"
-                      style={{ color: "var(--text-2)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
-                      title="Copy ad text"
-                    >
-                      <Copy size={12} />
-                      Copy Text
-                    </button>
-                  )}
-                  <button onClick={onClose} className="px-4 py-2.5 rounded-[8px] text-[12px] font-medium"
-                    style={{ color: "var(--text-2)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}>
-                    Close
-                  </button>
-                </div>
+                )}
               </div>
+
+              {/* More from this shop — 4-col grid */}
+              {shopAds.length > 0 && (
+                <div className="pb-2">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Monitor size={12} strokeWidth={1.8} style={{ color: "var(--ai-light)" }} />
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
+                        More from {storeName}
+                      </p>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-[4px]"
+                      style={{ background: "var(--ai-soft)", color: "var(--ai-light)", fontWeight: 600 }}>
+                      {totalShopAds} total
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {shopAds.map(a => <MiniAdCard key={a.id} ad={a} />)}
+                  </div>
+                </div>
+              )}
+
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          </div>
+        </div>
+      </motion.div>
+    </>
   );
 }

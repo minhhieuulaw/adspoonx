@@ -9,7 +9,7 @@ import { getAIInsights, getDropshippingScore } from "@/lib/ai-insights";
 import { detectLanguage } from "@/lib/detect-language";
 import AdCard from "@/components/ads/AdCard";
 import AdsFilter, { type FilterValues, AI_SCORE_TIERS } from "@/components/ads/AdsFilter";
-import AdDetailPanel, { PanelContent } from "@/components/ads/AdDetailPanel";
+import AdDetailModal from "@/components/ads/AdDetailModal";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Search, ChevronRight, Sparkles, Zap, Globe, Brain, SlidersHorizontal, X, ChevronDown, Save, Trash2, Code, Loader2, CheckSquare, Square, Bookmark, Play, Users, TrendingUp } from "lucide-react";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
@@ -1138,68 +1138,12 @@ export default function AdsPage() {
         </AnimatePresence>
       </div>
 
-      {/* ── Right: Expandable panel column (xl+) ── */}
-      <motion.div
-        className="hidden xl:flex flex-col flex-shrink-0 no-scrollbar"
-        animate={{ width: selectedAd ? 520 : 280 }}
-        transition={{ type: "spring", stiffness: 350, damping: 32 }}
-        style={{
-          position: "sticky",
-          top: 56,
-          height: "calc(100vh - 56px)",
-          overflowY: "auto",
-          borderLeft: "1px solid var(--border)",
-          background: "var(--bg-surface)",
-        }}
-      >
-        <AnimatePresence mode="wait">
-          {selectedAd ? (
-            <motion.div
-              key={selectedAd.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              style={{ minHeight: "100%" }}
-            >
-              <PanelContent ad={selectedAd} onClose={() => setSelectedAd(null)} allAds={ads} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center"
-              style={{ minHeight: "calc(100vh - 56px)" }}
-            >
-              <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Sparkles size={18} style={{ color: "var(--ai-light)" }} />
-              </div>
-              <div>
-                <p className="text-[13px] font-medium mb-1" style={{ color: "var(--text-2)" }}>
-                  Ad Analysis
-                </p>
-                <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
-                  Click any ad card to see full details and AI insights
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      {/* ── Mobile/tablet (< xl): overlay panel ── */}
-      <div className="xl:hidden">
-        <AdDetailPanel
-          ad={selectedAd}
-          onClose={() => setSelectedAd(null)}
-          isMobile={true}
-          allAds={ads}
-        />
-      </div>
+      {/* ── Ad Detail Modal (all screen sizes) ── */}
+      <AdDetailModal
+        ad={selectedAd}
+        onClose={() => setSelectedAd(null)}
+        allAds={ads}
+      />
     </div>
   );
 }
