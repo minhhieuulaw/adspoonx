@@ -328,34 +328,31 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
         key="modal-bg"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         transition={{ duration: 0.15 }}
-        className="fixed inset-0 z-50"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3"
         style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(3px)" }}
         onClick={onClose}
-      />
-
-      {/* Modal */}
-      <motion.div
-        key="modal-body"
-        initial={{ opacity: 0, scale: 0.96, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 16 }}
-        transition={{ type: "spring", stiffness: 400, damping: 34 }}
-        className="fixed z-50"
-        style={{
-          top: "50%", left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "min(980px, calc(100vw - 24px))",
-          height: "min(880px, calc(100vh - 32px))",
-          borderRadius: 16,
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border-strong)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.72), 0 0 0 1px rgba(255,255,255,0.04)",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-        onClick={e => e.stopPropagation()}
       >
+        {/* Modal — inside backdrop so flex-centering works, stopPropagation prevents close */}
+        <motion.div
+          key="modal-body"
+          initial={{ opacity: 0, scale: 0.96, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 16 }}
+          transition={{ type: "spring", stiffness: 400, damping: 34 }}
+          style={{
+            width: "min(980px, calc(100vw - 24px))",
+            height: "min(880px, calc(100vh - 32px))",
+            borderRadius: 16,
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-strong)",
+            boxShadow: "0 32px 80px rgba(0,0,0,0.72), 0 0 0 1px rgba(255,255,255,0.04)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            flexShrink: 0,
+          }}
+          onClick={e => e.stopPropagation()}
+        >
 
         {/* ── Header ── */}
         <div className="flex items-center gap-3 px-4 py-2.5 flex-shrink-0"
@@ -811,6 +808,7 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
             </div>
           </div>
         </div>
+        </motion.div>
       </motion.div>
     </>
   );
