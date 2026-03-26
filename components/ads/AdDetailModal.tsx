@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Calendar, Eye, DollarSign, Globe, Monitor, Bookmark,
@@ -247,16 +248,34 @@ function MiniSparkline({ values, color }: { values: number[]; color: string }) {
 interface Props { ad: FbAd | null; onClose: () => void; allAds?: FbAd[]; }
 
 export default function AdDetailModal({ ad, onClose, allAds = [] }: Props) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (ad) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => { document.body.style.overflow = ""; };
+  }, [ad]);
+
+  if (!mounted) return null;
+
+  // Portal to document.body — escapes any transformed/stacking-context parent
+  return createPortal(
     <AnimatePresence>
       {ad && <ModalInner ad={ad} onClose={onClose} allAds={allAds} />}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 
