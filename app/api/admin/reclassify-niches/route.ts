@@ -164,13 +164,46 @@ export async function POST(req: NextRequest) {
         pageName:    true,
       },
       take: limit,
-      // scrapedAt ASC: process oldest first → avoids reprocessing same
-      // recently-failed ads that sit at the top of a DESC sort
-      orderBy: { scrapedAt: "asc" },
+      // updatedAt ASC: ads least-recently-touched come first.
+      // Every processed ad gets lastCheckedAt touched → bumps updatedAt → moves to back.
+      // This creates a self-healing queue: fresh/unprocessed ads always at front.
+      orderBy: { updatedAt: "asc" },
     });
 
     if (ads.length === 0) {
       return NextResponse.json({ ok: true, processed: 0, updated: 0, results: [] });
+    }
+
+    // Helper: classify one ad, with image-fallback to text-only on CDN errors
+    async function classifyAd(ad: typeof ads[0]): Promise<{ niche: string; confidence: string }> {
+      const textContent = `Classify this Facebook ad into exactly ONE of these product niches:\n${NICHE_LIST}\n\nAd info:\n- Brand: ${ad.pageName ?? "Unknown"}\n- Body: ${(ad.bodyText ?? "").slice(0, 300)}\n- Title: ${ad.title ?? ""}\n\nReturn ONLY a JSON object, no markdown:\n{"niche": "exact niche name from list", "confidence": "high|medium|low", "reason": "1 sentence"}`;
+
+      // Phase 1: try with image (if available)
+      if (ad.imageUrl) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const withImg: any[] = [
+            { type: "text", text: textContent },
+            { type: "image", source: { type: "url", url: ad.imageUrl } },
+          ];
+          const resp = await anthropic.messages.create({
+            model: HAIKU_MODEL, max_tokens: 100,
+            messages: [{ role: "user", content: withImg }],
+          });
+          const raw = (resp.content[0] as { text: string }).text.trim();
+          return JSON.parse(raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim()) as { niche: string; confidence: string };
+        } catch {
+          // Image URL likely expired → fall through to text-only
+        }
+      }
+
+      // Phase 2: text-only fallback
+      const resp = await anthropic.messages.create({
+        model: HAIKU_MODEL, max_tokens: 100,
+        messages: [{ role: "user", content: [{ type: "text", text: textContent }] }],
+      });
+      const raw = (resp.content[0] as { text: string }).text.trim();
+      return JSON.parse(raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim()) as { niche: string; confidence: string };
     }
 
     // Process in parallel batches of BATCH_SIZE
@@ -182,25 +215,7 @@ export async function POST(req: NextRequest) {
 
       const chunkResults = await Promise.all(chunk.map(async ad => {
         try {
-          const textContent = `Classify this Facebook ad into exactly ONE of these product niches:\n${NICHE_LIST}\n\nAd info:\n- Brand: ${ad.pageName ?? "Unknown"}\n- Body: ${(ad.bodyText ?? "").slice(0, 300)}\n- Title: ${ad.title ?? ""}\n\nReturn ONLY a JSON object, no markdown:\n{"niche": "exact niche name from list", "confidence": "high|medium|low", "reason": "1 sentence"}`;
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const msgContent: any[] = [{ type: "text", text: textContent }];
-          if (ad.imageUrl) {
-            msgContent.push({ type: "image", source: { type: "url", url: ad.imageUrl } });
-          }
-
-          const response = await anthropic.messages.create({
-            model:      HAIKU_MODEL,
-            max_tokens: 100,
-            messages:   [{ role: "user", content: msgContent }],
-          });
-
-          const raw     = (response.content[0] as { text: string }).text.trim();
-          const jsonStr = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-          const parsed  = JSON.parse(jsonStr) as { niche: string; confidence: string };
-
-          // Validate niche is in our list
+          const parsed    = await classifyAd(ad);
           const validNiche = VALID_NICHES.has(parsed.niche) ? parsed.niche : null;
 
           if (validNiche && validNiche !== "Other" && parsed.confidence !== "low") {
@@ -210,8 +225,19 @@ export async function POST(req: NextRequest) {
             });
             return { id: ad.adArchiveId, oldNiche: "Other", newNiche: validNiche, confidence: parsed.confidence };
           }
-          return { id: ad.adArchiveId, oldNiche: "Other", newNiche: "Other", confidence: "low" };
+          // Low confidence / unclassifiable: touch lastCheckedAt to bump updatedAt
+          // → this ad moves to BACK of updatedAt ASC queue next run
+          await prisma.ad.update({
+            where: { adArchiveId: ad.adArchiveId },
+            data:  { lastCheckedAt: new Date() },
+          });
+          return { id: ad.adArchiveId, oldNiche: "Other", newNiche: "Other", confidence: parsed.confidence ?? "low" };
         } catch {
+          // Total failure: also touch to push to back
+          await prisma.ad.update({
+            where: { adArchiveId: ad.adArchiveId },
+            data:  { lastCheckedAt: new Date() },
+          }).catch(() => null);
           return { id: ad.adArchiveId, oldNiche: "Other", newNiche: "Other", confidence: "error" };
         }
       }));

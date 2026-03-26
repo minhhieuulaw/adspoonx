@@ -789,10 +789,10 @@ function NicheIntelligence() {
       done += d.processed ?? 0;
       setResult(d);
 
-      // Stuck detection: 3 batch liên tiếp updated=0 → tất cả là low-confidence → dừng
+      // Stuck detection: 8 batch liên tiếp updated=0 → tất cả là low-confidence → dừng
       if ((d.updated ?? 0) === 0) {
         stuckRounds++;
-        if (stuckRounds >= 3) break;
+        if (stuckRounds >= 8) break;
       } else {
         stuckRounds = 0;
       }
