@@ -26,6 +26,7 @@ model User {
   savedAds       SavedAd[]
   savedSearches  SavedSearch[]
   scanPurchases  ScanPurchase[]
+  tickets        Ticket[]
 }
 
 model Account {
@@ -174,4 +175,54 @@ model ScanPurchase {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ─── Support Tickets ───────────────────────────────────────────
+model Ticket {
+  id        String   @id @default(cuid())
+  userId    String
+  subject   String
+  body      String
+  status    String   @default("open")   // open | in_progress | resolved | closed
+  priority  String   @default("normal") // low | normal | high | urgent
+  reply     String?
+  repliedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+}
+
+// ─── Announcements (admin-set banner) ─────────────────────────
+model Announcement {
+  id        String   @id @default(cuid())
+  message   String
+  color     String   @default("purple") // purple | blue | red | green | yellow
+  isActive  Boolean  @default(true)
+  link      String?                     // optional CTA link
+  linkText  String?                     // optional CTA label
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+
+  @@index([isActive])
+}
+
+// ─── Workflow Run Log (Daily A scraper) ───────────────────────
+model WorkflowRun {
+  id         String   @id @default(cuid())
+  runAt      DateTime @default(now())
+  schedule   String?                  // "02:00" | "10:00" | "18:00" | "manual"
+  status     String   @default("success") // success | error | partial
+  totalAds   Int      @default(0)
+  newAds     Int      @default(0)
+  updatedAds Int      @default(0)
+  errors     Int      @default(0)
+  durationMs Int?
+  notes      String?
+
+  @@index([runAt(sort: Desc)])
+  @@index([status])
 }

@@ -11,8 +11,10 @@ export default function MarketingNav() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4"
+      className="fixed left-0 right-0 z-50 flex items-center justify-between px-8 py-4"
       style={{
+        top: "var(--banner-h, 0px)",
+        transition: "top 0.2s ease",
         background: "rgba(15,17,23,0.85)",
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid var(--sidebar-border)",

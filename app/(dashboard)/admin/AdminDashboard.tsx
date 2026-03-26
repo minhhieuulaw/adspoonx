@@ -8,6 +8,8 @@ import {
 import {
   Users, TrendingUp, Database, DollarSign, Activity,
   Star, Globe, Play, Trash2, RefreshCw, Zap,
+  Bell, CheckCircle, Clock, AlertCircle, Plus, Pencil, X,
+  MessageSquare, ChevronDown, ChevronUp,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -372,6 +374,15 @@ export default function AdminDashboard() {
       {/* ── Crawl Control ── */}
       <CrawlControl />
 
+      {/* ── Announcements ── */}
+      <AnnouncementsPanel />
+
+      {/* ── Workflow History ── */}
+      <WorkflowHistory />
+
+      {/* ── Tickets ── */}
+      <TicketList />
+
     </div>
   );
 }
@@ -479,6 +490,443 @@ function CrawlControl() {
               style={{ color: line.includes("❌") ? "#F87171" : line.includes("✅") ? "#34D399" : "var(--text-3)" }}>
               {line}
             </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Announcements Panel ───────────────────────────────────────────────────────
+
+interface AnnouncementItem {
+  id: string; message: string; color: string;
+  isActive: boolean; link: string | null; linkText: string | null;
+  expiresAt: string | null; createdAt: string;
+}
+
+const COLORS = ["purple", "blue", "green", "red", "yellow"] as const;
+const COLOR_LABELS: Record<string, string> = {
+  purple: "#A78BFA", blue: "#60A5FA", green: "#34D399", red: "#F87171", yellow: "#FCD34D",
+};
+
+function AnnouncementsPanel() {
+  const [list,    setList]    = useState<AnnouncementItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form,    setForm]    = useState({ message: "", color: "purple", link: "", linkText: "", expiresAt: "" });
+  const [saving,  setSaving]  = useState(false);
+  const [editId,  setEditId]  = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    const r = await fetch("/api/admin/announcements");
+    setList(await r.json() as AnnouncementItem[]);
+    setLoading(false);
+  }
+  useEffect(() => { void load(); }, []);
+
+  async function submit() {
+    if (!form.message.trim()) return;
+    setSaving(true);
+    const url    = editId ? `/api/admin/announcements/${editId}` : "/api/admin/announcements";
+    const method = editId ? "PATCH" : "POST";
+    await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    setForm({ message: "", color: "purple", link: "", linkText: "", expiresAt: "" });
+    setEditId(null);
+    setSaving(false);
+    void load();
+  }
+
+  async function toggle(item: AnnouncementItem) {
+    await fetch(`/api/admin/announcements/${item.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !item.isActive }),
+    });
+    void load();
+  }
+
+  async function remove(id: string) {
+    if (!confirm("Xóa announcement này?")) return;
+    await fetch(`/api/admin/announcements/${id}`, { method: "DELETE" });
+    void load();
+  }
+
+  function startEdit(item: AnnouncementItem) {
+    setEditId(item.id);
+    setForm({ message: item.message, color: item.color, link: item.link ?? "", linkText: item.linkText ?? "", expiresAt: item.expiresAt ? item.expiresAt.slice(0, 16) : "" });
+  }
+
+  return (
+    <div className="rounded-[12px] p-4 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <div className="flex items-center gap-2 mb-3">
+        <Bell size={13} style={{ color: "var(--ai-light)" }} />
+        <p className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
+          Announcements (banner home page)
+        </p>
+      </div>
+
+      {/* Form tạo / sửa */}
+      <div className="rounded-[8px] p-3 mb-3 flex flex-col gap-2" style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+        <input
+          value={form.message}
+          onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+          placeholder="Nội dung thông báo..."
+          className="w-full px-2.5 py-2 rounded-[6px] text-[12px] outline-none"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-1)" }}
+        />
+        <div className="flex gap-2 flex-wrap">
+          <select
+            value={form.color}
+            onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+            className="px-2 py-1.5 rounded-[6px] text-[12px] outline-none"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: COLOR_LABELS[form.color] }}
+          >
+            {COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input
+            value={form.link}
+            onChange={e => setForm(f => ({ ...f, link: e.target.value }))}
+            placeholder="Link (tuỳ chọn)"
+            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-[6px] text-[12px] outline-none"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-1)" }}
+          />
+          <input
+            value={form.linkText}
+            onChange={e => setForm(f => ({ ...f, linkText: e.target.value }))}
+            placeholder="Link text"
+            className="w-24 px-2.5 py-1.5 rounded-[6px] text-[12px] outline-none"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-1)" }}
+          />
+          <input
+            type="datetime-local"
+            value={form.expiresAt}
+            onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
+            className="px-2.5 py-1.5 rounded-[6px] text-[12px] outline-none"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => void submit()}
+            disabled={saving || !form.message.trim()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold disabled:opacity-50"
+            style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}
+          >
+            <Plus size={11} /> {editId ? "Cập nhật" : "Thêm mới"}
+          </button>
+          {editId && (
+            <button
+              onClick={() => { setEditId(null); setForm({ message: "", color: "purple", link: "", linkText: "", expiresAt: "" }); }}
+              className="px-3 py-1.5 rounded-[6px] text-[12px]"
+              style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-3)" }}
+            >
+              Hủy
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Danh sách */}
+      {loading ? (
+        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Đang tải...</p>
+      ) : list.length === 0 ? (
+        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Chưa có announcement nào.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {list.map(item => (
+            <div key={item.id} className="flex items-start gap-2 rounded-[8px] px-3 py-2"
+              style={{ background: "var(--bg-hover)", border: `1px solid ${COLOR_LABELS[item.color] ?? "#A78BFA"}40` }}>
+              <div
+                className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
+                style={{ background: COLOR_LABELS[item.color] ?? "#A78BFA", opacity: item.isActive ? 1 : 0.3 }}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] truncate" style={{ color: item.isActive ? "var(--text-1)" : "var(--text-3)" }}>
+                  {item.message}
+                </p>
+                {item.link && (
+                  <p className="text-[10px] truncate" style={{ color: "var(--text-3)" }}>
+                    → {item.link} {item.linkText && `(${item.linkText})`}
+                  </p>
+                )}
+                {item.expiresAt && (
+                  <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                    Hết hạn: {new Date(item.expiresAt).toLocaleDateString("vi-VN")}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                <button onClick={() => void toggle(item)} title={item.isActive ? "Tắt" : "Bật"}
+                  className="p-1 rounded hover:opacity-80 transition-opacity"
+                  style={{ color: item.isActive ? "#34D399" : "var(--text-3)" }}>
+                  <CheckCircle size={13} />
+                </button>
+                <button onClick={() => startEdit(item)} title="Sửa"
+                  className="p-1 rounded hover:opacity-80 transition-opacity"
+                  style={{ color: "var(--text-3)" }}>
+                  <Pencil size={13} />
+                </button>
+                <button onClick={() => void remove(item.id)} title="Xóa"
+                  className="p-1 rounded hover:opacity-80 transition-opacity"
+                  style={{ color: "#F87171" }}>
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Workflow History ──────────────────────────────────────────────────────────
+
+interface WorkflowRunItem {
+  id: string; runAt: string; schedule: string | null; status: string;
+  totalAds: number; newAds: number; updatedAds: number; errors: number;
+  durationMs: number | null; notes: string | null;
+}
+
+const STATUS_STYLE: Record<string, { color: string; icon: React.ElementType }> = {
+  success: { color: "#34D399", icon: CheckCircle },
+  error:   { color: "#F87171", icon: AlertCircle },
+  partial: { color: "#FCD34D", icon: AlertCircle },
+};
+
+function WorkflowHistory() {
+  const [runs,    setRuns]    = useState<WorkflowRunItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open,    setOpen]    = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/workflow-runs?limit=20")
+      .then(r => r.json() as Promise<WorkflowRunItem[]>)
+      .then(d => setRuns(Array.isArray(d) ? d : []))
+      .catch(() => null)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="rounded-[12px] p-4 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <button className="flex items-center justify-between w-full mb-2" onClick={() => setOpen(o => !o)}>
+        <div className="flex items-center gap-2">
+          <Clock size={13} style={{ color: "var(--ai-light)" }} />
+          <p className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
+            Workflow History — Daily A
+          </p>
+        </div>
+        {open ? <ChevronUp size={13} style={{ color: "var(--text-3)" }} /> : <ChevronDown size={13} style={{ color: "var(--text-3)" }} />}
+      </button>
+
+      {open && (
+        loading ? (
+          <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Đang tải...</p>
+        ) : runs.length === 0 ? (
+          <div className="rounded-[8px] px-3 py-3 text-[12px]"
+            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-3)" }}>
+            Chưa có run nào. Scraper VPS cần gọi <code className="text-[11px]">/api/workflow-run</code> sau mỗi lần chạy.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                  <th className="text-left pb-2 pr-3">Thời gian</th>
+                  <th className="text-left pb-2 pr-3">Schedule</th>
+                  <th className="text-left pb-2 pr-3">Status</th>
+                  <th className="text-right pb-2 pr-3">Total</th>
+                  <th className="text-right pb-2 pr-3">New</th>
+                  <th className="text-right pb-2 pr-3">Updated</th>
+                  <th className="text-right pb-2 pr-3">Errors</th>
+                  <th className="text-right pb-2">Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map(run => {
+                  const style = STATUS_STYLE[run.status] ?? STATUS_STYLE.error;
+                  const Icon  = style.icon;
+                  return (
+                    <tr key={run.id} style={{ borderTop: "1px solid var(--border)" }}>
+                      <td className="py-1.5 pr-3 tabular-nums" style={{ color: "var(--text-2)" }}>
+                        {new Date(run.runAt).toLocaleString("vi-VN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                      <td className="py-1.5 pr-3" style={{ color: "var(--text-3)" }}>{run.schedule ?? "manual"}</td>
+                      <td className="py-1.5 pr-3">
+                        <span className="flex items-center gap-1" style={{ color: style.color }}>
+                          <Icon size={11} /> {run.status}
+                        </span>
+                      </td>
+                      <td className="py-1.5 pr-3 text-right tabular-nums" style={{ color: "var(--text-2)" }}>{run.totalAds.toLocaleString()}</td>
+                      <td className="py-1.5 pr-3 text-right tabular-nums" style={{ color: "#34D399" }}>+{run.newAds.toLocaleString()}</td>
+                      <td className="py-1.5 pr-3 text-right tabular-nums" style={{ color: "#60A5FA" }}>{run.updatedAds.toLocaleString()}</td>
+                      <td className="py-1.5 pr-3 text-right tabular-nums" style={{ color: run.errors > 0 ? "#F87171" : "var(--text-3)" }}>{run.errors}</td>
+                      <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-3)" }}>
+                        {run.durationMs != null ? `${Math.round(run.durationMs / 1000)}s` : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+// ── Ticket List ───────────────────────────────────────────────────────────────
+
+interface TicketItem {
+  id: string; subject: string; body: string; status: string; priority: string;
+  reply: string | null; createdAt: string;
+  user: { id: string; name: string | null; email: string | null; image: string | null };
+}
+
+const TICKET_STATUS_COLORS: Record<string, string> = {
+  open:        "#F87171",
+  in_progress: "#FCD34D",
+  resolved:    "#34D399",
+  closed:      "#6b7280",
+};
+const PRIORITY_COLORS: Record<string, string> = {
+  low: "#6b7280", normal: "#60A5FA", high: "#FCD34D", urgent: "#F87171",
+};
+
+function TicketList() {
+  const [tickets,  setTickets]  = useState<TicketItem[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [filter,   setFilter]   = useState("open");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [reply,    setReply]    = useState("");
+  const [saving,   setSaving]   = useState(false);
+
+  async function load(status: string) {
+    setLoading(true);
+    const q = status === "all" ? "" : `?status=${status}`;
+    const r  = await fetch(`/api/admin/tickets${q}`);
+    setTickets(await r.json() as TicketItem[]);
+    setLoading(false);
+  }
+
+  useEffect(() => { void load(filter); }, [filter]);
+
+  async function sendReply(id: string, status: string) {
+    setSaving(true);
+    await fetch(`/api/admin/tickets/${id}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ reply, status }),
+    });
+    setSaving(false);
+    setReply("");
+    setExpanded(null);
+    void load(filter);
+  }
+
+  const STATUSES = ["open", "in_progress", "resolved", "closed", "all"];
+
+  return (
+    <div className="rounded-[12px] p-4 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <MessageSquare size={13} style={{ color: "var(--ai-light)" }} />
+          <p className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
+            Support Tickets
+          </p>
+        </div>
+        <div className="flex gap-1">
+          {STATUSES.map(s => (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className="px-2.5 py-1 rounded-[6px] text-[10px] font-semibold capitalize"
+              style={filter === s
+                ? { background: "var(--ai-soft)", color: "var(--ai-light)", border: "1px solid rgba(124,58,237,0.3)" }
+                : { background: "var(--bg-hover)", color: "var(--text-3)", border: "1px solid var(--border)" }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Đang tải...</p>
+      ) : tickets.length === 0 ? (
+        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Không có ticket nào.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {tickets.map(ticket => (
+            <div key={ticket.id} className="rounded-[8px] overflow-hidden"
+              style={{ border: "1px solid var(--border)" }}>
+              {/* Header row */}
+              <button
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:opacity-90"
+                style={{ background: "var(--bg-hover)" }}
+                onClick={() => setExpanded(e => e === ticket.id ? null : ticket.id)}
+              >
+                <span className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: TICKET_STATUS_COLORS[ticket.status] ?? "#6b7280" }} />
+                <span className="flex-1 min-w-0">
+                  <span className="text-[12px] font-semibold block truncate" style={{ color: "var(--text-1)" }}>
+                    {ticket.subject}
+                  </span>
+                  <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                    {ticket.user.name ?? ticket.user.email} · {new Date(ticket.createdAt).toLocaleDateString("vi-VN")}
+                  </span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0"
+                  style={{ background: `${PRIORITY_COLORS[ticket.priority] ?? "#6b7280"}22`, color: PRIORITY_COLORS[ticket.priority] ?? "var(--text-3)" }}>
+                  {ticket.priority}
+                </span>
+                {expanded === ticket.id
+                  ? <ChevronUp size={12} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                  : <ChevronDown size={12} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                }
+              </button>
+
+              {/* Expanded detail */}
+              {expanded === ticket.id && (
+                <div className="px-3 pb-3 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+                  <p className="text-[12px] mb-3 whitespace-pre-wrap leading-relaxed" style={{ color: "var(--text-2)" }}>
+                    {ticket.body}
+                  </p>
+                  {ticket.reply && (
+                    <div className="rounded-[6px] px-3 py-2 mb-3 text-[12px]"
+                      style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#6ee7b7" }}>
+                      <strong>Đã trả lời:</strong> {ticket.reply}
+                    </div>
+                  )}
+                  <textarea
+                    value={reply}
+                    onChange={e => setReply(e.target.value)}
+                    placeholder="Nhập reply..."
+                    rows={3}
+                    className="w-full px-2.5 py-2 rounded-[6px] text-[12px] outline-none resize-none mb-2"
+                    style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-1)" }}
+                  />
+                  <div className="flex gap-2">
+                    {["open","in_progress","resolved","closed"].map(s => (
+                      <button
+                        key={s}
+                        onClick={() => void sendReply(ticket.id, s)}
+                        disabled={saving}
+                        className="px-2.5 py-1.5 rounded-[6px] text-[11px] font-semibold disabled:opacity-50 capitalize"
+                        style={{
+                          background: ticket.status === s ? `${TICKET_STATUS_COLORS[s]}22` : "var(--bg-hover)",
+                          border: `1px solid ${TICKET_STATUS_COLORS[s] ?? "var(--border)"}`,
+                          color: TICKET_STATUS_COLORS[s] ?? "var(--text-3)",
+                        }}
+                      >
+                        {s === "in_progress" ? "In Progress" : s.charAt(0).toUpperCase() + s.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}

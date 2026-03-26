@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { Settings, Zap, Bookmark, LogOut, Crown, ChevronRight, ShoppingCart, RefreshCw } from "lucide-react";
+import { Settings, Zap, Bookmark, LogOut, Crown, ChevronRight, ShoppingCart, RefreshCw, MessageSquare, ChevronDown, ChevronUp, Send } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -238,6 +238,9 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* Support Tickets */}
+      <SupportTickets />
+
       {/* Sign out */}
       <div className="rounded-[12px] p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
         <p className="text-[11px] font-semibold uppercase mb-3" style={{ color: "var(--text-3)", letterSpacing: "0.08em" }}>Account Actions</p>
@@ -252,6 +255,169 @@ export default function SettingsPage() {
           Sign out
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Support Tickets component ─────────────────────────────────────────────────
+
+interface TicketData {
+  id: string; subject: string; body: string; status: string;
+  priority: string; reply: string | null; createdAt: string;
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  open: "#F87171", in_progress: "#FCD34D", resolved: "#34D399", closed: "#6b7280",
+};
+
+function SupportTickets() {
+  const [tickets,  setTickets]  = useState<TicketData[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [subject,  setSubject]  = useState("");
+  const [body,     setBody]     = useState("");
+  const [priority, setPriority] = useState("normal");
+  const [sending,  setSending]  = useState(false);
+  const [sent,     setSent]     = useState(false);
+
+  useEffect(() => {
+    fetch("/api/tickets")
+      .then(r => r.json() as Promise<TicketData[]>)
+      .then(d => setTickets(Array.isArray(d) ? d : []))
+      .catch(() => null);
+  }, [sent]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!subject.trim() || !body.trim()) return;
+    setSending(true);
+    try {
+      const r = await fetch("/api/tickets", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ subject, body, priority }),
+      });
+      if (r.ok) {
+        setSubject(""); setBody(""); setPriority("normal");
+        setShowForm(false);
+        setSent(s => !s); // trigger reload
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <MessageSquare size={13} style={{ color: "var(--ai-light)" }} strokeWidth={1.8} />
+          <p className="text-[11px] font-semibold uppercase" style={{ color: "var(--text-3)", letterSpacing: "0.08em" }}>
+            Support
+          </p>
+        </div>
+        <button
+          onClick={() => setShowForm(f => !f)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[7px] text-[11px] font-semibold"
+          style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}
+        >
+          {showForm ? "Hủy" : "+ Tạo ticket"}
+        </button>
+      </div>
+
+      {/* Form */}
+      {showForm && (
+        <form onSubmit={e => void submit(e)} className="mb-4 flex flex-col gap-2">
+          <input
+            value={subject}
+            onChange={e => setSubject(e.target.value)}
+            placeholder="Tiêu đề..."
+            required
+            className="w-full px-3 py-2 rounded-[8px] text-[12px] outline-none"
+            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-1)" }}
+          />
+          <textarea
+            value={body}
+            onChange={e => setBody(e.target.value)}
+            placeholder="Mô tả chi tiết vấn đề..."
+            required
+            rows={4}
+            className="w-full px-3 py-2 rounded-[8px] text-[12px] outline-none resize-none"
+            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-1)" }}
+          />
+          <div className="flex items-center gap-2">
+            <select
+              value={priority}
+              onChange={e => setPriority(e.target.value)}
+              className="px-2.5 py-1.5 rounded-[7px] text-[12px] outline-none"
+              style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+            >
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+            <button
+              type="submit"
+              disabled={sending || !subject.trim() || !body.trim()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[12px] font-semibold disabled:opacity-50"
+              style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}
+            >
+              <Send size={11} />
+              {sending ? "Đang gửi..." : "Gửi ticket"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Danh sách ticket */}
+      {tickets.length === 0 ? (
+        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
+          Chưa có ticket nào. Tạo ticket nếu bạn cần hỗ trợ.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {tickets.map(ticket => (
+            <div key={ticket.id} className="rounded-[8px] overflow-hidden"
+              style={{ border: "1px solid var(--border)" }}>
+              <button
+                onClick={() => setExpanded(e => e === ticket.id ? null : ticket.id)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left"
+                style={{ background: "var(--bg-hover)" }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: STATUS_COLOR[ticket.status] ?? "#6b7280" }} />
+                <span className="flex-1 min-w-0">
+                  <span className="text-[12px] font-medium block truncate" style={{ color: "var(--text-1)" }}>
+                    {ticket.subject}
+                  </span>
+                  <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                    {new Date(ticket.createdAt).toLocaleDateString("vi-VN")} · {ticket.status.replace("_", " ")}
+                  </span>
+                </span>
+                {expanded === ticket.id
+                  ? <ChevronUp size={12} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                  : <ChevronDown size={12} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                }
+              </button>
+              {expanded === ticket.id && (
+                <div className="px-3 pb-3 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+                  <p className="text-[12px] whitespace-pre-wrap leading-relaxed mb-2" style={{ color: "var(--text-2)" }}>
+                    {ticket.body}
+                  </p>
+                  {ticket.reply && (
+                    <div className="rounded-[6px] px-3 py-2 text-[12px]"
+                      style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#6ee7b7" }}>
+                      <p className="text-[10px] font-semibold mb-1" style={{ color: "#34D399" }}>Phản hồi từ team:</p>
+                      {ticket.reply}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
