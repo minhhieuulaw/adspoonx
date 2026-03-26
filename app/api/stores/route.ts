@@ -10,9 +10,13 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url);
   const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"));
-  const limit = Math.min(60, parseInt(url.searchParams.get("limit") ?? "30"));
+  const limit = Math.min(60, parseInt(url.searchParams.get("limit") ?? "20"));
   const sort = url.searchParams.get("sort") ?? "activeAds";
   const q = url.searchParams.get("q")?.trim();
+  const countries = url.searchParams.get("countries")?.split(",").filter(Boolean);
+  const platforms = url.searchParams.get("platforms")?.split(",").filter(Boolean);
+  const minAds = parseInt(url.searchParams.get("minAds") ?? "0");
+  const maxAds = parseInt(url.searchParams.get("maxAds") ?? "999999");
   const offset = (page - 1) * limit;
 
   const orderCol =
@@ -21,38 +25,44 @@ export async function GET(req: NextRequest) {
     '"activeAds"';
 
   try {
-    let shops: Array<Record<string, unknown>>;
-    let total: number;
+    // Build WHERE clauses
+    const conditions: string[] = ['"activeAds" >= $1', '"activeAds" <= $2'];
+    const params: unknown[] = [minAds, maxAds];
+    let paramIdx = 3;
 
     if (q) {
-      shops = await prisma.$queryRawUnsafe(
-        `SELECT "pageId", "pageName", "profilePicture", "activeAds", "pausedAds", "totalAds",
-                platforms, countries, "firstSeenAt", "lastAdSeenAt"
-         FROM "Shop"
-         WHERE "pageName" ILIKE '%' || $1 || '%'
-         ORDER BY ${orderCol} DESC NULLS LAST
-         LIMIT $2 OFFSET $3`,
-        q, limit, offset,
-      );
-      const cnt = await prisma.$queryRawUnsafe<[{ count: bigint }]>(
-        `SELECT COUNT(*) as count FROM "Shop" WHERE "pageName" ILIKE '%' || $1 || '%'`,
-        q,
-      );
-      total = Number(cnt[0]?.count ?? 0);
-    } else {
-      shops = await prisma.$queryRawUnsafe(
-        `SELECT "pageId", "pageName", "profilePicture", "activeAds", "pausedAds", "totalAds",
-                platforms, countries, "firstSeenAt", "lastAdSeenAt"
-         FROM "Shop"
-         ORDER BY ${orderCol} DESC NULLS LAST
-         LIMIT $1 OFFSET $2`,
-        limit, offset,
-      );
-      const cnt = await prisma.$queryRawUnsafe<[{ count: bigint }]>(
-        `SELECT COUNT(*) as count FROM "Shop"`,
-      );
-      total = Number(cnt[0]?.count ?? 0);
+      conditions.push(`"pageName" ILIKE '%' || $${paramIdx} || '%'`);
+      params.push(q);
+      paramIdx++;
     }
+    if (countries?.length) {
+      conditions.push(`countries && $${paramIdx}::text[]`);
+      params.push(countries);
+      paramIdx++;
+    }
+    if (platforms?.length) {
+      conditions.push(`platforms && $${paramIdx}::text[]`);
+      params.push(platforms);
+      paramIdx++;
+    }
+
+    const whereSQL = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    const shops = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      `SELECT "pageId", "pageName", "profilePicture", "activeAds", "pausedAds", "totalAds",
+              platforms, countries, "firstSeenAt", "lastAdSeenAt"
+       FROM "Shop"
+       ${whereSQL}
+       ORDER BY ${orderCol} DESC NULLS LAST
+       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+      ...params, limit, offset,
+    );
+
+    const cnt = await prisma.$queryRawUnsafe<[{ count: bigint }]>(
+      `SELECT COUNT(*) as count FROM "Shop" ${whereSQL}`,
+      ...params,
+    );
+    const total = Number(cnt[0]?.count ?? 0);
 
     const data = shops.map((s) => ({
       pageId: String(s.pageId ?? ""),
@@ -73,9 +83,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error("Stores API error:", e);
-    return NextResponse.json(
-      { error: "Failed to fetch stores", detail: String(e) },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to fetch stores", detail: String(e) }, { status: 500 });
   }
 }
