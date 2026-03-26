@@ -705,10 +705,10 @@ function CrawlControl() {
 // ── Niche Intelligence ────────────────────────────────────────────────────────
 
 interface NicheStats {
-  distribution: { niche: string; count: number }[];
-  otherCount:   number;
-  withImage:    number;
-  normalizable: number;
+  distribution:    { niche: string; count: number }[];
+  otherCount:      number;
+  classifiedCount: number;
+  normalizable:    number;
   estimatedCostUsd: number;
 }
 
@@ -828,6 +828,14 @@ function NicheIntelligence() {
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => void fetchStats().then(s => { setStats(s); setLoading(false); }).catch(() => {})}
+            disabled={loading || autoRunning}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[11px] disabled:opacity-40"
+            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+          >
+            <RefreshCw size={11} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
           {autoRunning ? (
             <button
               onClick={stop}
@@ -875,9 +883,9 @@ function NicheIntelligence() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             {[
               { label: "Unclassified (Other)", value: stats.otherCount.toLocaleString(), color: "#F87171" },
-              { label: "With image", value: stats.withImage.toLocaleString(), color: "#60A5FA" },
+              { label: "Classified", value: stats.classifiedCount.toLocaleString(), color: "#34D399" },
               { label: "Old names (fixed)", value: stats.normalizable.toLocaleString(), color: "#FCD34D" },
-              { label: "Est. cost all", value: `$${stats.estimatedCostUsd}`, color: "#34D399" },
+              { label: "Est. cost remaining", value: `$${stats.estimatedCostUsd}`, color: "#60A5FA" },
             ].map(k => (
               <div key={k.label} className="rounded-[10px] p-3"
                 style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)" }}>

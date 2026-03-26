@@ -29,7 +29,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [distribution, normalizable] = await Promise.all([
+  const [distribution, normalizable, classifiedCount] = await Promise.all([
     prisma.ad.groupBy({
       by: ["niche"],
       _count: { niche: true },
@@ -38,12 +38,12 @@ export async function GET() {
     prisma.ad.count({
       where: { niche: { in: Object.keys(NORMALIZE_MAP) } },
     }),
+    prisma.ad.count({
+      where: { niche: { not: null, notIn: ["Other"] } },
+    }),
   ]);
 
   const otherCount = distribution.find(d => d.niche === "Other")?._count.niche ?? 0;
-  const withImage  = await prisma.ad.count({
-    where: { niche: "Other", imageUrl: { not: null } },
-  });
 
   // ~0.000063 per ad (Haiku with image)
   const estimatedCostUsd = +(otherCount * 0.000063).toFixed(2);
@@ -51,7 +51,7 @@ export async function GET() {
   return NextResponse.json({
     distribution: distribution.map(d => ({ niche: d.niche ?? "null", count: d._count.niche })),
     otherCount,
-    withImage,
+    classifiedCount,
     normalizable,
     estimatedCostUsd,
   });
