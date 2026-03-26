@@ -162,6 +162,7 @@ export async function POST(req: NextRequest) {
         title:       true,
         imageUrl:    true,
         pageName:    true,
+        rawData:     true,
       },
       take: limit,
       // updatedAt ASC: ads least-recently-touched come first.
@@ -174,9 +175,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, processed: 0, updated: 0, results: [] });
     }
 
+    // Extract product link URL from rawData snapshot
+    function extractLinkUrl(rawData: unknown): string {
+      try {
+        const snap = ((rawData as Record<string, unknown>)?.snapshot ?? {}) as Record<string, unknown>;
+        return (snap.link_url as string) ?? (snap.caption as string) ?? "";
+      } catch { return ""; }
+    }
+
     // Helper: classify one ad, with image-fallback to text-only on CDN errors
     async function classifyAd(ad: typeof ads[0]): Promise<{ niche: string; confidence: string }> {
-      const textContent = `Classify this Facebook ad into exactly ONE of these product niches:\n${NICHE_LIST}\n\nAd info:\n- Brand: ${ad.pageName ?? "Unknown"}\n- Body: ${(ad.bodyText ?? "").slice(0, 300)}\n- Title: ${ad.title ?? ""}\n\nReturn ONLY a JSON object, no markdown:\n{"niche": "exact niche name from list", "confidence": "high|medium|low", "reason": "1 sentence"}`;
+      const linkUrl = extractLinkUrl(ad.rawData);
+      const textContent = `Classify this Facebook ad into exactly ONE of these product niches:\n${NICHE_LIST}\n\nAd info:\n- Brand: ${ad.pageName ?? "Unknown"}\n- Body: ${(ad.bodyText ?? "").slice(0, 300)}\n- Title: ${ad.title ?? ""}${linkUrl ? `\n- Product URL: ${linkUrl}` : ""}\n\nReturn ONLY a JSON object, no markdown:\n{"niche": "exact niche name from list", "confidence": "high|medium|low", "reason": "1 sentence"}`;
 
       // Phase 1: try with image (if available)
       if (ad.imageUrl) {
