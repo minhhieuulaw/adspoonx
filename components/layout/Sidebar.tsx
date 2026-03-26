@@ -45,7 +45,7 @@ function NavContent({ onClose }: { onClose?: () => void }) {
       <div className="flex items-center gap-3 px-5 flex-shrink-0"
         style={{ borderBottom: "1px solid var(--sidebar-border)", height: 56 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-transparent.png" alt="AdSpoonX" className="h-9 flex-shrink-0" style={{ filter: "invert(1)", objectFit: "contain" }} />
+        <img src="/logo-transparent.png" alt="AdSpoonX" className="h-[60px] flex-shrink-0" style={{ filter: "invert(1)", objectFit: "contain" }} />
         <span className="flex-1" />
         {onClose && (
           <button onClick={onClose} className="p-1 rounded-[6px] md:hidden"

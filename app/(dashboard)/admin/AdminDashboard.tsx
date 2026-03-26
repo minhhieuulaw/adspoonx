@@ -119,20 +119,7 @@ export default function AdminDashboard() {
 
   useEffect(load, []);
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64 gap-2" style={{ color: "var(--text-3)" }}>
-      <div className="w-4 h-4 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />
-      Loading...
-    </div>
-  );
-
-  if (error || !stats) return (
-    <div className="flex items-center justify-center h-64" style={{ color: "var(--text-3)" }}>
-      {error || "No data"}
-    </div>
-  );
-
-  const revenueData = stats.revenue.scanPurchases.byMonth.map(m => ({
+  const revenueData = (stats?.revenue.scanPurchases.byMonth ?? []).map(m => ({
     month: m.month.slice(5),
     revenue: Math.round(m.amountCents / 100),
     orders: m.count,
@@ -140,7 +127,7 @@ export default function AdminDashboard() {
 
   const planPieData = (() => {
     const agg: Record<string, number> = {};
-    for (const s of stats.subscriptions.byPlan) {
+    for (const s of (stats?.subscriptions.byPlan ?? [])) {
       if (s.status === "cancelled" || s.status === "expired") continue;
       agg[s.plan] = (agg[s.plan] ?? 0) + s.count;
     }
@@ -168,6 +155,19 @@ export default function AdminDashboard() {
           Refresh
         </button>
       </div>
+
+      {/* ── Stats Section (loading / error / content) ── */}
+      {loading ? (
+        <div className="flex items-center justify-center h-48 gap-2" style={{ color: "var(--text-3)" }}>
+          <div className="w-4 h-4 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />
+          Loading stats...
+        </div>
+      ) : (error || !stats) ? (
+        <div className="flex items-center justify-center h-20 text-[12px] rounded-[10px] mb-4"
+          style={{ color: "#F87171", background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.15)" }}>
+          ⚠ {error || "Không có dữ liệu"}
+        </div>
+      ) : (<>
 
       {/* ── KPIs ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
@@ -371,8 +371,13 @@ export default function AdminDashboard() {
         </table>
       </Card>
 
+      </>)}
+
       {/* ── Crawl Control ── */}
       <CrawlControl />
+
+      {/* ── Niche Intelligence ── */}
+      <NicheIntelligence />
 
       {/* ── Announcements ── */}
       <AnnouncementsPanel />
@@ -498,6 +503,175 @@ function CrawlControl() {
 }
 
 // ── Announcements Panel ───────────────────────────────────────────────────────
+
+// ── Niche Intelligence ────────────────────────────────────────────────────────
+
+interface NicheStats {
+  distribution: { niche: string; count: number }[];
+  otherCount:   number;
+  withImage:    number;
+  normalizable: number;
+  estimatedCostUsd: number;
+}
+
+interface ReclassifyResult {
+  ok:        boolean;
+  action:    string;
+  processed?: number;
+  updated?:  number;
+  breakdown?: Record<string, number>;
+}
+
+function NicheIntelligence() {
+  const [stats,   setStats]   = useState<NicheStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState<"normalize" | "reclassify" | null>(null);
+  const [result,  setResult]  = useState<ReclassifyResult | null>(null);
+
+  async function fetchStats(): Promise<NicheStats> {
+    const r = await fetch("/api/admin/reclassify-niches");
+    return r.json() as Promise<NicheStats>;
+  }
+
+  useEffect(() => {
+    void (async () => {
+      // 1. Load stats
+      setLoading(true);
+      const s = await fetchStats().catch(() => null);
+      setLoading(false);
+      if (!s) return;
+      setStats(s);
+
+      // 2. Auto normalize (free — map tên cũ → chuẩn)
+      if (s.normalizable > 0) {
+        setRunning("normalize");
+        const r = await fetch("/api/admin/reclassify-niches", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "normalize" }),
+        });
+        const d = await r.json() as ReclassifyResult;
+        setResult(d);
+        setRunning(null);
+      }
+
+      // 3. Auto reclassify "Other" ads (100 mỗi lần)
+      if (s.otherCount > 0) {
+        setRunning("reclassify");
+        const r = await fetch("/api/admin/reclassify-niches", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "reclassify", limit: 100 }),
+        });
+        const d = await r.json() as ReclassifyResult;
+        setResult(d);
+        setRunning(null);
+
+        // Refresh stats sau khi reclassify
+        const s2 = await fetchStats().catch(() => null);
+        if (s2) setStats(s2);
+      }
+    })();
+  }, []);
+
+  const PIE_COLORS_10 = ["#A78BFA","#60A5FA","#F472B6","#34D399","#FCD34D","#FB923C","#38BDF8","#818CF8","#4ADE80","#94A3B8"];
+
+  return (
+    <div className="rounded-[12px] p-5 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-7 h-7 rounded-[8px] flex items-center justify-center" style={{ background: "rgba(167,139,250,0.15)" }}>
+          <Database size={13} style={{ color: "#A78BFA" }} />
+        </div>
+        <p className="font-display text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>Niche Intelligence</p>
+        {stats && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+            style={{ background: "rgba(248,113,113,0.12)", color: "#F87171" }}>
+            {stats.otherCount.toLocaleString()} Other
+          </span>
+        )}
+        {running && (
+          <span className="flex items-center gap-1 text-[10px]" style={{ color: "var(--ai-light)" }}>
+            <div className="w-3 h-3 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />
+            {running === "normalize" ? "Normalizing..." : "Reclassifying..."}
+          </span>
+        )}
+      </div>
+
+      {/* Loading */}
+      {loading && <div className="h-20 skeleton rounded-[8px]" />}
+
+      {/* Stats + distribution */}
+      {!loading && stats && (
+        <>
+          {/* KPI cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            {[
+              { label: "Unclassified (Other)", value: stats.otherCount.toLocaleString(), color: "#F87171" },
+              { label: "With image", value: stats.withImage.toLocaleString(), color: "#60A5FA" },
+              { label: "Old names (fixed)", value: stats.normalizable.toLocaleString(), color: "#FCD34D" },
+              { label: "Est. cost all", value: `$${stats.estimatedCostUsd}`, color: "#34D399" },
+            ].map(k => (
+              <div key={k.label} className="rounded-[10px] p-3"
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)" }}>
+                <p className="text-[9px] uppercase tracking-widest font-semibold mb-1" style={{ color: "var(--text-3)" }}>{k.label}</p>
+                <p className="font-display text-[20px] font-bold" style={{ color: k.color }}>{k.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Distribution chart */}
+          <div className="mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>
+              Niche Distribution
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {stats.distribution.slice(0, 12).map((d, i) => {
+                const total = stats.distribution.reduce((s, x) => s + x.count, 0);
+                const pct   = total > 0 ? (d.count / total) * 100 : 0;
+                const color = PIE_COLORS_10[i % PIE_COLORS_10.length];
+                return (
+                  <div key={d.niche} className="flex items-center gap-2">
+                    <span className="text-[10px] w-36 truncate flex-shrink-0" style={{ color: "var(--text-2)" }}>{d.niche}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(pct, 0.5)}%`, background: color }} />
+                    </div>
+                    <span className="text-[10px] font-data w-16 text-right flex-shrink-0" style={{ color: "var(--text-3)" }}>
+                      {d.count.toLocaleString()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Auto-run result */}
+          {result && (
+            <div className="p-3 rounded-[10px] mt-2"
+              style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)" }}>
+              <p className="text-[11px] font-semibold mb-2" style={{ color: "#34D399" }}>
+                ✓ {result.action === "normalize" ? "Normalized" : "Reclassified"}{" "}
+                {result.updated?.toLocaleString()} ads
+                {result.processed ? ` (of ${result.processed} processed)` : ""}
+              </p>
+              {result.breakdown && Object.keys(result.breakdown).length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(result.breakdown)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([niche, count]) => (
+                      <span key={niche} className="text-[9px] px-2 py-0.5 rounded-full font-semibold"
+                        style={{ background: "rgba(52,211,153,0.12)", color: "#34D399", border: "1px solid rgba(52,211,153,0.2)" }}>
+                        {niche}: {count}
+                      </span>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 interface AnnouncementItem {
   id: string; message: string; color: string;

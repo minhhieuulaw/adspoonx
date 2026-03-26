@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Globe, Monitor, Eye, DollarSign, Bookmark, ExternalLink, Play, Copy } from "lucide-react";
+import { X, Calendar, Globe, Monitor, Eye, DollarSign, Bookmark, ExternalLink, Play, Copy, Sparkles, ChevronDown, ChevronUp, Zap, AlertCircle } from "lucide-react";
 import type { FbAd } from "@/lib/facebook-ads";
 import { getAIInsights, getScoreBg, getScoreBorder } from "@/lib/ai-insights";
 import { useSavedAds } from "@/lib/hooks/useSavedAds";
+import type { AdAnalysisResult } from "@/app/api/ai/analyze-ad/route";
 
 interface Props {
   ad: FbAd | null;
@@ -138,10 +139,76 @@ function MetricChip({ icon: Icon, label, value }: { icon: React.ElementType; lab
   );
 }
 
+// ── Claude section helper ──────────────────────────────────────────────────────
+
+function ClaudeSection({
+  label, text, tag, highlight, dim,
+}: {
+  label: string; text: string; tag?: boolean; highlight?: boolean; dim?: boolean;
+}) {
+  if (tag) {
+    return (
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>{label}</p>
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold"
+          style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }}>
+          {text}
+        </span>
+      </div>
+    );
+  }
+  const textColor = highlight ? "#6ee7b7" : dim ? "#F87171" : "var(--text-2)";
+  const bg        = highlight ? "rgba(52,211,153,0.05)" : dim ? "rgba(248,113,113,0.05)" : "rgba(255,255,255,0.02)";
+  const border    = highlight ? "rgba(52,211,153,0.15)"  : dim ? "rgba(248,113,113,0.15)"  : "rgba(255,255,255,0.06)";
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>{label}</p>
+      <div className="rounded-[8px] px-3 py-2" style={{ background: bg, border: `1px solid ${border}` }}>
+        <p className="text-[12px] leading-relaxed" style={{ color: textColor }}>{text}</p>
+      </div>
+    </div>
+  );
+}
+
 // ── Main modal ─────────────────────────────────────────────────────────────────
 
 export default function AdDetailModal({ ad, onClose }: Props) {
   const { savedIds, toggleSave } = useSavedAds();
+  const [claudeResult,  setClaudeResult]  = useState<AdAnalysisResult | null>(null);
+  const [claudeLoading, setClaudeLoading] = useState(false);
+  const [claudeError,   setClaudeError]   = useState("");
+  const [claudeOpen,    setClaudeOpen]    = useState(false);
+
+  // Reset when ad changes
+  useEffect(() => {
+    setClaudeResult(null);
+    setClaudeError("");
+    setClaudeOpen(false);
+  }, [ad?.id]);
+
+  async function runClaudeAnalysis() {
+    if (!ad) return;
+    setClaudeLoading(true);
+    setClaudeError("");
+    setClaudeOpen(true);
+    try {
+      const r = await fetch("/api/ai/analyze-ad", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ adArchiveId: ad.id }),
+      });
+      const data = await r.json() as AdAnalysisResult & { error?: string };
+      if (!r.ok) {
+        setClaudeError(data.error ?? "Analysis failed");
+      } else {
+        setClaudeResult(data);
+      }
+    } catch {
+      setClaudeError("Network error. Vui lòng thử lại.");
+    } finally {
+      setClaudeLoading(false);
+    }
+  }
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -504,6 +571,128 @@ export default function AdDetailModal({ ad, onClose }: Props) {
                       </div>
                     </div>
                   </div>
+
+                  {/* ── Claude AI Deep Analysis ── */}
+                  <div className="rounded-[12px] overflow-hidden"
+                    style={{ border: "1px solid rgba(124,58,237,0.25)", background: "rgba(124,58,237,0.04)" }}>
+
+                    {/* Header row */}
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={13} style={{ color: "#A78BFA" }} />
+                        <span className="text-[12px] font-semibold" style={{ color: "#A78BFA" }}>Claude AI Deep Analysis</span>
+                        {claudeResult?.cached && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                            style={{ background: "rgba(52,211,153,0.12)", color: "#34D399" }}>cached</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!claudeResult && !claudeLoading && (
+                          <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                            <Zap size={9} className="inline mr-0.5" style={{ color: "#A78BFA" }} />
+                            3 scans
+                          </span>
+                        )}
+                        {claudeResult && (
+                          <button onClick={() => setClaudeOpen(o => !o)} style={{ color: "var(--text-3)" }}>
+                            {claudeOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Generate button or result */}
+                    {!claudeResult && !claudeLoading && (
+                      <div className="px-4 pb-4">
+                        <button
+                          onClick={() => void runClaudeAnalysis()}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[12px] font-semibold transition-opacity hover:opacity-80"
+                          style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}
+                        >
+                          <Sparkles size={12} />
+                          Generate AI Analysis
+                        </button>
+                        {claudeError && (
+                          <div className="mt-2 flex items-center gap-1.5 text-[11px]" style={{ color: "#F87171" }}>
+                            <AlertCircle size={11} />
+                            {claudeError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {claudeLoading && (
+                      <div className="px-4 pb-4 flex items-center gap-2 text-[12px]" style={{ color: "var(--text-3)" }}>
+                        <div className="w-3 h-3 rounded-full border-2 border-[#A78BFA] border-t-transparent animate-spin flex-shrink-0" />
+                        Claude đang phân tích ad...
+                      </div>
+                    )}
+
+                    {claudeResult && claudeOpen && (
+                      <div className="px-4 pb-4 flex flex-col gap-3 border-t" style={{ borderColor: "rgba(124,58,237,0.15)" }}>
+
+                        {/* Score */}
+                        <div className="flex items-center justify-between pt-3">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: "#A78BFA", opacity: 0.7 }}>AI Score</p>
+                            <span className="font-display text-[32px] font-black leading-none" style={{ color: "#A78BFA" }}>{claudeResult.score}</span>
+                            <span className="text-[12px] ml-1" style={{ color: "#A78BFA", opacity: 0.5 }}>/100</span>
+                          </div>
+                          <div className="text-right text-[11px]" style={{ color: "var(--text-2)" }}>
+                            <p className="font-semibold" style={{ color: "var(--text-1)" }}>{claudeResult.productCategory}</p>
+                            <p style={{ color: "var(--text-3)" }}>{claudeResult.scoreReason}</p>
+                          </div>
+                        </div>
+
+                        {/* Emotion triggers */}
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Emotional Triggers</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {claudeResult.emotionalTriggers.map(t => (
+                              <span key={t} className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                                style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Hook */}
+                        <ClaudeSection label="Hook Analysis" text={claudeResult.hookAnalysis} />
+                        <ClaudeSection label="Target Audience" text={claudeResult.targetAudience} />
+                        <ClaudeSection label="Offer Type" text={claudeResult.offerType} tag />
+                        <ClaudeSection label="Why It Works" text={claudeResult.whyItWorks} highlight />
+                        <ClaudeSection label="Weaknesses" text={claudeResult.weaknesses} dim />
+
+                        {/* Replication Strategy */}
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Replication Strategy</p>
+                          <div className="rounded-[8px] px-3 py-2.5"
+                            style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                            <p className="text-[12px] leading-relaxed" style={{ color: "#6ee7b7" }}>{claudeResult.replicationStrategy}</p>
+                          </div>
+                        </div>
+
+                        {/* Recommendations */}
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Recommendations</p>
+                          <div className="flex flex-col gap-1.5">
+                            {claudeResult.recommendations.map((r, i) => (
+                              <div key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "var(--text-2)" }}>
+                                <span className="text-[10px] font-bold mt-0.5 flex-shrink-0" style={{ color: "#A78BFA" }}>{i + 1}.</span>
+                                {r}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <p className="text-[10px] text-right" style={{ color: "var(--text-3)" }}>
+                          {claudeResult.scansCharged} scan{claudeResult.scansCharged > 1 ? "s" : ""} charged · claude-sonnet-4-6
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
 
                 {/* Footer actions */}

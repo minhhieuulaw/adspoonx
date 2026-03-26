@@ -210,6 +210,20 @@ model Announcement {
   @@index([isActive])
 }
 
+// ─── AI Analysis Cache ─────────────────────────────────────────
+model AiAnalysis {
+  id         String   @id @default(cuid())
+  targetType String                   // "ad" | "shop"
+  targetId   String                   // adArchiveId or pageId
+  model      String   @default("claude-sonnet-4-6")
+  analysis   Json                     // structured result
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime                 // 7-day TTL
+
+  @@unique([targetType, targetId])
+  @@index([expiresAt])
+}
+
 // ─── Workflow Run Log (Daily A scraper) ───────────────────────
 model WorkflowRun {
   id         String   @id @default(cuid())

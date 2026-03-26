@@ -107,6 +107,21 @@ export async function deductScan(userId: string): Promise<boolean> {
 }
 
 /**
+ * Atomically deduct N scans. Returns true if successful (had enough balance).
+ */
+export async function deductScans(userId: string, amount: number): Promise<boolean> {
+  const { balance } = await getUserScans(userId);
+  if (balance < amount) return false;
+
+  const { count } = await prisma.user.updateMany({
+    where: { id: userId, scansBalance: { gte: amount } },
+    data:  { scansBalance: { decrement: amount } },
+  });
+
+  return count > 0;
+}
+
+/**
  * Add scans to a user's balance (e.g. after a purchase).
  */
 export async function addScans(userId: string, amount: number): Promise<void> {

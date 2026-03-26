@@ -6,8 +6,9 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   ArrowLeft, Store, Zap, BarChart2, Calendar, Pause,
-  ExternalLink, Play,
+  ExternalLink, Play, Sparkles, ChevronDown, ChevronUp, AlertCircle,
 } from "lucide-react";
+import type { ShopAnalysisResult } from "@/app/api/ai/analyze-shop/route";
 import { getAIInsights } from "@/lib/ai-insights";
 import AdCard from "@/components/ads/AdCard";
 import type { StoreData } from "@/lib/store-helpers";
@@ -51,6 +52,32 @@ export default function StoreProfilePage() {
     const sum = activeAds.reduce((acc, ad) => acc + getAIInsights(ad).winningScore, 0);
     return Math.round(sum / activeAds.length);
   }, [activeAds]);
+
+  const [shopAI,        setShopAI]        = useState<ShopAnalysisResult | null>(null);
+  const [shopAILoading, setShopAILoading] = useState(false);
+  const [shopAIError,   setShopAIError]   = useState("");
+  const [shopAIOpen,    setShopAIOpen]    = useState(false);
+
+  async function runShopAnalysis() {
+    if (!pageId) return;
+    setShopAILoading(true);
+    setShopAIError("");
+    setShopAIOpen(true);
+    try {
+      const r    = await fetch("/api/ai/analyze-shop", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ pageId }),
+      });
+      const data = await r.json() as ShopAnalysisResult & { error?: string };
+      if (!r.ok) setShopAIError(data.error ?? "Analysis failed");
+      else       setShopAI(data);
+    } catch {
+      setShopAIError("Network error. Vui lòng thử lại.");
+    } finally {
+      setShopAILoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -195,6 +222,168 @@ export default function StoreProfilePage() {
           </div>
         </motion.div>
       </div>
+
+      {/* ── Shop AI Insights ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+        className="rounded-[14px] overflow-hidden mb-5"
+        style={{ border: "1px solid rgba(124,58,237,0.25)", background: "rgba(124,58,237,0.04)" }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} style={{ color: "#A78BFA" }} />
+            <span className="font-semibold text-[13px]" style={{ color: "#A78BFA" }}>Shop AI Intelligence</span>
+            {shopAI?.cached && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                style={{ background: "rgba(52,211,153,0.12)", color: "#34D399" }}>cached</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2.5">
+            {!shopAI && !shopAILoading && (
+              <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--text-3)" }}>
+                <Zap size={9} style={{ color: "#A78BFA" }} />10 scans · Premium+
+              </span>
+            )}
+            {shopAI && (
+              <button onClick={() => setShopAIOpen(o => !o)} className="p-1" style={{ color: "var(--text-3)" }}>
+                {shopAIOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Generate button */}
+        {!shopAI && !shopAILoading && (
+          <div className="px-5 pb-5">
+            <button
+              onClick={() => void runShopAnalysis()}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-[10px] text-[13px] font-semibold transition-opacity hover:opacity-80"
+              style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.35)", color: "var(--ai-light)" }}
+            >
+              <Sparkles size={13} />
+              Generate Shop AI Analysis
+            </button>
+            {shopAIError && (
+              <div className="mt-2.5 flex items-center gap-1.5 text-[12px]" style={{ color: "#F87171" }}>
+                <AlertCircle size={12} />{shopAIError}
+              </div>
+            )}
+          </div>
+        )}
+
+        {shopAILoading && (
+          <div className="px-5 pb-5 flex items-center gap-2.5 text-[12px]" style={{ color: "var(--text-3)" }}>
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-[#A78BFA] border-t-transparent animate-spin" />
+            Claude đang phân tích {store.pageName}...
+          </div>
+        )}
+
+        {shopAI && shopAIOpen && (
+          <div className="px-5 pb-5 border-t flex flex-col gap-4" style={{ borderColor: "rgba(124,58,237,0.15)" }}>
+            {/* Overall strategy */}
+            <div className="pt-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>Overall Strategy</p>
+              <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-1)" }}>{shopAI.overallStrategy}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left column */}
+              <div className="flex flex-col gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Target Market</p>
+                  <div className="rounded-[8px] px-3 py-2.5" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>{shopAI.targetMarket}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Brand Voice</p>
+                  <div className="rounded-[8px] px-3 py-2.5" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>{shopAI.brandVoice}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Pricing Strategy</p>
+                  <div className="rounded-[8px] px-3 py-2.5" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>{shopAI.pricingStrategy}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Ad Cadence</p>
+                  <p className="text-[12px]" style={{ color: "var(--text-2)" }}>{shopAI.adCadence}</p>
+                </div>
+              </div>
+
+              {/* Right column */}
+              <div className="flex flex-col gap-3">
+                {/* Top Hooks */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Top Hook Patterns</p>
+                  <div className="flex flex-col gap-1.5">
+                    {shopAI.topHooks.map((h, i) => (
+                      <div key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "var(--text-2)" }}>
+                        <span className="font-bold mt-0.5 flex-shrink-0" style={{ color: "#A78BFA" }}>{i + 1}.</span>{h}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Strengths */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Strengths</p>
+                  <div className="flex flex-col gap-1">
+                    {shopAI.strengths.map((s, i) => (
+                      <div key={i} className="flex items-start gap-1.5 text-[12px]" style={{ color: "#6ee7b7" }}>
+                        <span className="flex-shrink-0 mt-0.5">✓</span>{s}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Weaknesses */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-3)" }}>Weaknesses</p>
+                  <div className="flex flex-col gap-1">
+                    {shopAI.weaknesses.map((w, i) => (
+                      <div key={i} className="flex items-start gap-1.5 text-[12px]" style={{ color: "#F87171" }}>
+                        <span className="flex-shrink-0 mt-0.5">✗</span>{w}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Competitive position */}
+            <div className="rounded-[10px] px-4 py-3" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#34D399" }}>Competitive Position</p>
+              <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>{shopAI.competitivePosition}</p>
+            </div>
+
+            {/* Market opportunity */}
+            <div className="rounded-[10px] px-4 py-3" style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.2)" }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#A78BFA" }}>Market Opportunity</p>
+              <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-2)" }}>{shopAI.marketOpportunity}</p>
+            </div>
+
+            {/* Recommendations */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>How to Compete</p>
+              <div className="flex flex-col gap-2">
+                {shopAI.recommendations.map((r, i) => (
+                  <div key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "var(--text-2)" }}>
+                    <span className="font-bold text-[11px] mt-0.5 flex-shrink-0" style={{ color: "#A78BFA" }}>{i + 1}.</span>{r}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-[10px] text-right" style={{ color: "var(--text-3)" }}>
+              {shopAI.scansCharged} scans charged · claude-sonnet-4-6
+            </p>
+          </div>
+        )}
+      </motion.div>
 
       {/* ── Tabs ── */}
       <div className="flex items-center gap-1 mb-4 p-1 rounded-[10px] w-fit"
