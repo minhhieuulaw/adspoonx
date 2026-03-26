@@ -263,9 +263,9 @@ function MiniAdCard({ ad, onClick }: { ad: FbAd; onClick: () => void }) {
   const days = daysRunning(ad.ad_delivery_start_time);
 
   return (
-    <div onClick={onClick} className="flex-shrink-0 cursor-pointer rounded-[8px] overflow-hidden"
+    <div onClick={onClick} className="cursor-pointer rounded-[8px] overflow-hidden"
       style={{
-        width: 140, background: "var(--bg-card)", border: "1px solid var(--border)",
+        background: "var(--bg-card)", border: "1px solid var(--border)",
         transition: "border-color 150ms",
       }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(124,58,237,0.3)"; }}
@@ -422,14 +422,15 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
         style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}
       >
         <button onClick={onClose}
-          className="p-1.5 rounded-[7px] flex items-center gap-1 text-[11px] font-medium"
+          className="panel-btn p-1.5 rounded-[7px] flex items-center gap-1 text-[11px] font-medium"
           style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
           <ChevronLeft size={12} strokeWidth={2} />
           Back
         </button>
         <span className="flex-1" />
         <button onClick={() => toggleSave(ad)}
-          className="p-1.5 rounded-[7px]"
+          data-tip={isSaved ? "Unsave" : "Save ad"}
+          className="panel-btn p-1.5 rounded-[7px]"
           style={{
             color: isSaved ? "var(--ai-light)" : "var(--text-3)",
             background: isSaved ? "var(--ai-soft)" : "var(--bg-hover)",
@@ -439,7 +440,8 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
         </button>
         {ad.ad_snapshot_url && (
           <a href={ad.ad_snapshot_url} target="_blank" rel="noopener noreferrer"
-            className="p-1.5 rounded-[7px]"
+            data-tip="Open in library"
+            className="panel-btn p-1.5 rounded-[7px]"
             style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)", display: "flex" }}>
             <ExternalLink size={13} strokeWidth={1.5} />
           </a>
@@ -447,7 +449,8 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
         <button
           onClick={() => void runClaudeAnalysis()}
           disabled={claudeLoading}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[11px] font-semibold disabled:opacity-50"
+          data-tip="AI deep analysis"
+          className="panel-btn flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[11px] font-semibold disabled:opacity-50"
           style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.35)", color: "var(--ai-light)" }}
         >
           {claudeLoading
@@ -456,7 +459,8 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
           }
         </button>
         <button onClick={onClose}
-          className="p-1.5 rounded-[7px]"
+          data-tip="Close panel"
+          className="panel-btn p-1.5 rounded-[7px]"
           style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
           <X size={13} strokeWidth={2} />
         </button>
@@ -885,52 +889,74 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
           )}
 
           {claudeResult && claudeOpen && (
-            <div className="px-3 pb-3 border-t flex flex-col gap-2.5" style={{ borderColor: "rgba(124,58,237,0.15)" }}>
-              {/* Score */}
-              <div className="flex items-center justify-between pt-2.5">
-                <div>
-                  <p className="text-[9px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: "#A78BFA", opacity: 0.7 }}>AI Score</p>
-                  <span className="font-display text-[26px] font-black leading-none" style={{ color: "#A78BFA" }}>{claudeResult.score}</span>
-                  <span className="text-[11px] ml-1" style={{ color: "#A78BFA", opacity: 0.5 }}>/100</span>
+            <div className="px-3 pb-3 border-t flex flex-col gap-2" style={{ borderColor: "rgba(124,58,237,0.15)" }}>
+
+              {/* Score + category row */}
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-display text-[24px] font-black leading-none" style={{ color: "#A78BFA" }}>{claudeResult.score}</span>
+                  <span className="text-[10px]" style={{ color: "#A78BFA", opacity: 0.5 }}>/100</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>
+                    {claudeResult.productCategory}
+                  </span>
                 </div>
-                <div className="text-right">
-                  <p className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>{claudeResult.productCategory}</p>
-                  <p className="text-[10px]" style={{ color: "var(--text-3)" }}>{claudeResult.scoreReason}</p>
-                </div>
+                <p className="text-[9px] text-right max-w-[130px] leading-snug" style={{ color: "var(--text-3)" }}>
+                  {claudeResult.scoreReason}
+                </p>
               </div>
 
-              {/* Emotional triggers */}
-              <div className="flex flex-wrap gap-1">
+              {/* Offer + emotional triggers inline */}
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(167,139,250,0.2)", color: "#C4B5FD", border: "1px solid rgba(167,139,250,0.3)" }}>
+                  {claudeResult.offerType}
+                </span>
                 {claudeResult.emotionalTriggers.map(t => (
                   <span key={t} className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold"
-                    style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>
+                    style={{ background: "rgba(167,139,250,0.08)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.15)" }}>
                     {t}
                   </span>
                 ))}
               </div>
 
-              <ClaudeSection label="Hook Analysis" text={claudeResult.hookAnalysis} />
-              <ClaudeSection label="Target Audience" text={claudeResult.targetAudience} />
-              <ClaudeSection label="Offer Type" text={claudeResult.offerType} tag />
-              <ClaudeSection label="Why It Works" text={claudeResult.whyItWorks} highlight />
-              <ClaudeSection label="Weaknesses" text={claudeResult.weaknesses} dim />
-
-              {/* Replication */}
-              <div>
-                <p className="text-[9px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>Replication Strategy</p>
-                <div className="rounded-[7px] px-2.5 py-2" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
-                  <p className="text-[11px] leading-relaxed" style={{ color: "#6ee7b7" }}>{claudeResult.replicationStrategy}</p>
+              {/* 2-col compact grid */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="rounded-[7px] px-2 py-1.5" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--text-3)" }}>Hook</p>
+                  <p className="text-[10px] leading-snug line-clamp-3" style={{ color: "var(--text-2)" }}>{claudeResult.hookAnalysis}</p>
+                </div>
+                <div className="rounded-[7px] px-2 py-1.5" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--text-3)" }}>Audience</p>
+                  <p className="text-[10px] leading-snug line-clamp-3" style={{ color: "var(--text-2)" }}>{claudeResult.targetAudience}</p>
+                </div>
+                <div className="rounded-[7px] px-2 py-1.5" style={{ background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.12)" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "#34D399" }}>Why Works</p>
+                  <p className="text-[10px] leading-snug line-clamp-3" style={{ color: "#6ee7b7" }}>{claudeResult.whyItWorks}</p>
+                </div>
+                <div className="rounded-[7px] px-2 py-1.5" style={{ background: "rgba(248,113,113,0.05)", border: "1px solid rgba(248,113,113,0.12)" }}>
+                  <p className="text-[8px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "#F87171" }}>Weakness</p>
+                  <p className="text-[10px] leading-snug line-clamp-3" style={{ color: "#FCA5A5" }}>{claudeResult.weaknesses}</p>
                 </div>
               </div>
 
-              {/* Recommendations */}
+              {/* Replication — single line with icon */}
+              <div className="flex items-start gap-1.5">
+                <span className="text-[11px] flex-shrink-0 mt-px">🎯</span>
+                <div>
+                  <p className="text-[8px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "#34D399" }}>Strategy</p>
+                  <p className="text-[10px] leading-snug" style={{ color: "#6ee7b7" }}>{claudeResult.replicationStrategy}</p>
+                </div>
+              </div>
+
+              {/* Tips — compact numbered */}
               <div>
-                <p className="text-[9px] font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--text-3)" }}>Tips</p>
-                <div className="flex flex-col gap-1">
+                <p className="text-[8px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Tips</p>
+                <div className="flex flex-col gap-0.5">
                   {claudeResult.recommendations.map((r, i) => (
-                    <div key={i} className="flex items-start gap-1.5 text-[11px]" style={{ color: "var(--text-2)" }}>
-                      <span className="font-bold flex-shrink-0" style={{ color: "#A78BFA" }}>{i + 1}.</span>{r}
-                    </div>
+                    <p key={i} className="text-[10px] leading-snug" style={{ color: "var(--text-2)" }}>
+                      <span className="font-bold" style={{ color: "#A78BFA" }}>{i + 1}.</span> {r}
+                    </p>
                   ))}
                 </div>
               </div>
@@ -957,7 +983,7 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
                 {totalShopAds} total
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {shopAds.map(a => (
                 <MiniAdCard key={a.id} ad={a} onClick={() => setSelectedShopAd(a.id)} />
               ))}
@@ -989,7 +1015,7 @@ export default function AdDetailPanel({ ad, onClose, isMobile = false, allAds = 
         overflowY: "auto" as const,
       }
     : {
-        width: 340,
+        width: 420,
         flexShrink: 0,
         position: "sticky" as const,
         top: 56,

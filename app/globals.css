@@ -6,29 +6,29 @@
    ═══════════════════════════════════════════════════ */
 
 :root {
-  /* ── Backgrounds ── */
-  --bg-base:       #0A0A0F;
-  --bg-surface:    #111118;
-  --bg-card:       #16161E;
-  --bg-elevated:   #1C1C27;
-  --bg-hover:      rgba(255, 255, 255, 0.04);
-  --bg-active:     rgba(255, 255, 255, 0.08);
+  /* ── Backgrounds — charcoal navy (professional dark) ── */
+  --bg-base:       #0D0E14;
+  --bg-surface:    #13141C;
+  --bg-card:       #1A1B25;
+  --bg-elevated:   #21222E;
+  --bg-hover:      rgba(255, 255, 255, 0.05);
+  --bg-active:     rgba(255, 255, 255, 0.09);
 
-  /* ── Borders ── */
-  --border:        rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.13);
+  /* ── Borders — more defined ── */
+  --border:        rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
 
-  /* ── AI Purple (primary accent) ── */
+  /* ── AI Purple (accent — slightly softer) ── */
   --ai:            #7C3AED;
   --ai-hover:      #8B5CF6;
   --ai-light:      #A78BFA;
-  --ai-glow:       rgba(124, 58, 237, 0.35);
-  --ai-soft:       rgba(124, 58, 237, 0.12);
+  --ai-glow:       rgba(124, 58, 237, 0.25);
+  --ai-soft:       rgba(124, 58, 237, 0.10);
 
   /* ── Blue (secondary) ── */
   --blue:          #3B82F6;
   --blue-light:    #60A5FA;
-  --blue-soft:     rgba(59, 130, 246, 0.12);
+  --blue-soft:     rgba(59, 130, 246, 0.10);
 
   /* ── Status ── */
   --green:         #10B981;
@@ -38,10 +38,10 @@
   --red:           #EF4444;
   --red-light:     #F87171;
 
-  /* ── Typography ── */
-  --text-1: rgba(255, 255, 255, 0.92);
-  --text-2: rgba(255, 255, 255, 0.55);
-  --text-3: rgba(255, 255, 255, 0.28);
+  /* ── Typography — improved readability ── */
+  --text-1: rgba(255, 255, 255, 0.93);
+  --text-2: rgba(255, 255, 255, 0.65);
+  --text-3: rgba(255, 255, 255, 0.40);
 
   /* ── Motion ── */
   --ease:     cubic-bezier(0.2, 0, 0, 1);
@@ -79,8 +79,8 @@
   --font-display:   var(--font-space-grotesk);
 }
 
-/* Display font utility */
-.font-display { font-family: var(--font-space-grotesk), var(--font-geist-sans), sans-serif; }
+/* Typography — Inter for display (professional), Geist Mono for data */
+.font-display { font-family: var(--font-inter), var(--font-geist-sans), sans-serif; }
 .font-data    { font-family: var(--font-geist-mono), monospace; }
 
 /* ── Reset ── */
@@ -97,17 +97,7 @@ body {
   font-size: 16px;
 }
 
-/* ── Ambient glow (AI intelligence atmosphere) ── */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 60% 30% at 20% 0%, rgba(124,58,237,0.07) 0%, transparent 65%),
-    radial-gradient(ellipse 40% 20% at 85% 5%, rgba(59,130,246,0.05) 0%, transparent 55%);
-}
+/* Ambient glow removed — cleaner professional look */
 
 /* Only main content needs stacking context — aside/header use position:fixed, not overridden */
 main { position: relative; z-index: 1; }
@@ -331,12 +321,41 @@ main { position: relative; z-index: 1; }
 }
 .vid-menu-item:hover { background: rgba(255,255,255,0.08); }
 
-/* AI Score ribbon fire effect */
-@keyframes ribbon-fire-pulse {
-  0%, 100% { box-shadow: 0 2px 16px rgba(239,68,68,0.6), 0 0 24px rgba(249,115,22,0.3); }
-  50%      { box-shadow: 0 2px 20px rgba(239,68,68,0.8), 0 0 32px rgba(249,115,22,0.5), 0 0 8px rgba(251,191,36,0.4); }
+/* Ribbon fire removed — static border looks cleaner */
+.ai-ribbon-fire { box-shadow: 0 2px 12px rgba(239,68,68,0.35); }
+
+/* ── Tooltip (CSS-only) ── */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.92);
+  opacity: 0;
+  pointer-events: none;
+  background: var(--bg-elevated);
+  color: var(--text-1);
+  border: 1px solid var(--border-strong);
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 200;
+  transition: opacity 120ms ease, transform 120ms ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
-.ai-ribbon-fire { animation: ribbon-fire-pulse 2s ease infinite; }
+[data-tip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* ── Panel header button (hover pop) ── */
+.panel-btn {
+  transition: transform 120ms var(--ease), background 120ms var(--ease), border-color 120ms var(--ease);
+}
+.panel-btn:hover { transform: scale(1.07); }
 
 @keyframes fire-flicker {
   0%, 100% { transform: scale(1) translateY(0); }
