@@ -47,10 +47,14 @@ export async function GET() {
       orderBy: { runAt: "desc" },
     }),
     prisma.ad.count({ where: { scrapedAt: { gte: todayStart } } }),
+    // Ads scraped today that already have a real niche (not null, not "Other")
     prisma.ad.count({
-      where: { scrapedAt: { gte: todayStart }, niche: { not: null } },
+      where: { scrapedAt: { gte: todayStart }, niche: { not: null, notIn: ["Other"] } },
     }),
-    prisma.ad.count({ where: { niche: null } }),
+    // Total ads that still need classification (null OR "Other")
+    prisma.ad.count({
+      where: { OR: [{ niche: null }, { niche: "Other" }] },
+    }),
   ]);
 
   return NextResponse.json({

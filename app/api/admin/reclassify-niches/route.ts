@@ -8,15 +8,23 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map(e => e.trim
 const HAIKU_MODEL  = "claude-haiku-4-5-20251001";
 const BATCH_SIZE   = 20; // ads per batch call (parallel)
 
+// Valid niche set for fast lookup
+const VALID_NICHES = new Set<string>(NICHES);
+
 // Niche normalization: map old/inconsistent names → standard NICHES list
 const NORMALIZE_MAP: Record<string, string> = {
-  "Skincare & Beauty":      "Health & Beauty",
-  "Hair Care":              "Health & Beauty",
-  "Weight Loss & Fitness":  "Fitness & Wellness",
-  "Health & Supplements":   "Supplements & Nutrition",
-  "Home & Kitchen":         "Home & Living",
-  "Outdoor & Sports":       "Sports & Outdoors",
-  "Car & Auto":             "E-commerce",
+  // Old names from previous classification rounds
+  "Skincare & Beauty":          "Health & Beauty",
+  "Hair Care":                  "Health & Beauty",
+  "Weight Loss & Fitness":      "Fitness & Wellness",
+  "Health & Supplements":       "Supplements & Nutrition",
+  "Home & Kitchen":             "Home & Living",
+  "Outdoor & Sports":           "Sports & Outdoors",
+  "Car & Auto":                 "E-commerce",
+  // Invalid niches still in DB
+  "Tech & Gadgets":             "Electronics & Tech",
+  "Dropshipping & E-com Tools": "E-commerce",
+  "Dental & Oral Care":         "Health & Beauty",
 };
 
 const NICHE_LIST = NICHES.filter(n => n !== "Other").join(", ");
@@ -29,21 +37,32 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [distribution, normalizable, classifiedCount] = await Promise.all([
+  const [distribution, normalizable, classifiedCount, nullCount] = await Promise.all([
     prisma.ad.groupBy({
       by: ["niche"],
       _count: { niche: true },
       orderBy: { _count: { niche: "desc" } },
     }),
+    // Count ads with any invalid/old niche name (needs normalize)
     prisma.ad.count({
       where: { niche: { in: Object.keys(NORMALIZE_MAP) } },
     }),
+    // Count properly classified (not null, not "Other", not invalid)
     prisma.ad.count({
-      where: { niche: { not: null, notIn: ["Other"] } },
+      where: {
+        niche: {
+          not: null,
+          notIn: ["Other", ...Object.keys(NORMALIZE_MAP)],
+        },
+      },
     }),
+    // Safety: count remaining NULLs (should be 0 after migration)
+    prisma.ad.count({ where: { niche: null } }),
   ]);
 
-  const otherCount = distribution.find(d => d.niche === "Other")?._count.niche ?? 0;
+  // otherCount = "Other" + NULL (both need reclassification)
+  const otherCount =
+    (distribution.find(d => d.niche === "Other")?._count.niche ?? 0) + nullCount;
 
   // ~0.000063 per ad (Haiku with image)
   const estimatedCostUsd = +(otherCount * 0.000063).toFixed(2);
@@ -57,7 +76,7 @@ export async function GET() {
   });
 }
 
-// ── POST: normalize + batch reclassify ──────────────────────────────────────
+// ── POST: normalize + batch reclassify + reset ────────────────────────────────
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -66,11 +85,12 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json() as {
-    action: "normalize" | "reclassify";
+    action: "normalize" | "reclassify" | "reset" | "reset-invalid";
     limit?: number;
+    confirm?: boolean;
   };
 
-  // ── Action 1: normalize old niche names ─────────────────────────────────
+  // ── Action: normalize old niche names ────────────────────────────────────
   if (body.action === "normalize") {
     let total = 0;
     for (const [oldNiche, newNiche] of Object.entries(NORMALIZE_MAP)) {
@@ -83,12 +103,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, action: "normalize", updated: total });
   }
 
-  // ── Action 2: reclassify "Other" ads using Claude Haiku ─────────────────
+  // ── Action: reset ALL classifications → "Other" (nuclear option) ─────────
+  if (body.action === "reset") {
+    if (!body.confirm) {
+      const total = await prisma.ad.count({ where: { niche: { not: null, notIn: ["Other"] } } });
+      return NextResponse.json({
+        ok: false,
+        needsConfirm: true,
+        willReset: total,
+        estimatedCostUsd: +(total * 0.000063).toFixed(2),
+        message: `This will reset ${total.toLocaleString()} classified ads to "Other". Pass confirm:true to proceed.`,
+      });
+    }
+    const { count } = await prisma.ad.updateMany({
+      where: { niche: { not: null, notIn: ["Other"] } },
+      data:  { niche: "Other" },
+    });
+    return NextResponse.json({ ok: true, action: "reset", updated: count });
+  }
+
+  // ── Action: reset only invalid niche names → "Other" ────────────────────
+  if (body.action === "reset-invalid") {
+    const invalidNames = Object.keys(NORMALIZE_MAP).filter(k => !VALID_NICHES.has(k));
+    // Also catch any niche not in current valid list
+    const allNiches = await prisma.ad.groupBy({
+      by: ["niche"],
+      _count: { niche: true },
+    });
+    const allInvalid = allNiches
+      .filter(d => d.niche !== null && d.niche !== "Other" && !VALID_NICHES.has(d.niche))
+      .map(d => d.niche as string);
+
+    const toReset = [...new Set([...invalidNames, ...allInvalid])];
+    if (toReset.length === 0) {
+      return NextResponse.json({ ok: true, action: "reset-invalid", updated: 0, niches: [] });
+    }
+    const { count } = await prisma.ad.updateMany({
+      where: { niche: { in: toReset } },
+      data:  { niche: "Other" },
+    });
+    return NextResponse.json({ ok: true, action: "reset-invalid", updated: count, niches: toReset });
+  }
+
+  // ── Action: reclassify "Other" (and NULL) ads using Claude Haiku ─────────
   if (body.action === "reclassify") {
     const limit = Math.min(body.limit ?? 100, 500); // cap at 500 per request
 
     const ads = await prisma.ad.findMany({
-      where: { niche: "Other" },
+      where: {
+        OR: [
+          { niche: "Other" },
+          { niche: null },
+        ],
+      },
       select: {
         adArchiveId: true,
         bodyText:    true,
@@ -97,7 +164,9 @@ export async function POST(req: NextRequest) {
         pageName:    true,
       },
       take: limit,
-      orderBy: { startDate: "desc" },
+      // scrapedAt ASC: process oldest first → avoids reprocessing same
+      // recently-failed ads that sit at the top of a DESC sort
+      orderBy: { scrapedAt: "asc" },
     });
 
     if (ads.length === 0) {
@@ -113,16 +182,7 @@ export async function POST(req: NextRequest) {
 
       const chunkResults = await Promise.all(chunk.map(async ad => {
         try {
-          const textContent = `Classify this Facebook ad into exactly ONE of these product niches:
-${NICHE_LIST}
-
-Ad info:
-- Brand: ${ad.pageName ?? "Unknown"}
-- Body: ${(ad.bodyText ?? "").slice(0, 300)}
-- Title: ${ad.title ?? ""}
-
-Return ONLY a JSON object, no markdown:
-{"niche": "exact niche name from list", "confidence": "high|medium|low", "reason": "1 sentence"}`;
+          const textContent = `Classify this Facebook ad into exactly ONE of these product niches:\n${NICHE_LIST}\n\nAd info:\n- Brand: ${ad.pageName ?? "Unknown"}\n- Body: ${(ad.bodyText ?? "").slice(0, 300)}\n- Title: ${ad.title ?? ""}\n\nReturn ONLY a JSON object, no markdown:\n{"niche": "exact niche name from list", "confidence": "high|medium|low", "reason": "1 sentence"}`;
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const msgContent: any[] = [{ type: "text", text: textContent }];
@@ -141,9 +201,7 @@ Return ONLY a JSON object, no markdown:
           const parsed  = JSON.parse(jsonStr) as { niche: string; confidence: string };
 
           // Validate niche is in our list
-          const validNiche = (NICHES as readonly string[]).includes(parsed.niche)
-            ? parsed.niche
-            : null;
+          const validNiche = VALID_NICHES.has(parsed.niche) ? parsed.niche : null;
 
           if (validNiche && validNiche !== "Other" && parsed.confidence !== "low") {
             await prisma.ad.update({

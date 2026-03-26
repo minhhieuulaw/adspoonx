@@ -713,25 +713,38 @@ interface NicheStats {
 }
 
 interface ReclassifyResult {
-  ok:        boolean;
-  action:    string;
-  processed?: number;
-  updated?:  number;
-  breakdown?: Record<string, number>;
+  ok:           boolean;
+  action:       string;
+  processed?:   number;
+  updated?:     number;
+  breakdown?:   Record<string, number>;
+  needsConfirm?: boolean;
+  willReset?:   number;
+  estimatedCostUsd?: number;
 }
 
 function NicheIntelligence() {
-  const [stats,       setStats]       = useState<NicheStats | null>(null);
-  const [loading,     setLoading]     = useState(true);
-  const [running,     setRunning]     = useState<"normalize" | "reclassify" | null>(null);
-  const [result,      setResult]      = useState<ReclassifyResult | null>(null);
-  const [autoRunning, setAutoRunning] = useState(false);
-  const [progress,    setProgress]    = useState<{ done: number; total: number } | null>(null);
+  const [stats,        setStats]        = useState<NicheStats | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [running,      setRunning]      = useState<"normalize" | "reclassify" | null>(null);
+  const [result,       setResult]       = useState<ReclassifyResult | null>(null);
+  const [autoRunning,  setAutoRunning]  = useState(false);
+  const [progress,     setProgress]     = useState<{ done: number; total: number } | null>(null);
+  const [resetConfirm, setResetConfirm] = useState(false);
   const stopRef = useRef(false);
 
-  async function fetchStats(): Promise<NicheStats> {
+  async function doFetchStats(): Promise<NicheStats> {
     const r = await fetch("/api/admin/reclassify-niches");
+    if (!r.ok) throw new Error("fetch failed");
     return r.json() as Promise<NicheStats>;
+  }
+
+  function refresh() {
+    setLoading(true);
+    void doFetchStats()
+      .then(s => setStats(s))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }
 
   async function runAll() {
@@ -739,8 +752,8 @@ function NicheIntelligence() {
     setAutoRunning(true);
     setResult(null);
 
-    // Step 1: normalize tên cũ (free, nhanh)
-    const s = await fetchStats().catch(() => null);
+    // Step 1: normalize tên cũ + invalid niches (free, nhanh)
+    const s = await doFetchStats().catch(() => null);
     if (!s) { setAutoRunning(false); return; }
     setStats(s);
 
@@ -754,9 +767,11 @@ function NicheIntelligence() {
     }
 
     // Step 2: loop reclassify cho đến khi hết "Other"
-    const total = s.otherCount;
+    // Dùng live otherCount từ stats để progress bar chính xác
+    let currentTotal = s.otherCount;
     let done = 0;
-    setProgress({ done, total });
+    let stuckRounds = 0; // số batch liên tiếp mà updated=0 (stuck detection)
+    setProgress({ done, total: currentTotal });
     setRunning("reclassify");
 
     while (!stopRef.current) {
@@ -767,19 +782,29 @@ function NicheIntelligence() {
 
       if (!r?.ok) break;
       const d = await r.json() as ReclassifyResult;
-      done += d.processed ?? 0;
-      setResult(d);
-      setProgress({ done, total });
 
-      // Hết ads "Other" → dừng
+      // Không còn ads để xử lý → dừng
       if ((d.processed ?? 0) === 0) break;
 
-      // Refresh stats để cập nhật số remaining
-      const s2 = await fetchStats().catch(() => null);
+      done += d.processed ?? 0;
+      setResult(d);
+
+      // Stuck detection: 3 batch liên tiếp updated=0 → tất cả là low-confidence → dừng
+      if ((d.updated ?? 0) === 0) {
+        stuckRounds++;
+        if (stuckRounds >= 3) break;
+      } else {
+        stuckRounds = 0;
+      }
+
+      // Refresh stats để lấy otherCount chính xác (giảm dần theo thực tế)
+      const s2 = await doFetchStats().catch(() => null);
       if (s2) {
         setStats(s2);
+        currentTotal = s2.otherCount + done; // total = đã làm + còn lại
         if (s2.otherCount === 0) break;
       }
+      setProgress({ done, total: currentTotal });
 
       // Delay 1.5s giữa các batch tránh rate limit
       await new Promise(res => setTimeout(res, 1500));
@@ -790,18 +815,51 @@ function NicheIntelligence() {
     setProgress(null);
 
     // Final refresh
-    const sFinal = await fetchStats().catch(() => null);
+    const sFinal = await doFetchStats().catch(() => null);
     if (sFinal) setStats(sFinal);
   }
 
-  function stop() {
-    stopRef.current = true;
+  function stop() { stopRef.current = true; }
+
+  async function resetInvalid() {
+    setLoading(true);
+    const r = await fetch("/api/admin/reclassify-niches", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reset-invalid" }),
+    }).catch(() => null);
+    if (r?.ok) {
+      const d = await r.json() as ReclassifyResult;
+      setResult(d);
+    }
+    refresh();
   }
 
-  // Load stats khi mount (không auto-run nữa)
+  async function resetAll() {
+    if (!resetConfirm) { setResetConfirm(true); return; }
+    setResetConfirm(false);
+    setLoading(true);
+    const r = await fetch("/api/admin/reclassify-niches", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reset", confirm: true }),
+    }).catch(() => null);
+    if (r?.ok) {
+      const d = await r.json() as ReclassifyResult;
+      setResult(d);
+    }
+    refresh();
+  }
+
+  // Mount: load stats + auto-refresh mỗi 120s khi idle
   useEffect(() => {
-    void fetchStats().then(s => { setStats(s); setLoading(false); }).catch(() => setLoading(false));
-    return () => { stopRef.current = true; }; // cleanup khi unmount
+    refresh();
+    const id = setInterval(() => {
+      if (!autoRunning) refresh();
+    }, 120_000);
+    return () => {
+      clearInterval(id);
+      stopRef.current = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const PIE_COLORS_10 = ["#A78BFA","#60A5FA","#F472B6","#34D399","#FCD34D","#FB923C","#38BDF8","#818CF8","#4ADE80","#94A3B8"];
@@ -809,8 +867,8 @@ function NicheIntelligence() {
   return (
     <div className="rounded-[12px] p-5 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
 
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
+      {/* Header row 1: title + status badges */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <div className="w-7 h-7 rounded-[8px] flex items-center justify-center" style={{ background: "rgba(167,139,250,0.15)" }}>
           <Database size={13} style={{ color: "#A78BFA" }} />
         </div>
@@ -818,7 +876,12 @@ function NicheIntelligence() {
         {stats && (
           <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
             style={{ background: "rgba(248,113,113,0.12)", color: "#F87171" }}>
-            {stats.otherCount.toLocaleString()} Other
+            {stats.otherCount.toLocaleString()} unclassified
+          </span>
+        )}
+        {!autoRunning && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
+            auto-refresh 120s
           </span>
         )}
         {running && (
@@ -827,15 +890,65 @@ function NicheIntelligence() {
             {running === "normalize" ? "Normalizing..." : "Reclassifying..."}
           </span>
         )}
-        <div className="ml-auto flex items-center gap-2">
+      </div>
+
+      {/* Header row 2: action buttons */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {/* Refresh */}
+        <button
+          onClick={refresh}
+          disabled={loading || autoRunning}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[11px] disabled:opacity-40"
+          style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+        >
+          <RefreshCw size={11} className={loading ? "animate-spin" : ""} /> Refresh
+        </button>
+
+        {/* Reset Invalid */}
+        {!autoRunning && stats && stats.normalizable > 0 && (
           <button
-            onClick={() => void fetchStats().then(s => { setStats(s); setLoading(false); }).catch(() => {})}
-            disabled={loading || autoRunning}
+            onClick={() => void resetInvalid()}
+            disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[11px] disabled:opacity-40"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+            style={{ background: "rgba(252,211,77,0.1)", border: "1px solid rgba(252,211,77,0.25)", color: "#FCD34D" }}
           >
-            <RefreshCw size={11} className={loading ? "animate-spin" : ""} /> Refresh
+            Fix invalid ({stats.normalizable})
           </button>
+        )}
+
+        {/* Reset All — two-click confirm */}
+        {!autoRunning && (
+          resetConfirm ? (
+            <span className="flex items-center gap-1.5">
+              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Confirm reset all?</span>
+              <button
+                onClick={() => void resetAll()}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[11px] font-semibold"
+                style={{ background: "rgba(248,113,113,0.15)", border: "1px solid rgba(248,113,113,0.35)", color: "#F87171" }}
+              >
+                Yes, reset
+              </button>
+              <button
+                onClick={() => setResetConfirm(false)}
+                className="px-2.5 py-1.5 rounded-[7px] text-[11px]"
+                style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-3)" }}
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              onClick={() => void resetAll()}
+              disabled={loading || !stats || stats.classifiedCount === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[11px] disabled:opacity-40"
+              style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#F87171" }}
+            >
+              <Trash2 size={10} /> Reset All
+            </button>
+          )
+        )}
+
+        <div className="ml-auto flex items-center gap-2">
           {autoRunning ? (
             <button
               onClick={stop}
@@ -862,29 +975,32 @@ function NicheIntelligence() {
         <div className="mb-4">
           <div className="flex justify-between text-[10px] mb-1" style={{ color: "var(--text-3)" }}>
             <span>Processed {progress.done.toLocaleString()} / {progress.total.toLocaleString()}</span>
-            <span>{Math.round(progress.done / Math.max(progress.total, 1) * 100)}%</span>
+            <span>{Math.min(100, Math.round(progress.done / Math.max(progress.total, 1) * 100))}%</span>
           </div>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--bg-hover)" }}>
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.round(progress.done / Math.max(progress.total, 1) * 100)}%`, background: "linear-gradient(90deg, #A78BFA, #60A5FA)" }}
+              style={{
+                width: `${Math.min(100, Math.round(progress.done / Math.max(progress.total, 1) * 100))}%`,
+                background: "linear-gradient(90deg, #A78BFA, #60A5FA)",
+              }}
             />
           </div>
         </div>
       )}
 
-      {/* Loading */}
-      {loading && <div className="h-20 skeleton rounded-[8px]" />}
+      {/* Loading skeleton */}
+      {loading && !stats && <div className="h-20 skeleton rounded-[8px]" />}
 
       {/* Stats + distribution */}
-      {!loading && stats && (
+      {stats && (
         <>
           {/* KPI cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             {[
-              { label: "Unclassified (Other)", value: stats.otherCount.toLocaleString(), color: "#F87171" },
+              { label: "Unclassified", value: stats.otherCount.toLocaleString(), color: "#F87171" },
               { label: "Classified", value: stats.classifiedCount.toLocaleString(), color: "#34D399" },
-              { label: "Old names (fixed)", value: stats.normalizable.toLocaleString(), color: "#FCD34D" },
+              { label: "Needs fix", value: stats.normalizable.toLocaleString(), color: "#FCD34D" },
               { label: "Est. cost remaining", value: `$${stats.estimatedCostUsd}`, color: "#60A5FA" },
             ].map(k => (
               <div key={k.label} className="rounded-[10px] p-3"
@@ -902,8 +1018,8 @@ function NicheIntelligence() {
             </p>
             <div className="flex flex-col gap-1.5">
               {stats.distribution.slice(0, 12).map((d, i) => {
-                const total = stats.distribution.reduce((s, x) => s + x.count, 0);
-                const pct   = total > 0 ? (d.count / total) * 100 : 0;
+                const totalCount = stats.distribution.reduce((s, x) => s + x.count, 0);
+                const pct   = totalCount > 0 ? (d.count / totalCount) * 100 : 0;
                 const color = PIE_COLORS_10[i % PIE_COLORS_10.length];
                 return (
                   <div key={d.niche} className="flex items-center gap-2">
@@ -920,12 +1036,14 @@ function NicheIntelligence() {
             </div>
           </div>
 
-          {/* Auto-run result */}
+          {/* Last action result */}
           {result && (
             <div className="p-3 rounded-[10px] mt-2"
               style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)" }}>
               <p className="text-[11px] font-semibold mb-2" style={{ color: "#34D399" }}>
-                ✓ {result.action === "normalize" ? "Normalized" : "Reclassified"}{" "}
+                ✓ {result.action === "normalize" ? "Normalized" :
+                   result.action === "reset" ? "Reset all" :
+                   result.action === "reset-invalid" ? "Fixed invalid" : "Reclassified"}{" "}
                 {result.updated?.toLocaleString()} ads
                 {result.processed ? ` (of ${result.processed} processed)` : ""}
               </p>
