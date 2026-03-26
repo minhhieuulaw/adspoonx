@@ -813,7 +813,7 @@ export default function AdsPage() {
             }}
           >
             <ChevronDown size={11} style={{ transform: advancedOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
-            Nâng cao
+            Advanced
           </button>
           {/* Saved searches */}
           <div style={{ position: "relative" }}>
@@ -825,7 +825,7 @@ export default function AdsPage() {
                 background: "var(--bg-hover)",
                 border: "1px solid var(--border)",
               }}
-              title="Tìm kiếm đã lưu"
+              title="Saved searches"
             >
               <Save size={13} strokeWidth={1.8} />
             </button>
@@ -839,11 +839,11 @@ export default function AdsPage() {
                 }}
               >
                 <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
-                  <span className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>Tìm kiếm đã lưu</span>
+                  <span className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>Saved searches</span>
                   <button onClick={() => setShowSaveInput(!showSaveInput)}
                     className="text-[10px] font-medium px-2 py-0.5 rounded-[5px]"
                     style={{ color: "var(--ai-light)", background: "var(--ai-soft)" }}>
-                    + Lưu hiện tại
+                    + Save current
                   </button>
                 </div>
                 {showSaveInput && (
@@ -853,7 +853,7 @@ export default function AdsPage() {
                       value={saveName}
                       onChange={e => setSaveName(e.target.value)}
                       onKeyDown={e => e.key === "Enter" && handleSaveSearch()}
-                      placeholder="Tên bộ tìm kiếm…"
+                      placeholder="Search name…"
                       className="flex-1 bg-transparent text-[12px] outline-none"
                       style={{ color: "var(--text-1)" }}
                       autoFocus
@@ -861,13 +861,13 @@ export default function AdsPage() {
                     <button onClick={handleSaveSearch}
                       className="text-[10px] font-bold px-2 py-1 rounded-[5px]"
                       style={{ background: "var(--ai)", color: "white" }}>
-                      Lưu
+                      Save
                     </button>
                   </div>
                 )}
                 {savedSearches.length === 0 ? (
                   <div className="px-3 py-4 text-center text-[11px]" style={{ color: "var(--text-3)" }}>
-                    Chưa có tìm kiếm nào được lưu
+                    No saved searches yet
                   </div>
                 ) : (
                   <div className="max-h-48 overflow-y-auto">
@@ -908,42 +908,42 @@ export default function AdsPage() {
                 style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
-                    Tên trang (Page)
+                    Page Name
                   </label>
                   <input
                     type="text"
                     value={searchPage}
                     onChange={e => setSearchPage(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSearch()}
-                    placeholder={useRegex ? "VD: nike|adidas" : "VD: Nike"}
+                    placeholder={useRegex ? "e.g. nike|adidas" : "e.g. Nike"}
                     className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
                     style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
                   />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
-                    Nội dung (Body/Title)
+                    Body / Title
                   </label>
                   <input
                     type="text"
                     value={searchBody}
                     onChange={e => setSearchBody(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSearch()}
-                    placeholder={useRegex ? "VD: free.?shipping|sale" : "VD: free shipping"}
+                    placeholder={useRegex ? "e.g. free.?shipping|sale" : "e.g. free shipping"}
                     className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
                     style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
                   />
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
-                    Ngách (Niche)
+                    Niche
                   </label>
                   <input
                     type="text"
                     value={searchNiche}
                     onChange={e => setSearchNiche(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSearch()}
-                    placeholder={useRegex ? "VD: fashion|beauty" : "VD: Fashion"}
+                    placeholder={useRegex ? "e.g. fashion|beauty" : "e.g. Fashion"}
                     className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
                     style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
                   />
@@ -953,7 +953,7 @@ export default function AdsPage() {
                 <div className="mt-1.5 flex items-center gap-1.5 px-1">
                   <Code size={10} style={{ color: "var(--ai-light)" }} />
                   <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
-                    Regex đang bật — dùng cú pháp PostgreSQL: <code style={{ color: "var(--ai-light)" }}>word1|word2</code>, <code style={{ color: "var(--ai-light)" }}>free.?ship</code>, <code style={{ color: "var(--ai-light)" }}>^Sale</code>
+                    Regex enabled — PostgreSQL syntax: <code style={{ color: "var(--ai-light)" }}>word1|word2</code>, <code style={{ color: "var(--ai-light)" }}>free.?ship</code>, <code style={{ color: "var(--ai-light)" }}>^Sale</code>
                   </span>
                 </div>
               )}

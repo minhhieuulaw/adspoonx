@@ -171,13 +171,13 @@ export default function AdminDashboard() {
 
       {/* ── KPIs ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        <KpiCard icon={Users}      label="Tổng thành viên"    value={stats.users.total.toLocaleString()}
+        <KpiCard icon={Users}      label="Total Users"       value={stats.users.total.toLocaleString()}
           sub={`${stats.users.google} Google · ${stats.users.email} Email`} color="#A78BFA" bg="rgba(124,58,237,0.12)" />
-        <KpiCard icon={Star}       label="Đang dùng bản trả phí" value={stats.subscriptions.activeTotal}
+        <KpiCard icon={Star}       label="Active Paid Users" value={stats.subscriptions.activeTotal}
           sub={`Conversion ${stats.users.conversionRate}%`} color="#34D399" bg="rgba(52,211,153,0.12)" />
-        <KpiCard icon={DollarSign} label="Doanh thu scan"     value={fmt$(stats.revenue.scanPurchases.totalCents)}
-          sub={`${stats.revenue.scanPurchases.totalCount} đơn hàng`} color="#FCD34D" bg="rgba(245,158,11,0.12)" />
-        <KpiCard icon={Database}   label="Tổng ads"           value={stats.ads.total.toLocaleString()}
+        <KpiCard icon={DollarSign} label="Scan Revenue"      value={fmt$(stats.revenue.scanPurchases.totalCents)}
+          sub={`${stats.revenue.scanPurchases.totalCount} orders`} color="#FCD34D" bg="rgba(245,158,11,0.12)" />
+        <KpiCard icon={Database}   label="Total Ads"         value={stats.ads.total.toLocaleString()}
           sub={`${stats.ads.active.toLocaleString()} active`} color="#60A5FA" bg="rgba(59,130,246,0.12)" />
       </div>
 
@@ -185,17 +185,17 @@ export default function AdminDashboard() {
         <KpiCard icon={Activity}   label="Paid users"         value={stats.users.paid}
           sub="starter / premium / business" color="#A78BFA" bg="rgba(124,58,237,0.12)" />
         <KpiCard icon={TrendingUp} label="Saved Ads"          value={stats.savedAds.toLocaleString()}
-          sub="tổng lượt lưu" color="#34D399" bg="rgba(52,211,153,0.12)" />
+          sub="total saves" color="#34D399" bg="rgba(52,211,153,0.12)" />
         <KpiCard icon={Globe}      label="Markets"            value={stats.ads.byCountry.length}
-          sub="quốc gia đang khai thác" color="#FCD34D" bg="rgba(245,158,11,0.12)" />
+          sub="countries tracked" color="#FCD34D" bg="rgba(245,158,11,0.12)" />
         <KpiCard icon={Database}   label="Niches"             value={stats.ads.byNiche.length}
-          sub="ngành hàng phân loại" color="#60A5FA" bg="rgba(59,130,246,0.12)" />
+          sub="niches classified" color="#60A5FA" bg="rgba(59,130,246,0.12)" />
       </div>
 
       {/* ── Charts row 1 ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
 
-        <Card title="📈 Thành viên mới — 30 ngày">
+        <Card title="📈 New Users — 30 days">
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={stats.users.last30Days} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
               <defs>
@@ -208,15 +208,15 @@ export default function AdminDashboard() {
               <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fontSize: 10, fill: "var(--text-3)" }} interval="preserveStartEnd" />
               <YAxis tick={{ fontSize: 10, fill: "var(--text-3)" }} allowDecimals={false} />
               <Tooltip content={<ChartTip />} />
-              <Area type="monotone" dataKey="count" name="Thành viên" stroke="#A78BFA" fill="url(#g1)" strokeWidth={2} dot={false} />
+              <Area type="monotone" dataKey="count" name="Users" stroke="#A78BFA" fill="url(#g1)" strokeWidth={2} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
 
-        <Card title="💰 Doanh thu — 12 tháng">
+        <Card title="💰 Revenue — 12 months">
           {revenueData.length === 0 ? (
             <div className="h-[180px] flex items-center justify-center text-[12px]" style={{ color: "var(--text-3)" }}>
-              Chưa có doanh thu
+              No revenue yet
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -235,10 +235,10 @@ export default function AdminDashboard() {
       {/* ── Charts row 2 ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
 
-        <Card title="🏷️ Phân bổ gói (active)">
+        <Card title="🏷️ Plan Distribution (active)">
           {planPieData.length === 0 ? (
             <div className="h-[180px] flex items-center justify-center text-[12px]" style={{ color: "var(--text-3)" }}>
-              Chưa có subscription
+              No subscriptions yet
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -262,7 +262,7 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        <Card title="🗃️ Ads scraped — 7 ngày">
+        <Card title="🗃️ Ads scraped — 7 days">
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={stats.ads.last7Days} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
           </ResponsiveContainer>
         </Card>
 
-        <Card title="🔐 Đăng ký qua">
+        <Card title="🔐 Sign-up method">
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
               <Pie
@@ -301,7 +301,7 @@ export default function AdminDashboard() {
       {/* ── Tables ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
 
-        <Card title="🌍 Top quốc gia">
+        <Card title="🌍 Top countries">
           <div className="space-y-1.5">
             {stats.ads.byCountry.slice(0, 10).map((c, i) => {
               const max = stats.ads.byCountry[0]?.count ?? 1;
@@ -324,7 +324,7 @@ export default function AdminDashboard() {
         <Card title="🎯 Top niches">
           <div className="space-y-1.5">
             {stats.ads.byNiche.length === 0 ? (
-              <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Chưa có niche data</p>
+              <p className="text-[12px]" style={{ color: "var(--text-3)" }}>No niche data</p>
             ) : stats.ads.byNiche.slice(0, 10).map((n, i) => {
               const max = stats.ads.byNiche[0]?.count ?? 1;
               return (
@@ -345,13 +345,13 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Subscription detail ── */}
-      <Card title="📋 Chi tiết subscriptions">
+      <Card title="📋 Subscription Details">
         <table className="w-full text-[12px]">
           <thead>
             <tr style={{ color: "var(--text-3)" }} className="text-[10px]">
               <th className="text-left pb-2">Plan</th>
               <th className="text-left pb-2">Status</th>
-              <th className="text-right pb-2">Số lượng</th>
+              <th className="text-right pb-2">Count</th>
             </tr>
           </thead>
           <tbody>
@@ -406,7 +406,7 @@ function CrawlControl() {
 
   async function post(body: object) {
     setBusy(true);
-    addLog("Đang xử lý...");
+    addLog("Processing...");
     try {
       const r = await fetch("/api/admin/crawl", {
         method:  "POST",
@@ -417,10 +417,10 @@ function CrawlControl() {
       if (!r.ok) {
         addLog(`❌ Lỗi: ${String(d.error ?? "unknown")}`);
       } else if ((body as Record<string, unknown>).action === "clean") {
-        addLog(`✅ Đã xóa ${String(d.deleted)} ads cũ.`);
+        addLog(`✅ Deleted ${String(d.deleted)} old ads.`);
       } else {
         const saved = d.saved ?? d.totalSaved ?? "?";
-        addLog(`✅ Đã lưu ${String(saved)} ads (quality filter đang bật).`);
+        addLog(`✅ Saved ${String(saved)} ads (quality filter on).`);
       }
     } catch {
       addLog("❌ Network error");
@@ -432,12 +432,12 @@ function CrawlControl() {
   return (
     <div className="rounded-[12px] p-4 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
       <p className="font-display text-[13px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>
-        🕷️ Crawl Control (thủ công)
+        🕷️ Crawl Control (manual)
       </p>
       <div className="rounded-[8px] px-3 py-2 mb-3 text-[11px]"
         style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#F87171" }}>
-        Auto-cron đã <strong>TẮT</strong> (CRON_DISABLED=true). Quality filter bật:
-        chỉ lưu ads có pageName + bodyText + ảnh/video.
+        Auto-cron <strong>DISABLED</strong> (CRON_DISABLED=true). Quality filter on:
+        only saves ads with pageName + bodyText + image/video.
       </div>
 
       <div className="flex gap-2 mb-3">
@@ -484,7 +484,7 @@ function CrawlControl() {
           className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[12px] font-semibold disabled:opacity-50"
           style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#F87171" }}
         >
-          <Trash2 size={11} /> Xóa ads cũ &gt;90 ngày
+          <Trash2 size={11} /> Delete ads &gt;90 days
         </button>
       </div>
 
@@ -720,7 +720,7 @@ function AnnouncementsPanel() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Xóa announcement này?")) return;
+    if (!confirm("Delete this announcement?")) return;
     await fetch(`/api/admin/announcements/${id}`, { method: "DELETE" });
     void load();
   }
@@ -744,7 +744,7 @@ function AnnouncementsPanel() {
         <input
           value={form.message}
           onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-          placeholder="Nội dung thông báo..."
+          placeholder="Announcement content..."
           className="w-full px-2.5 py-2 rounded-[6px] text-[12px] outline-none"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-1)" }}
         />
@@ -760,7 +760,7 @@ function AnnouncementsPanel() {
           <input
             value={form.link}
             onChange={e => setForm(f => ({ ...f, link: e.target.value }))}
-            placeholder="Link (tuỳ chọn)"
+            placeholder="Link (optional)"
             className="flex-1 min-w-0 px-2.5 py-1.5 rounded-[6px] text-[12px] outline-none"
             style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-1)" }}
           />
@@ -786,7 +786,7 @@ function AnnouncementsPanel() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] font-semibold disabled:opacity-50"
             style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}
           >
-            <Plus size={11} /> {editId ? "Cập nhật" : "Thêm mới"}
+            <Plus size={11} /> {editId ? "Update" : "Add"}
           </button>
           {editId && (
             <button
@@ -802,9 +802,9 @@ function AnnouncementsPanel() {
 
       {/* Danh sách */}
       {loading ? (
-        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Đang tải...</p>
+        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Loading...</p>
       ) : list.length === 0 ? (
-        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Chưa có announcement nào.</p>
+        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>No announcements yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {list.map(item => (
@@ -835,12 +835,12 @@ function AnnouncementsPanel() {
                   style={{ color: item.isActive ? "#34D399" : "var(--text-3)" }}>
                   <CheckCircle size={13} />
                 </button>
-                <button onClick={() => startEdit(item)} title="Sửa"
+                <button onClick={() => startEdit(item)} title="Edit"
                   className="p-1 rounded hover:opacity-80 transition-opacity"
                   style={{ color: "var(--text-3)" }}>
                   <Pencil size={13} />
                 </button>
-                <button onClick={() => void remove(item.id)} title="Xóa"
+                <button onClick={() => void remove(item.id)} title="Delete"
                   className="p-1 rounded hover:opacity-80 transition-opacity"
                   style={{ color: "#F87171" }}>
                   <X size={13} />
@@ -895,11 +895,11 @@ function WorkflowHistory() {
 
       {open && (
         loading ? (
-          <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Đang tải...</p>
+          <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Loading...</p>
         ) : runs.length === 0 ? (
           <div className="rounded-[8px] px-3 py-3 text-[12px]"
             style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-3)" }}>
-            Chưa có run nào. Scraper VPS cần gọi <code className="text-[11px]">/api/workflow-run</code> sau mỗi lần chạy.
+            No runs yet. VPS scraper should call <code className="text-[11px]">/api/workflow-run</code> after each job.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -1027,7 +1027,7 @@ function TicketList() {
       </div>
 
       {loading ? (
-        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Đang tải...</p>
+        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Loading...</p>
       ) : tickets.length === 0 ? (
         <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Không có ticket nào.</p>
       ) : (
@@ -1070,13 +1070,13 @@ function TicketList() {
                   {ticket.reply && (
                     <div className="rounded-[6px] px-3 py-2 mb-3 text-[12px]"
                       style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#6ee7b7" }}>
-                      <strong>Đã trả lời:</strong> {ticket.reply}
+                      <strong>Replied:</strong> {ticket.reply}
                     </div>
                   )}
                   <textarea
                     value={reply}
                     onChange={e => setReply(e.target.value)}
-                    placeholder="Nhập reply..."
+                    placeholder="Enter reply..."
                     rows={3}
                     className="w-full px-2.5 py-2 rounded-[6px] text-[12px] outline-none resize-none mb-2"
                     style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-1)" }}

@@ -880,7 +880,7 @@ export function PanelContent({ ad, onClose, allAds = [] }: { ad: FbAd; onClose: 
           {claudeLoading && (
             <div className="px-3 pb-3 flex items-center gap-2 text-[11px]" style={{ color: "var(--text-3)" }}>
               <div className="w-3 h-3 rounded-full border-2 border-[#A78BFA] border-t-transparent animate-spin flex-shrink-0" />
-              Đang phân tích...
+              Analyzing...
             </div>
           )}
 
