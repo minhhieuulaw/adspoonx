@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -9,7 +9,7 @@ import {
   Users, TrendingUp, Database, DollarSign, Activity,
   Star, Globe, Play, Trash2, RefreshCw, Zap,
   Bell, CheckCircle, Clock, AlertCircle, Plus, Pencil, X,
-  MessageSquare, ChevronDown, ChevronUp,
+  MessageSquare, ChevronDown, ChevronUp, Server, Timer,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +37,18 @@ interface AdminStats {
     last7Days: { date: string; count: number }[];
   };
   savedAds: number;
+}
+
+interface VpsStatus {
+  todayRuns:         { id: string; runAt: string; schedule: string; status: string; newAds: number; updatedAds: number; errors: number; durationMs: number | null; notes: string | null }[];
+  todayNewAds:       number;
+  todayClassified:   number;
+  totalUnclassified: number;
+  totalNewToday:     number;
+  totalUpdatedToday: number;
+  totalErrorsToday:  number;
+  nextRun:           string;
+  lastRun:           { status: string; runAt: string; newAds: number; updatedAds: number; errors: number; durationMs: number | null } | null;
 }
 
 const PLAN_COLORS: Record<string, string> = {
@@ -155,6 +167,9 @@ export default function AdminDashboard() {
           Refresh
         </button>
       </div>
+
+      {/* ── VPS Status Bar ── */}
+      <VpsStatusBar />
 
       {/* ── Stats Section (loading / error / content) ── */}
       {loading ? (
@@ -392,6 +407,189 @@ export default function AdminDashboard() {
   );
 }
 
+// ── VPS Status Bar ────────────────────────────────────────────────────────────
+
+function VpsStatusBar() {
+  const [data,    setData]    = useState<VpsStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  function load() {
+    setLoading(true);
+    fetch("/api/admin/vps-status")
+      .then(r => r.json() as Promise<VpsStatus>)
+      .then(d => { setData(d); setLastRefresh(new Date()); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  function fmtCountdown(isoStr: string) {
+    const diff = new Date(isoStr).getTime() - Date.now();
+    if (diff <= 0) return "now";
+    const h = Math.floor(diff / 3_600_000);
+    const m = Math.floor((diff % 3_600_000) / 60_000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  function fmtTime(isoStr: string) {
+    return new Date(isoStr).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+
+  const statusColor = (s: string) =>
+    s === "success" ? "#34D399" : s === "error" ? "#F87171" : "#FCD34D";
+
+  const statusBg = (s: string) =>
+    s === "success" ? "rgba(52,211,153,0.1)" : s === "error" ? "rgba(248,113,113,0.1)" : "rgba(252,211,77,0.1)";
+
+  return (
+    <div className="rounded-[12px] p-4 mb-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Server size={13} style={{ color: "var(--ai-light)" }} />
+          <span className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
+            VPS Job Monitor
+          </span>
+          {data && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
+              auto-refresh 60s
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {lastRefresh && (
+            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
+              {lastRefresh.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
+            </span>
+          )}
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11px]"
+            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+          >
+            <RefreshCw size={10} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      {loading && !data ? (
+        <div className="flex items-center gap-2 h-10 text-[11px]" style={{ color: "var(--text-3)" }}>
+          <div className="w-3 h-3 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />
+          Loading...
+        </div>
+      ) : !data ? (
+        <div className="text-[11px]" style={{ color: "#F87171" }}>Failed to load VPS status.</div>
+      ) : (
+        <>
+          {/* ── Summary stats row ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            <div className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5" style={{ background: "var(--bg-hover)" }}>
+              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>New ads today</span>
+              <span className="font-display text-[18px] font-bold" style={{ color: "#60A5FA" }}>
+                {data.totalNewToday.toLocaleString()}
+              </span>
+            </div>
+            <div className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5" style={{ background: "var(--bg-hover)" }}>
+              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Updated today</span>
+              <span className="font-display text-[18px] font-bold" style={{ color: "#A78BFA" }}>
+                {data.totalUpdatedToday.toLocaleString()}
+              </span>
+            </div>
+            <div className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5" style={{ background: "var(--bg-hover)" }}>
+              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Classified today</span>
+              <span className="font-display text-[18px] font-bold" style={{ color: "#34D399" }}>
+                {data.todayClassified.toLocaleString()}
+                <span className="text-[11px] font-normal ml-1" style={{ color: "var(--text-3)" }}>
+                  / {data.todayNewAds}
+                </span>
+              </span>
+            </div>
+            <div className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5" style={{ background: "var(--bg-hover)" }}>
+              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Unclassified total</span>
+              <span className="font-display text-[18px] font-bold" style={{ color: data.totalUnclassified > 0 ? "#FCD34D" : "#34D399" }}>
+                {data.totalUnclassified.toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          {/* ── Next run + errors ── */}
+          <div className="flex items-center gap-4 mb-3 text-[11px]">
+            <div className="flex items-center gap-1.5" style={{ color: "var(--text-2)" }}>
+              <Timer size={11} style={{ color: "var(--ai-light)" }} />
+              <span style={{ color: "var(--text-3)" }}>Next run</span>
+              <strong style={{ color: "var(--text-1)" }}>
+                {new Date(data.nextRun).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })} UTC
+              </strong>
+              <span style={{ color: "var(--text-3)" }}>({fmtCountdown(data.nextRun)})</span>
+            </div>
+            {data.totalErrorsToday > 0 && (
+              <div className="flex items-center gap-1" style={{ color: "#F87171" }}>
+                <AlertCircle size={11} />
+                <span>{data.totalErrorsToday} errors today</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Today's job runs ── */}
+          {data.todayRuns.length === 0 ? (
+            <div className="text-[11px] py-2" style={{ color: "var(--text-3)" }}>
+              No jobs have run today yet. Schedules: 02:00 · 10:00 · 18:00 UTC
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="text-[10px] font-semibold mb-1" style={{ color: "var(--text-3)" }}>
+                TODAY&apos;S RUNS ({data.todayRuns.length})
+              </div>
+              {data.todayRuns.map(run => (
+                <div key={run.id}
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[11px]"
+                  style={{ background: statusBg(run.status), border: `1px solid ${statusColor(run.status)}22` }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor(run.status) }} />
+                  <span className="font-semibold w-16 flex-shrink-0" style={{ color: statusColor(run.status) }}>
+                    {run.status}
+                  </span>
+                  <span style={{ color: "var(--text-3)" }} className="w-12 flex-shrink-0">
+                    {fmtTime(run.runAt)}
+                  </span>
+                  <span className="flex items-center gap-1" style={{ color: "var(--text-2)" }}>
+                    <span style={{ color: "#60A5FA" }}>+{run.newAds ?? 0}</span>
+                    <span style={{ color: "var(--text-3)" }}>new</span>
+                    <span style={{ color: "var(--text-3)" }}>·</span>
+                    <span style={{ color: "#A78BFA" }}>~{run.updatedAds ?? 0}</span>
+                    <span style={{ color: "var(--text-3)" }}>updated</span>
+                    {(run.errors ?? 0) > 0 && (
+                      <>
+                        <span style={{ color: "var(--text-3)" }}>·</span>
+                        <span style={{ color: "#F87171" }}>{run.errors} err</span>
+                      </>
+                    )}
+                  </span>
+                  {run.durationMs && (
+                    <span className="ml-auto flex-shrink-0 font-data" style={{ color: "var(--text-3)" }}>
+                      {(run.durationMs / 1000).toFixed(1)}s
+                    </span>
+                  )}
+                  <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded" style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
+                    {run.schedule ?? "manual"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Crawl Control ─────────────────────────────────────────────────────────────
 
 function CrawlControl() {
@@ -523,53 +721,87 @@ interface ReclassifyResult {
 }
 
 function NicheIntelligence() {
-  const [stats,   setStats]   = useState<NicheStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [running, setRunning] = useState<"normalize" | "reclassify" | null>(null);
-  const [result,  setResult]  = useState<ReclassifyResult | null>(null);
+  const [stats,       setStats]       = useState<NicheStats | null>(null);
+  const [loading,     setLoading]     = useState(true);
+  const [running,     setRunning]     = useState<"normalize" | "reclassify" | null>(null);
+  const [result,      setResult]      = useState<ReclassifyResult | null>(null);
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [progress,    setProgress]    = useState<{ done: number; total: number } | null>(null);
+  const stopRef = useRef(false);
 
   async function fetchStats(): Promise<NicheStats> {
     const r = await fetch("/api/admin/reclassify-niches");
     return r.json() as Promise<NicheStats>;
   }
 
+  async function runAll() {
+    stopRef.current = false;
+    setAutoRunning(true);
+    setResult(null);
+
+    // Step 1: normalize tên cũ (free, nhanh)
+    const s = await fetchStats().catch(() => null);
+    if (!s) { setAutoRunning(false); return; }
+    setStats(s);
+
+    if (s.normalizable > 0) {
+      setRunning("normalize");
+      await fetch("/api/admin/reclassify-niches", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "normalize" }),
+      }).catch(() => null);
+      setRunning(null);
+    }
+
+    // Step 2: loop reclassify cho đến khi hết "Other"
+    const total = s.otherCount;
+    let done = 0;
+    setProgress({ done, total });
+    setRunning("reclassify");
+
+    while (!stopRef.current) {
+      const r = await fetch("/api/admin/reclassify-niches", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reclassify", limit: 100 }),
+      }).catch(() => null);
+
+      if (!r?.ok) break;
+      const d = await r.json() as ReclassifyResult;
+      done += d.processed ?? 0;
+      setResult(d);
+      setProgress({ done, total });
+
+      // Hết ads "Other" → dừng
+      if ((d.processed ?? 0) === 0) break;
+
+      // Refresh stats để cập nhật số remaining
+      const s2 = await fetchStats().catch(() => null);
+      if (s2) {
+        setStats(s2);
+        if (s2.otherCount === 0) break;
+      }
+
+      // Delay 1.5s giữa các batch tránh rate limit
+      await new Promise(res => setTimeout(res, 1500));
+    }
+
+    setRunning(null);
+    setAutoRunning(false);
+    setProgress(null);
+
+    // Final refresh
+    const sFinal = await fetchStats().catch(() => null);
+    if (sFinal) setStats(sFinal);
+  }
+
+  function stop() {
+    stopRef.current = true;
+  }
+
+  // Load stats khi mount (không auto-run nữa)
   useEffect(() => {
-    void (async () => {
-      // 1. Load stats
-      setLoading(true);
-      const s = await fetchStats().catch(() => null);
-      setLoading(false);
-      if (!s) return;
-      setStats(s);
-
-      // 2. Auto normalize (free — map tên cũ → chuẩn)
-      if (s.normalizable > 0) {
-        setRunning("normalize");
-        const r = await fetch("/api/admin/reclassify-niches", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "normalize" }),
-        });
-        const d = await r.json() as ReclassifyResult;
-        setResult(d);
-        setRunning(null);
-      }
-
-      // 3. Auto reclassify "Other" ads (100 mỗi lần)
-      if (s.otherCount > 0) {
-        setRunning("reclassify");
-        const r = await fetch("/api/admin/reclassify-niches", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "reclassify", limit: 100 }),
-        });
-        const d = await r.json() as ReclassifyResult;
-        setResult(d);
-        setRunning(null);
-
-        // Refresh stats sau khi reclassify
-        const s2 = await fetchStats().catch(() => null);
-        if (s2) setStats(s2);
-      }
-    })();
+    void fetchStats().then(s => { setStats(s); setLoading(false); }).catch(() => setLoading(false));
+    return () => { stopRef.current = true; }; // cleanup khi unmount
   }, []);
 
   const PIE_COLORS_10 = ["#A78BFA","#60A5FA","#F472B6","#34D399","#FCD34D","#FB923C","#38BDF8","#818CF8","#4ADE80","#94A3B8"];
@@ -578,7 +810,7 @@ function NicheIntelligence() {
     <div className="rounded-[12px] p-5 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
 
       {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         <div className="w-7 h-7 rounded-[8px] flex items-center justify-center" style={{ background: "rgba(167,139,250,0.15)" }}>
           <Database size={13} style={{ color: "#A78BFA" }} />
         </div>
@@ -595,7 +827,43 @@ function NicheIntelligence() {
             {running === "normalize" ? "Normalizing..." : "Reclassifying..."}
           </span>
         )}
+        <div className="ml-auto flex items-center gap-2">
+          {autoRunning ? (
+            <button
+              onClick={stop}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[11px] font-semibold"
+              style={{ background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)", color: "#F87171" }}
+            >
+              ⏹ Stop
+            </button>
+          ) : (
+            <button
+              onClick={() => void runAll()}
+              disabled={loading || !stats || stats.otherCount === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[11px] font-semibold disabled:opacity-40"
+              style={{ background: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.3)", color: "#A78BFA" }}
+            >
+              <Zap size={11} /> Run All ({stats?.otherCount.toLocaleString() ?? "…"})
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Progress bar */}
+      {progress && (
+        <div className="mb-4">
+          <div className="flex justify-between text-[10px] mb-1" style={{ color: "var(--text-3)" }}>
+            <span>Processed {progress.done.toLocaleString()} / {progress.total.toLocaleString()}</span>
+            <span>{Math.round(progress.done / Math.max(progress.total, 1) * 100)}%</span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--bg-hover)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${Math.round(progress.done / Math.max(progress.total, 1) * 100)}%`, background: "linear-gradient(90deg, #A78BFA, #60A5FA)" }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Loading */}
       {loading && <div className="h-20 skeleton rounded-[8px]" />}
