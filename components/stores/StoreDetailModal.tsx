@@ -26,18 +26,40 @@ interface Props {
 export default function StoreDetailModal({ pageId, onClose }: Props) {
   const [store, setStore] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [tab, setTab] = useState<TabKey>("active");
+  const [hasMore, setHasMore] = useState(true);
+
+  const fetchStore = useCallback(async (pid: string, status: string, offset = 0) => {
+    const params = new URLSearchParams({ limit: "30", offset: String(offset), status });
+    const r = await fetch(`/api/stores/${encodeURIComponent(pid)}?${params}`);
+    if (!r.ok) throw new Error();
+    return r.json();
+  }, []);
 
   useEffect(() => {
     if (!pageId) { setStore(null); return; }
     setLoading(true);
     setTab("active");
-    fetch(`/api/stores/${encodeURIComponent(pageId)}`)
-      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+    setHasMore(true);
+    fetchStore(pageId, "all")
       .then(setStore)
       .catch(() => setStore(null))
       .finally(() => setLoading(false));
-  }, [pageId]);
+  }, [pageId, fetchStore]);
+
+  const loadMore = useCallback(async () => {
+    if (!pageId || !store || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const status = tab === "active" ? "active" : tab === "paused" ? "paused" : "all";
+      const data = await fetchStore(pageId, status, store.ads.length);
+      if (data.ads.length === 0) { setHasMore(false); return; }
+      setStore(prev => prev ? { ...prev, ads: [...prev.ads, ...data.ads] } : prev);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [pageId, store, tab, loadingMore, fetchStore]);
 
   // ESC to close
   useEffect(() => {
@@ -226,11 +248,25 @@ export default function StoreDetailModal({ pageId, onClose }: Props) {
                         </p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                        {displayAds.map((ad, i) => (
-                          <AdCard key={ad.id} ad={ad} index={i} />
-                        ))}
-                      </div>
+                      <>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                          {displayAds.map((ad, i) => (
+                            <AdCard key={ad.id} ad={ad} index={i} />
+                          ))}
+                        </div>
+                        {hasMore && displayAds.length >= 10 && (
+                          <div className="flex justify-center mt-4">
+                            <button
+                              onClick={loadMore}
+                              disabled={loadingMore}
+                              className="px-4 py-2 rounded-lg text-xs font-medium transition-colors"
+                              style={{ background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)", color: "#A78BFA" }}
+                            >
+                              {loadingMore ? "Loading..." : "Load more ads"}
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

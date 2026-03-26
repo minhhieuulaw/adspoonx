@@ -28,11 +28,17 @@ export async function GET(
 
     const shop = shops[0];
 
-    // Get ads via Prisma (Ad model works fine)
+    const limit = Math.min(100, parseInt(_req.nextUrl.searchParams.get("limit") ?? "30"));
+    const offset = parseInt(_req.nextUrl.searchParams.get("offset") ?? "0");
+    const status = _req.nextUrl.searchParams.get("status") ?? "all"; // active|paused|all
+
+    const statusFilter = status === "active" ? { isActive: true } : status === "paused" ? { isActive: false } : {};
+
     const ads = await prisma.ad.findMany({
-      where: { pageId },
+      where: { pageId, ...statusFilter },
       orderBy: [{ isActive: "desc" }, { scrapedAt: "desc" }],
-      take: 500,
+      skip: offset,
+      take: limit,
     });
 
     const niches = [...new Set(ads.map((a) => a.niche).filter(Boolean))];
