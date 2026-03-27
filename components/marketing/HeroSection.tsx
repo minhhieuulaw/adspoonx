@@ -11,8 +11,52 @@ const STATS = [
   { value: "3x/day",   label: "Refresh" },
 ] as const;
 
-// Skeletal ad card for the mock dashboard
-function AdCard({ delay, highlight }: { delay: number; highlight?: boolean }) {
+const MOCK_ADS = [
+  {
+    live: "46d", aiScore: 92, aiColor: "#10B981",
+    brand: "GLOWSKIN CO.",
+    gradient: "linear-gradient(135deg, rgba(120,60,100,0.7) 0%, rgba(60,80,100,0.6) 100%)",
+    name: "GlowSkin Co.", desc: "Finally — a serum that works in 7 days or ...",
+    tag: "Health & Beauty", tagColor: "#10B981", cta: "Shop Now",
+  },
+  {
+    live: "31d", aiScore: 87, aiColor: "#8B5CF6",
+    brand: "FITPULSE",
+    gradient: "linear-gradient(135deg, rgba(80,50,130,0.7) 0%, rgba(60,80,120,0.6) 100%)",
+    name: "Fitpulse", desc: "5-minute morning workout that actually sti...",
+    tag: "Fitness", tagColor: "#8B5CF6", cta: "Learn More",
+  },
+  {
+    live: "12d", aiScore: 74, aiColor: "#3B82F6",
+    brand: "AUTODASH",
+    gradient: "linear-gradient(135deg, rgba(40,80,80,0.7) 0%, rgba(50,90,70,0.6) 100%)",
+    name: "AutoDash", desc: "Your dashboard—upgraded. Premium mats that...",
+    tag: "Automotive", tagColor: "#F59E0B", cta: "Order Now",
+  },
+  {
+    live: "22d", aiScore: 95, aiColor: "#10B981",
+    brand: "LUXECARRY",
+    gradient: "linear-gradient(135deg, rgba(60,50,90,0.6) 0%, rgba(50,60,80,0.5) 100%)",
+    name: "LuxeCarry", desc: "Handcrafted leather bags — 40% off this we...",
+    tag: "Fashion", tagColor: "#EC4899", cta: "Shop Now",
+  },
+  {
+    live: "58d", aiScore: 91, aiColor: "#A78BFA",
+    brand: "SLEEPDEEP",
+    gradient: "linear-gradient(135deg, rgba(80,40,130,0.7) 0%, rgba(70,60,110,0.6) 100%)",
+    name: "SleepDeep", desc: "Join 50k people sleeping better with our #...",
+    tag: "Supplements", tagColor: "#6366F1", cta: "Order Now",
+  },
+  {
+    live: "9d", aiScore: 68, aiColor: "#3B82F6",
+    brand: "CHEFMATE",
+    gradient: "linear-gradient(135deg, rgba(80,80,40,0.6) 0%, rgba(60,80,60,0.5) 100%)",
+    name: "ChefMate", desc: "The air fryer that cooks 2x faster. 4.8★ ...",
+    tag: "Home Appliances", tagColor: "#F97316", cta: "Shop Now",
+  },
+] as const;
+
+function MockAdCard({ ad, delay }: { ad: typeof MOCK_ADS[number]; delay: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -21,60 +65,77 @@ function AdCard({ delay, highlight }: { delay: number; highlight?: boolean }) {
       className="rounded-xl overflow-hidden flex flex-col relative"
       style={{
         background: "var(--bg-card)",
-        border: `1px solid ${highlight ? "rgba(167,139,250,0.45)" : "var(--border)"}`,
-        boxShadow: highlight ? "0 0 18px rgba(124,58,237,0.2)" : "none",
+        border: "1px solid var(--border)",
       }}
     >
-      {/* Image placeholder with shimmer */}
+      {/* Ad visual area */}
       <div
         className="w-full relative overflow-hidden"
-        style={{ aspectRatio: "1 / 1", background: "rgba(255,255,255,0.04)" }}
+        style={{ aspectRatio: "16 / 10", background: ad.gradient }}
       >
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(59,130,246,0.08) 50%, rgba(16,185,129,0.06) 100%)",
-          }}
-        />
-        {/* Shimmer sweep */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%)",
-            animation: "shimmer 2.4s infinite",
-          }}
-        />
-        {/* AI Score badge */}
-        {highlight && (
-          <div
-            className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold"
-            style={{
-              background: "rgba(124,58,237,0.85)",
-              color: "#fff",
-              border: "1px solid rgba(167,139,250,0.5)",
-              backdropFilter: "blur(8px)",
-            }}
+        {/* Brand watermark */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span
+            className="text-sm font-bold tracking-[0.2em] uppercase"
+            style={{ color: "rgba(255,255,255,0.25)" }}
           >
-            AI Score: 94
-          </div>
-        )}
-      </div>
-
-      {/* Content skeleton */}
-      <div className="p-2.5 flex flex-col gap-1.5">
-        <div className="h-2 rounded-full" style={{ background: "rgba(255,255,255,0.12)", width: "75%" }} />
-        <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.07)", width: "90%" }} />
-        <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.07)", width: "60%" }} />
-        {/* CTA badge */}
+            {ad.brand}
+          </span>
+        </div>
+        {/* LIVE badge */}
         <div
-          className="mt-1 self-start px-2 py-0.5 rounded text-[9px] font-semibold"
+          className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold"
           style={{
-            background: highlight ? "rgba(124,58,237,0.3)" : "rgba(255,255,255,0.06)",
-            color: highlight ? "var(--ai-light)" : "var(--text-3)",
-            border: `1px solid ${highlight ? "rgba(167,139,250,0.3)" : "rgba(255,255,255,0.08)"}`,
+            background: "rgba(0,0,0,0.6)",
+            color: "#fff",
+            backdropFilter: "blur(4px)",
           }}
         >
-          Shop Now
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#10B981" }} />
+          LIVE · {ad.live}
+        </div>
+        {/* AI Score badge */}
+        <div
+          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-md flex flex-col items-center justify-center"
+          style={{
+            background: `linear-gradient(135deg, ${ad.aiColor} 0%, ${ad.aiColor}99 100%)`,
+            boxShadow: `0 2px 8px ${ad.aiColor}55`,
+          }}
+        >
+          <span className="text-[6px] font-semibold leading-none text-white/80">AI</span>
+          <span className="text-[11px] font-extrabold leading-none text-white">{ad.aiScore}</span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-2.5 flex flex-col gap-1">
+        <span className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>
+          {ad.name}
+        </span>
+        <span className="text-[11px] leading-snug" style={{ color: "var(--text-3)" }}>
+          {ad.desc}
+        </span>
+        <div className="flex items-center justify-between mt-1">
+          <span
+            className="text-[9px] font-semibold px-1.5 py-0.5 rounded"
+            style={{
+              background: `${ad.tagColor}20`,
+              color: ad.tagColor,
+              border: `1px solid ${ad.tagColor}30`,
+            }}
+          >
+            {ad.tag}
+          </span>
+          <span
+            className="text-[9px] font-semibold px-2 py-0.5 rounded-md"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              color: "var(--text-2)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            {ad.cta}
+          </span>
         </div>
       </div>
     </motion.div>
@@ -306,7 +367,7 @@ export default function HeroSection() {
               className="flex-1 h-6 rounded-md flex items-center px-3 gap-2"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
             >
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--green)" }} />
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#10B981" }} />
               <span
                 className="text-[11px]"
                 style={{
@@ -317,6 +378,18 @@ export default function HeroSection() {
                 app.adspoonx.com/ads
               </span>
             </div>
+            {/* AI Score active badge */}
+            <div
+              className="ml-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold shrink-0"
+              style={{
+                background: "rgba(16,185,129,0.15)",
+                border: "1px solid rgba(16,185,129,0.3)",
+                color: "#10B981",
+              }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#10B981" }} />
+              AI Score active
+            </div>
           </div>
 
           {/* Dashboard mock content */}
@@ -324,7 +397,7 @@ export default function HeroSection() {
             className="p-5"
             style={{ background: "rgba(13,14,20,0.98)" }}
           >
-            {/* Toolbar skeleton */}
+            {/* Toolbar */}
             <div className="flex items-center gap-3 mb-4">
               <div
                 className="flex-1 h-8 rounded-lg flex items-center px-3 gap-2"
@@ -334,33 +407,42 @@ export default function HeroSection() {
                 <div className="h-2 rounded-full" style={{ background: "rgba(255,255,255,0.08)", width: "140px" }} />
               </div>
               <div
-                className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium"
+                className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold shrink-0"
                 style={{
                   background: "rgba(124,58,237,0.2)",
                   border: "1px solid rgba(124,58,237,0.3)",
                   color: "var(--ai-light)",
-                  fontFamily: "system-ui, sans-serif",
                 }}
               >
-                <div className="w-2 h-2 rounded-full" style={{ background: "var(--ai-light)" }} />
-                Filter
+                AI Score ✦
               </div>
               <div
-                className="h-8 w-8 rounded-lg flex items-center justify-center text-xs"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)" }}
+                className="h-8 px-3 rounded-lg flex items-center text-xs font-semibold shrink-0"
+                style={{
+                  background: "rgba(59,130,246,0.2)",
+                  border: "1px solid rgba(59,130,246,0.3)",
+                  color: "#60A5FA",
+                }}
               >
-                <div className="w-3.5 h-0.5 rounded" style={{ background: "rgba(255,255,255,0.2)" }} />
+                LIVE
+              </div>
+              <div
+                className="h-8 px-3 rounded-lg flex items-center text-xs font-medium shrink-0"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-2)",
+                }}
+              >
+                US · EN
               </div>
             </div>
 
             {/* Ad cards grid — 2 rows × 3 cols */}
             <div className="grid grid-cols-3 gap-3">
-              <AdCard delay={0.75} />
-              <AdCard delay={0.82} highlight />
-              <AdCard delay={0.89} />
-              <AdCard delay={0.96} />
-              <AdCard delay={1.03} />
-              <AdCard delay={1.1} />
+              {MOCK_ADS.map((ad, i) => (
+                <MockAdCard key={ad.name} ad={ad} delay={0.75 + i * 0.07} />
+              ))}
             </div>
           </div>
         </div>
@@ -374,12 +456,7 @@ export default function HeroSection() {
         />
       </motion.div>
 
-      {/* Shimmer keyframe */}
       <style>{`
-        @keyframes shimmer {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(200%); }
-        }
         @keyframes ping {
           75%, 100% { transform: scale(2); opacity: 0; }
         }
