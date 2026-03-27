@@ -80,18 +80,19 @@ function NicheCard({ niche, index, variant }: { niche: NicheData; index: number;
         transition={{ delay: index * 0.04, duration: 0.3 }}
         className="group rounded-xl p-4 cursor-pointer transition-all duration-200"
         style={{
-          background: "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--card-deep)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          boxShadow: "var(--shadow-card)",
         }}
         onMouseEnter={e => {
-          e.currentTarget.style.borderColor = `${variantColor}40`;
+          e.currentTarget.style.borderColor = `${variantColor}50`;
           e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = `0 8px 24px ${variantColor}10`;
+          e.currentTarget.style.boxShadow = `0 12px 32px ${variantColor}18, var(--shadow-card)`;
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+          e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
           e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
+          e.currentTarget.style.boxShadow = "var(--shadow-card)";
         }}
       >
         {/* Header */}

@@ -107,7 +107,7 @@ export default function SavedPage() {
 
       {/* Usage bar */}
       <div className="rounded-[10px] px-4 py-3 mb-4 flex items-center gap-4"
-        style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+        style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[11px]" style={{ color: "var(--text-3)" }}>

@@ -142,7 +142,7 @@ function LiveStatsBar({ topScore }: { topScore: number }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
       className="flex items-center gap-0 mb-3 rounded-[10px] overflow-hidden"
-      style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+      style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "var(--shadow-card)" }}
     >
       {/* Total Ads */}
       <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
@@ -155,9 +155,7 @@ function LiveStatsBar({ topScore }: { topScore: number }) {
         </div>
       </div>
 
-      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
-
-      {/* Users Online */}
+      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
       <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
         <div className="relative flex-shrink-0">
           <Users size={13} style={{ color: "#34D399" }} strokeWidth={2} />
@@ -178,7 +176,7 @@ function LiveStatsBar({ topScore }: { topScore: number }) {
         </div>
       </div>
 
-      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
+      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
 
       {/* New Products Today */}
       <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
@@ -191,7 +189,7 @@ function LiveStatsBar({ topScore }: { topScore: number }) {
         </div>
       </div>
 
-      <div style={{ width: 1, alignSelf: "stretch", background: "var(--border)" }} />
+      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
 
       {/* Top AI Score */}
       <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
@@ -215,7 +213,7 @@ function SkeletonAdCard({ delay = 0 }: { delay?: number }) {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay }}
       className="rounded-[10px] overflow-hidden flex flex-col"
-      style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+      style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.05)" }}
     >
       {/* Creative area */}
       <div className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 0 }} />
@@ -672,12 +670,12 @@ export default function AdsPage() {
             top: 56,
             alignSelf: "flex-start",
             height: "calc(100vh - 56px)",
-            background: "var(--bg-surface)",
-            borderRight: "1px solid var(--border)",
+            background: "linear-gradient(180deg, #16172A 0%, #0F1020 50%, #0B0C18 100%)",
+            borderRight: "1px solid rgba(124,58,237,0.10)",
             overflowY: "auto",
           }}
         >
-          <div className="px-3 pt-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div className="px-3 pt-3 pb-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.10)" }}>
             <div className="flex items-center gap-2 mb-0.5">
               <Brain size={13} style={{ color: "var(--ai-light)" }} />
               <h1 className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
@@ -715,11 +713,11 @@ export default function AdsPage() {
                 transition={{ type: "spring", stiffness: 320, damping: 30 }}
                 style={{
                   position: "fixed", top: 56, left: 0, bottom: 0, width: 280, zIndex: 41,
-                  background: "var(--bg-surface)", borderRight: "1px solid var(--border)", overflowY: "auto",
+                  background: "linear-gradient(180deg, #16172A 0%, #0F1020 50%, #0B0C18 100%)", borderRight: "1px solid rgba(124,58,237,0.10)", overflowY: "auto",
                 }}
                 className="no-scrollbar"
               >
-                <div className="flex items-center justify-between px-3 pt-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                <div className="flex items-center justify-between px-3 pt-3 pb-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.10)" }}>
                   <div className="flex items-center gap-2">
                     <Brain size={13} style={{ color: "var(--ai-light)" }} />
                     <span className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Filters</span>
@@ -772,7 +770,7 @@ export default function AdsPage() {
             {/* Search history dropdown */}
             {showHistory && searchHistory.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 z-30 rounded-[10px] py-1.5 overflow-hidden"
-                style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+                style={{ background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 16px 48px rgba(0,0,0,0.7)", backdropFilter: "blur(12px)" }}>
                 <p className="px-3 py-1 text-[9px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Recent Searches</p>
                 {searchHistory.map((h, i) => (
                   <button key={i}
@@ -833,9 +831,9 @@ export default function AdsPage() {
               <div
                 className="absolute right-0 top-full mt-1 z-20 rounded-[10px] overflow-hidden"
                 style={{
-                  width: 280, background: "var(--bg-elevated)",
-                  border: "1px solid var(--border-strong)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                  width: 280, background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 16px 48px rgba(0,0,0,0.7)", backdropFilter: "blur(12px)",
                 }}
               >
                 <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -905,7 +903,7 @@ export default function AdsPage() {
               className="overflow-hidden mb-4"
             >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 rounded-[10px]"
-                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}>
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
                     Page Name

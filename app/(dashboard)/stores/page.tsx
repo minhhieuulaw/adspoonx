@@ -244,16 +244,17 @@ function StoreCardRow({ store, index, onClick }: { store: ShopRow; index: number
       onClick={onClick}
       className="group flex items-center gap-4 px-5 py-4 rounded-xl cursor-pointer transition-all duration-200"
       style={{
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.05)",
+        background: "var(--card-deep)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "var(--shadow-card)",
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderColor = "rgba(124,58,237,0.25)";
-        e.currentTarget.style.background = "rgba(124,58,237,0.03)";
+        e.currentTarget.style.borderColor = "rgba(124,58,237,0.30)";
+        e.currentTarget.style.boxShadow = "var(--shadow-hover)";
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
-        e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
+        e.currentTarget.style.boxShadow = "var(--shadow-card)";
       }}
     >
       {/* Avatar */}

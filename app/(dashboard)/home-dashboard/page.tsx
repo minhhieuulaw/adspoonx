@@ -69,7 +69,7 @@ function KPICard({
   return (
     <motion.div {...fadeUp(delay)}
       className="rounded-[12px] p-4 flex items-center gap-3"
-      style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+      style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}
     >
       <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
         <Icon size={16} strokeWidth={1.8} style={{ color }} />
@@ -136,7 +136,7 @@ function QuickLink({
     <motion.div {...fadeUp(delay)}>
       <Link href={href}
         className="flex items-center gap-3 p-3 rounded-[10px] group transition-colors"
-        style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}
+        style={{ border: "1px solid rgba(255,255,255,0.07)", background: "var(--card-deep)", boxShadow: "var(--shadow-card)" }}
       >
         <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
           <Icon size={15} strokeWidth={1.8} style={{ color: iconColor }} />
@@ -338,7 +338,7 @@ export default function HomeDashboardPage() {
         {/* Niche Distribution */}
         <motion.div {...fadeUp(0.12)}
           className="rounded-[12px] p-4"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -365,7 +365,7 @@ export default function HomeDashboardPage() {
         {/* Top Stores */}
         <motion.div {...fadeUp(0.14)}
           className="rounded-[12px] p-4"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -395,7 +395,7 @@ export default function HomeDashboardPage() {
         {/* Platform Distribution */}
         <motion.div {...fadeUp(0.16)}
           className="rounded-[12px] p-4"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}
         >
           <div className="flex items-center gap-2 mb-4">
             <BarChart2 size={14} strokeWidth={1.8} style={{ color: "#60A5FA" }} />
@@ -417,7 +417,7 @@ export default function HomeDashboardPage() {
         {/* Weekly Growth */}
         <motion.div {...fadeUp(0.18)}
           className="rounded-[12px] p-4"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}
         >
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />

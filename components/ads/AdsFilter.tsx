@@ -109,7 +109,7 @@ function FilterSection({ label, children }: { label: string; children: React.Rea
 }
 
 function Divider() {
-  return <div style={{ height: 1, background: "var(--border)" }} />;
+  return <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />;
 }
 
 // ── Platform dropdown multi-select ────────────────────────────────────────────
@@ -161,9 +161,10 @@ function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1"
             style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
+              backdropFilter: "blur(12px)",
             }}>
             {PLATFORMS.map(p => {
               const isOn = selected.includes(p.id);
@@ -242,9 +243,10 @@ function LanguageDropdown({ selected, onSelect }: { selected: AdLanguage | "all"
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1 max-h-[240px] overflow-y-auto no-scrollbar"
             style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
+              backdropFilter: "blur(12px)",
             }}>
             {LANGUAGE_OPTIONS.map(l => {
               const isOn = selected === l.id;
@@ -317,9 +319,10 @@ function NicheDropdown({ selected, onSelect }: { selected: string | null; onSele
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1 max-h-[280px] overflow-y-auto no-scrollbar"
             style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
+              backdropFilter: "blur(12px)",
             }}>
             {/* All option */}
             <button
@@ -548,35 +551,39 @@ export default function AdsFilter({
 
         {/* Smart Presets */}
         <FilterSection label="Smart Presets">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             {PRESETS.map((preset) => {
               const isActive = values.preset === preset.id;
+              const accentColor = preset.id === "top" ? "var(--ai)" : preset.id === "trending" ? "#34D399" : "#F59E0B";
+              const accentBg    = preset.id === "top" ? "rgba(124,58,237,0.08)" : preset.id === "trending" ? "rgba(52,211,153,0.06)" : "rgba(245,158,11,0.06)";
               return (
                 <button
                   key={preset.id}
                   onClick={() => togglePreset(preset.id)}
-                  className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-[7px] text-left"
+                  className="flex items-center gap-2 w-full px-2.5 py-2 text-left"
                   style={{
-                    background: isActive ? "rgba(124,58,237,0.15)" : "transparent",
-                    border:     `1px solid ${isActive ? "rgba(124,58,237,0.4)" : "transparent"}`,
+                    background: isActive ? accentBg : "rgba(255,255,255,0.02)",
+                    border: `1px solid ${isActive ? accentColor : "rgba(255,255,255,0.05)"}`,
+                    borderLeft: `3px solid ${accentColor}`,
+                    borderRadius: "0 8px 8px 0",
                     transition: "all 120ms var(--ease)",
                   }}
                   onMouseEnter={e => {
-                    if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+                    if (!isActive) (e.currentTarget as HTMLElement).style.background = accentBg;
                   }}
                   onMouseLeave={e => {
-                    if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent";
+                    if (!isActive) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)";
                   }}
                 >
-                  <span style={{ fontSize: 13, lineHeight: 1 }}>{preset.icon}</span>
+                  <span style={{ fontSize: 12, lineHeight: 1 }}>{preset.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium" style={{ color: isActive ? "var(--ai-light)" : "var(--text-2)" }}>
+                    <p className="text-[11px] font-semibold" style={{ color: isActive ? accentColor : "var(--text-2)" }}>
                       {preset.label}
                     </p>
                     <p className="text-[9px]" style={{ color: "var(--text-3)" }}>{preset.desc}</p>
                   </div>
                   {isActive && (
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ai-light)", flexShrink: 0 }} />
+                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: accentColor, flexShrink: 0, boxShadow: `0 0 6px ${accentColor}` }} />
                   )}
                 </button>
               );

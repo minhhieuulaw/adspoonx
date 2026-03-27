@@ -78,7 +78,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Profile card */}
-      <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-[11px] font-semibold uppercase mb-3" style={{ color: "var(--text-3)", letterSpacing: "0.08em" }}>Account</p>
         <div className="flex items-center gap-3">
           {session?.user?.image ? (
@@ -97,7 +97,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Plan card */}
-      <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-[11px] font-semibold uppercase mb-3" style={{ color: "var(--text-3)", letterSpacing: "0.08em" }}>Subscription</p>
 
         {loading ? (
@@ -181,7 +181,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Buy more scans */}
-      <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-[11px] font-semibold uppercase mb-1" style={{ color: "var(--text-3)", letterSpacing: "0.08em" }}>Buy more Scans</p>
         <p className="text-[11px] mb-3" style={{ color: "var(--text-3)" }}>
           One-time purchase — Scans never expire and stack on top of your monthly allocation.
@@ -242,7 +242,7 @@ export default function SettingsPage() {
       <SupportTickets />
 
       {/* Sign out */}
-      <div className="rounded-[12px] p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <div className="rounded-[12px] p-4" style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}>
         <p className="text-[11px] font-semibold uppercase mb-3" style={{ color: "var(--text-3)", letterSpacing: "0.08em" }}>Account Actions</p>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
@@ -308,7 +308,7 @@ function SupportTickets() {
   }
 
   return (
-    <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+    <div className="rounded-[12px] p-4 mb-3" style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <MessageSquare size={13} style={{ color: "var(--ai-light)" }} strokeWidth={1.8} />

@@ -389,13 +389,17 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
 // ── AI Score Ribbon (prominent flag + fire for ≥80) ──────────────────────────
 
 function AIScoreRibbon({ score }: { score: number }) {
+  const isElite = score >= 85;
   const isHot = score >= 80;
   const isGood = score >= 65;
   const isMid = score >= 50;
 
   let gradient: string;
   let shadow: string;
-  if (isHot) {
+  if (isElite) {
+    gradient = "linear-gradient(135deg, #7C3AED, #A78BFA, #C4B5FD)";
+    shadow = "0 2px 16px rgba(124,58,237,0.7), 0 0 32px rgba(167,139,250,0.35), 0 0 48px rgba(124,58,237,0.15)";
+  } else if (isHot) {
     gradient = "linear-gradient(135deg, #DC2626, #F97316, #FBBF24)";
     shadow = "0 2px 16px rgba(239,68,68,0.6), 0 0 24px rgba(249,115,22,0.3)";
   } else if (isGood) {
@@ -438,7 +442,7 @@ function AIScoreRibbon({ score }: { score: number }) {
         AI
       </span>
       <span className="font-data" style={{
-        fontSize: isHot ? 15 : 14,
+        fontSize: isElite || isHot ? 15 : 14,
         fontWeight: 800,
         color: "#fff",
         lineHeight: 1.1,

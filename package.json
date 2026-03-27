@@ -7,7 +7,10 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "screenshot": "node scripts/screenshot-check.mjs",
+    "screenshot:staging": "node scripts/screenshot-check.mjs https://staging.adspoonx.com",
+    "screenshot:prod": "node scripts/screenshot-check.mjs https://adspoonx.com"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
@@ -41,6 +44,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "puppeteer": "^24.40.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
