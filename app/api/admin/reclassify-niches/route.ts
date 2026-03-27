@@ -15,12 +15,12 @@ const VALID_NICHES = new Set<string>(NICHES);
 const NORMALIZE_MAP: Record<string, string> = {
   // Old names from previous classification rounds
   "Skincare & Beauty":          "Health & Beauty",
-  "Hair Care":                  "Health & Beauty",
+  // "Hair Care" removed — now a valid standalone niche
   "Weight Loss & Fitness":      "Fitness & Wellness",
   "Health & Supplements":       "Supplements & Nutrition",
   "Home & Kitchen":             "Home & Living",
   "Outdoor & Sports":           "Sports & Outdoors",
-  "Car & Auto":                 "E-commerce",
+  "Car & Auto":                 "Automotive",
   // Invalid niches still in DB
   "Tech & Gadgets":             "Electronics & Tech",
   "Dropshipping & E-com Tools": "E-commerce",
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json() as {
-    action: "normalize" | "reclassify" | "reset" | "reset-invalid" | "bulk-detect";
+    action: "normalize" | "reclassify" | "reset" | "reset-invalid" | "bulk-detect" | "split-migration";
     limit?: number;
     confirm?: boolean;
   };
@@ -311,6 +311,28 @@ export async function POST(req: NextRequest) {
       updated,
       breakdown,
     });
+  }
+
+  // ── Action: reset 4 broad niches → "Other" so bulk-detect can re-split them ──
+  if (body.action === "split-migration") {
+    const BROAD_NICHES = ["Health & Beauty", "Home & Living", "Fashion & Apparel", "E-commerce"];
+
+    const total = await prisma.ad.count({ where: { niche: { in: BROAD_NICHES } } });
+
+    if (!body.confirm) {
+      return NextResponse.json({
+        ok: false,
+        needsConfirm: true,
+        willReset: total,
+        message: `This will reset ${total.toLocaleString()} ads in 4 broad niches to "Other" so they can be re-classified into the new specific niches. Pass confirm:true to proceed.`,
+      });
+    }
+
+    const { count } = await prisma.ad.updateMany({
+      where: { niche: { in: BROAD_NICHES } },
+      data:  { niche: "Other" },
+    });
+    return NextResponse.json({ ok: true, action: "split-migration", reset: count });
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });

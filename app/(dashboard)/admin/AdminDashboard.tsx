@@ -726,11 +726,12 @@ interface ReclassifyResult {
 function NicheIntelligence() {
   const [stats,        setStats]        = useState<NicheStats | null>(null);
   const [loading,      setLoading]      = useState(true);
-  const [running,      setRunning]      = useState<"normalize" | "bulk-detect" | "reclassify" | null>(null);
+  const [running,      setRunning]      = useState<"normalize" | "bulk-detect" | "reclassify" | "split-migration" | null>(null);
   const [result,       setResult]       = useState<ReclassifyResult | null>(null);
   const [autoRunning,  setAutoRunning]  = useState(false);
   const [progress,     setProgress]     = useState<{ done: number; total: number } | null>(null);
   const [resetConfirm, setResetConfirm] = useState(false);
+  const [splitConfirm, setSplitConfirm] = useState(false);
   const stopRef = useRef(false);
 
   async function doFetchStats(): Promise<NicheStats> {
@@ -873,6 +874,46 @@ function NicheIntelligence() {
     refresh();
   }
 
+  async function runSplitMigration() {
+    if (!splitConfirm) { setSplitConfirm(true); return; }
+    setSplitConfirm(false);
+    stopRef.current = false;
+    setAutoRunning(true);
+    setResult(null);
+
+    // Step 1: reset 4 broad niches → "Other"
+    setRunning("split-migration");
+    const r = await fetch("/api/admin/reclassify-niches", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "split-migration", confirm: true }),
+    }).catch(() => null);
+    if (!r?.ok) { setAutoRunning(false); setRunning(null); return; }
+
+    // Step 2: refresh stats
+    const s = await doFetchStats().catch(() => null);
+    if (s) setStats(s);
+
+    // Step 3: bulk-detect loop to re-classify into new specific niches
+    setRunning("bulk-detect");
+    while (!stopRef.current) {
+      const r2 = await fetch("/api/admin/reclassify-niches", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "bulk-detect", limit: 5000 }),
+      }).catch(() => null);
+      if (!r2?.ok) break;
+      const d = await r2.json() as ReclassifyResult;
+      if ((d.processed ?? 0) === 0) break;
+      setResult(d);
+      const s2 = await doFetchStats().catch(() => null);
+      if (s2) setStats(s2);
+      if ((d.updated ?? 0) === 0) break;
+    }
+
+    setRunning(null);
+    setAutoRunning(false);
+    refresh();
+  }
+
   // Mount: load stats + auto-refresh mỗi 120s khi idle
   useEffect(() => {
     refresh();
@@ -911,7 +952,7 @@ function NicheIntelligence() {
         {running && (
           <span className="flex items-center gap-1 text-[10px]" style={{ color: "var(--ai-light)" }}>
             <div className="w-3 h-3 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />
-            {running === "normalize" ? "Normalizing..." : running === "bulk-detect" ? "Auto-classifying..." : "AI classifying..."}
+            {running === "normalize" ? "Normalizing..." : running === "split-migration" ? "Resetting broad niches..." : running === "bulk-detect" ? "Auto-classifying..." : "AI classifying..."}
           </span>
         )}
       </div>
@@ -938,6 +979,38 @@ function NicheIntelligence() {
           >
             Fix invalid ({stats.normalizable})
           </button>
+        )}
+
+        {/* Split Migration — two-click confirm */}
+        {!autoRunning && (
+          splitConfirm ? (
+            <span className="flex items-center gap-1.5">
+              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Reset 4 broad niches & re-classify?</span>
+              <button
+                onClick={() => void runSplitMigration()}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[11px] font-semibold"
+                style={{ background: "rgba(96,165,250,0.15)", border: "1px solid rgba(96,165,250,0.35)", color: "#60A5FA" }}
+              >
+                Yes, migrate
+              </button>
+              <button
+                onClick={() => setSplitConfirm(false)}
+                className="px-2.5 py-1.5 rounded-[7px] text-[11px]"
+                style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-3)" }}
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              onClick={() => void runSplitMigration()}
+              disabled={loading || !stats || stats.classifiedCount === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[11px] disabled:opacity-40"
+              style={{ background: "rgba(96,165,250,0.08)", border: "1px solid rgba(96,165,250,0.2)", color: "#60A5FA" }}
+            >
+              Split Niches
+            </button>
+          )
         )}
 
         {/* Reset All — two-click confirm */}
