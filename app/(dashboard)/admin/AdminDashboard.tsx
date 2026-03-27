@@ -726,7 +726,7 @@ interface ReclassifyResult {
 function NicheIntelligence() {
   const [stats,        setStats]        = useState<NicheStats | null>(null);
   const [loading,      setLoading]      = useState(true);
-  const [running,      setRunning]      = useState<"normalize" | "reclassify" | null>(null);
+  const [running,      setRunning]      = useState<"normalize" | "bulk-detect" | "reclassify" | null>(null);
   const [result,       setResult]       = useState<ReclassifyResult | null>(null);
   const [autoRunning,  setAutoRunning]  = useState(false);
   const [progress,     setProgress]     = useState<{ done: number; total: number } | null>(null);
@@ -766,48 +766,72 @@ function NicheIntelligence() {
       setRunning(null);
     }
 
-    // Step 2: loop reclassify cho đến khi hết "Other"
-    // Dùng live otherCount từ stats để progress bar chính xác
     let currentTotal = s.otherCount;
     let done = 0;
-    let stuckRounds = 0; // số batch liên tiếp mà updated=0 (stuck detection)
     setProgress({ done, total: currentTotal });
-    setRunning("reclassify");
 
+    // Step 2: bulk-detect loop — free, instant, uses page_categories from rawData
+    setRunning("bulk-detect");
     while (!stopRef.current) {
       const r = await fetch("/api/admin/reclassify-niches", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reclassify", limit: 100 }),
+        body: JSON.stringify({ action: "bulk-detect", limit: 5000 }),
       }).catch(() => null);
 
       if (!r?.ok) break;
       const d = await r.json() as ReclassifyResult;
-
-      // Không còn ads để xử lý → dừng
       if ((d.processed ?? 0) === 0) break;
 
-      done += d.processed ?? 0;
+      done += d.updated ?? 0;
       setResult(d);
 
-      // Stuck detection: 8 batch liên tiếp updated=0 → tất cả là low-confidence → dừng
-      if ((d.updated ?? 0) === 0) {
-        stuckRounds++;
-        if (stuckRounds >= 8) break;
-      } else {
-        stuckRounds = 0;
-      }
-
-      // Refresh stats để lấy otherCount chính xác (giảm dần theo thực tế)
       const s2 = await doFetchStats().catch(() => null);
       if (s2) {
         setStats(s2);
-        currentTotal = s2.otherCount + done; // total = đã làm + còn lại
-        if (s2.otherCount === 0) break;
+        currentTotal = s2.otherCount + done;
+        if (s2.otherCount === 0 || (d.updated ?? 0) === 0) break;
       }
       setProgress({ done, total: currentTotal });
+    }
+    setRunning(null);
 
-      // Delay 1.5s giữa các batch tránh rate limit
-      await new Promise(res => setTimeout(res, 1500));
+    // Step 3: reclassify remaining "Other" using Claude Haiku (for hard cases)
+    const sAfterBulk = await doFetchStats().catch(() => null);
+    if (sAfterBulk) setStats(sAfterBulk);
+    if (!stopRef.current && (sAfterBulk?.otherCount ?? 0) > 0) {
+      let stuckRounds = 0;
+      setRunning("reclassify");
+
+      while (!stopRef.current) {
+        const r = await fetch("/api/admin/reclassify-niches", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "reclassify", limit: 100 }),
+        }).catch(() => null);
+
+        if (!r?.ok) break;
+        const d = await r.json() as ReclassifyResult;
+        if ((d.processed ?? 0) === 0) break;
+
+        done += d.processed ?? 0;
+        setResult(d);
+
+        if ((d.updated ?? 0) === 0) {
+          stuckRounds++;
+          if (stuckRounds >= 8) break;
+        } else {
+          stuckRounds = 0;
+        }
+
+        const s2 = await doFetchStats().catch(() => null);
+        if (s2) {
+          setStats(s2);
+          currentTotal = s2.otherCount + done;
+          if (s2.otherCount === 0) break;
+        }
+        setProgress({ done, total: currentTotal });
+
+        await new Promise(res => setTimeout(res, 1500));
+      }
     }
 
     setRunning(null);
@@ -887,7 +911,7 @@ function NicheIntelligence() {
         {running && (
           <span className="flex items-center gap-1 text-[10px]" style={{ color: "var(--ai-light)" }}>
             <div className="w-3 h-3 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />
-            {running === "normalize" ? "Normalizing..." : "Reclassifying..."}
+            {running === "normalize" ? "Normalizing..." : running === "bulk-detect" ? "Auto-classifying..." : "AI classifying..."}
           </span>
         )}
       </div>

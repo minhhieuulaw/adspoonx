@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { anthropic } from "@/lib/anthropic";
-import { NICHES } from "@/lib/niche-detect";
+import { NICHES, detectNiche, nicheInputFromRaw } from "@/lib/niche-detect";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map(e => e.trim());
 const HAIKU_MODEL  = "claude-haiku-4-5-20251001";
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json() as {
-    action: "normalize" | "reclassify" | "reset" | "reset-invalid";
+    action: "normalize" | "reclassify" | "reset" | "reset-invalid" | "bulk-detect";
     limit?: number;
     confirm?: boolean;
   };
@@ -143,6 +143,47 @@ export async function POST(req: NextRequest) {
       data:  { niche: "Other" },
     });
     return NextResponse.json({ ok: true, action: "reset-invalid", updated: count, niches: toReset });
+  }
+
+  // ── Action: bulk classify using detectNiche() — free, instant, no AI cost ──
+  if (body.action === "bulk-detect") {
+    const limit = Math.min(body.limit ?? 5000, 10000);
+
+    const ads = await prisma.ad.findMany({
+      where: { OR: [{ niche: "Other" }, { niche: null }] },
+      select: { adArchiveId: true, bodyText: true, title: true, rawData: true },
+      take: limit,
+      orderBy: { updatedAt: "asc" },
+    });
+
+    if (ads.length === 0) {
+      return NextResponse.json({ ok: true, action: "bulk-detect", processed: 0, updated: 0, breakdown: {} });
+    }
+
+    // Group adArchiveIds by detected niche
+    const groups: Record<string, string[]> = {};
+    for (const ad of ads) {
+      const input = nicheInputFromRaw(ad.rawData as Record<string, unknown>, ad);
+      const niche = detectNiche(input);
+      if (niche !== "Other") {
+        groups[niche] ??= [];
+        groups[niche].push(ad.adArchiveId);
+      }
+    }
+
+    // Bulk update per niche group (single updateMany per niche — very fast)
+    let updated = 0;
+    const breakdown: Record<string, number> = {};
+    for (const [niche, ids] of Object.entries(groups)) {
+      const { count } = await prisma.ad.updateMany({
+        where: { adArchiveId: { in: ids } },
+        data:  { niche },
+      });
+      updated += count;
+      breakdown[niche] = count;
+    }
+
+    return NextResponse.json({ ok: true, action: "bulk-detect", processed: ads.length, updated, breakdown });
   }
 
   // ── Action: reclassify "Other" (and NULL) ads using Claude Haiku ─────────
