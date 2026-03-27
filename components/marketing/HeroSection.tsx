@@ -365,11 +365,23 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Bottom gradient fade */}
+        {/* Bottom + sides gradient fade */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none rounded-b-2xl"
+          className="absolute -bottom-1 -left-6 -right-6 h-48 pointer-events-none"
           style={{
-            background: "linear-gradient(to top, var(--bg-base) 0%, transparent 100%)",
+            background: "linear-gradient(to top, var(--bg-base) 0%, var(--bg-base) 10%, transparent 100%)",
+          }}
+        />
+        <div
+          className="absolute top-0 -left-6 bottom-0 w-16 pointer-events-none"
+          style={{
+            background: "linear-gradient(to right, var(--bg-base) 0%, transparent 100%)",
+          }}
+        />
+        <div
+          className="absolute top-0 -right-6 bottom-0 w-16 pointer-events-none"
+          style={{
+            background: "linear-gradient(to left, var(--bg-base) 0%, transparent 100%)",
           }}
         />
       </motion.div>
