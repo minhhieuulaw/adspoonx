@@ -251,7 +251,6 @@ export default function HeroSection() {
         style={{
           background: "rgba(255,255,255,0.03)",
           border: "1px solid var(--border)",
-          divideColor: "var(--border)",
         }}
       >
         {STATS.map((s) => (
