@@ -116,11 +116,11 @@ export default function Header() {
       style={{
         height: 56,
         zIndex: 30,
-        background: "rgba(9,10,17,0.90)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        boxShadow: "0 1px 0 rgba(124,58,237,0.06), 0 4px 20px rgba(0,0,0,0.3)",
+        background: "rgba(7,8,16,0.94)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 1px 0 rgba(124,58,237,0.10), 0 4px 24px rgba(0,0,0,0.40)",
       }}
     >
       {/* Hamburger — mobile only (hidden on md+) */}

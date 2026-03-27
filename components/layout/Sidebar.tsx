@@ -37,13 +37,13 @@ function NavContent({ onClose }: { onClose?: () => void }) {
       className="h-full flex flex-col select-none"
       style={{
         width: 256,
-        background: "linear-gradient(180deg, #16172A 0%, #0F1020 50%, #0B0C18 100%)",
-        borderRight: "1px solid rgba(124,58,237,0.10)",
+        background: "linear-gradient(180deg, #181A32 0%, #111228 50%, #0C0D1E 100%)",
+        borderRight: "1px solid rgba(124,58,237,0.15)",
       }}
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 flex-shrink-0"
-        style={{ borderBottom: "1px solid rgba(124,58,237,0.10)", height: 56, background: "rgba(124,58,237,0.03)" }}>
+        style={{ borderBottom: "1px solid rgba(124,58,237,0.14)", height: 56, background: "rgba(124,58,237,0.05)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-transparent.png" alt="AdSpoonX" className="h-[60px] flex-shrink-0" style={{ filter: "invert(1)", objectFit: "contain" }} />
         <span className="flex-1" />
@@ -72,19 +72,19 @@ function NavContent({ onClose }: { onClose?: () => void }) {
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full"
                       style={{ background: "var(--accent)" }} />
                   )}
-                  <div className="flex items-center gap-3 px-3 py-[7px] rounded-[8px] mb-0.5"
+                  <div className="flex items-center gap-3 px-3 py-2 rounded-[9px] mb-0.5"
                     style={{
-                      background: isActive ? "rgba(124,58,237,0.14)" : "transparent",
+                      background: isActive ? "rgba(124,58,237,0.18)" : "transparent",
                       color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
-                      boxShadow: isActive ? "inset 0 0 0 1px rgba(124,58,237,0.18), 0 0 12px rgba(124,58,237,0.08)" : "none",
+                      boxShadow: isActive ? "inset 0 0 0 1px rgba(124,58,237,0.25), 0 0 16px rgba(124,58,237,0.10)" : "none",
                       transition: "background 150ms var(--ease), box-shadow 200ms var(--ease)",
                     }}
-                    onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; }}
+                    onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; }}
                     onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   >
                     <Icon size={15} strokeWidth={isActive ? 2 : 1.5}
                       style={{ color: isActive ? "var(--ai-light)" : "var(--text-muted)", flexShrink: 0 }} />
-                    <span className="flex-1 text-[13px]" style={{ fontWeight: isActive ? 500 : 400 }}>
+                    <span className="flex-1 text-[13px]" style={{ fontWeight: isActive ? 600 : 400 }}>
                       {item.label}
                     </span>
                     {"tag" in item && item.tag && (
@@ -102,12 +102,12 @@ function NavContent({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* Upgrade */}
-      <div className="px-3 py-3 flex-shrink-0" style={{ borderTop: "1px solid rgba(124,58,237,0.10)" }}>
+      <div className="px-3 py-3 flex-shrink-0" style={{ borderTop: "1px solid rgba(124,58,237,0.15)" }}>
         <Link href="/pricing"
           className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] w-full"
           style={{
-            background: "linear-gradient(135deg, rgba(124,58,237,0.16) 0%, rgba(79,70,229,0.08) 100%)",
-            border: "1px solid rgba(124,58,237,0.30)",
+            background: "linear-gradient(135deg, rgba(124,58,237,0.20) 0%, rgba(79,70,229,0.10) 100%)",
+            border: "1px solid rgba(124,58,237,0.35)",
             transition: "background 150ms var(--ease), box-shadow 150ms var(--ease)",
           }}
           onMouseEnter={e => {

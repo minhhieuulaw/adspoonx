@@ -141,63 +141,66 @@ function LiveStatsBar({ topScore }: { topScore: number }) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex items-center gap-0 mb-3 rounded-[10px] overflow-hidden"
-      style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "var(--shadow-card)" }}
+      className="flex items-center gap-0 mb-4 rounded-[14px] overflow-hidden"
+      style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "var(--shadow-card)" }}
     >
       {/* Total Ads */}
-      <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
-        <Sparkles size={13} style={{ color: "#A78BFA" }} strokeWidth={2} />
+      <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0">
+        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: "rgba(167,139,250,0.12)" }}>
+          <Sparkles size={15} style={{ color: "#A78BFA" }} strokeWidth={2} />
+        </div>
         <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Total Ads</p>
-          <p className="text-[15px] font-bold tabular-nums leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)" }}>Total Ads</p>
+          <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color: "var(--text-1)", letterSpacing: "-0.03em" }}>
             {fmtNum(totalAds)}
           </p>
         </div>
       </div>
 
-      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
-      <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
-        <div className="relative flex-shrink-0">
-          <Users size={13} style={{ color: "#34D399" }} strokeWidth={2} />
-          <span
-            className="live-dot"
-            style={{
-              position: "absolute", top: -2, right: -2,
-              width: 5, height: 5, borderRadius: "50%",
-              background: "#34D399",
-            }}
-          />
+      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.06)" }} />
+      <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0">
+        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 relative" style={{ background: "rgba(52,211,153,0.12)" }}>
+          <Users size={15} style={{ color: "#34D399" }} strokeWidth={2} />
+          <span className="live-dot" style={{
+            position: "absolute", top: -1, right: -1,
+            width: 6, height: 6, borderRadius: "50%",
+            background: "#34D399", boxShadow: "0 0 6px #34D399",
+          }} />
         </div>
         <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Users Online</p>
-          <p className="text-[15px] font-bold tabular-nums leading-tight" style={{ color: "#34D399", letterSpacing: "-0.02em", transition: "all 300ms ease" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)" }}>Users Online</p>
+          <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color: "#34D399", letterSpacing: "-0.03em", transition: "all 300ms ease" }}>
             {fmtNum(usersOnline)}
           </p>
         </div>
       </div>
 
-      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
+      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.06)" }} />
 
       {/* New Products Today */}
-      <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
-        <TrendingUp size={13} style={{ color: "#FCD34D" }} strokeWidth={2} />
+      <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0">
+        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: "rgba(252,211,77,0.12)" }}>
+          <TrendingUp size={15} style={{ color: "#FCD34D" }} strokeWidth={2} />
+        </div>
         <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>New Today</p>
-          <p className="text-[15px] font-bold tabular-nums leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)" }}>New Today</p>
+          <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color: "#FCD34D", letterSpacing: "-0.03em" }}>
             +{fmtNum(newToday)}
           </p>
         </div>
       </div>
 
-      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
+      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.06)" }} />
 
       {/* Top AI Score */}
-      <div className="flex items-center gap-2 px-4 py-2.5 flex-1 min-w-0">
-        <Brain size={13} style={{ color: "#60A5FA" }} strokeWidth={2} />
+      <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0">
+        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: "rgba(96,165,250,0.12)" }}>
+          <Brain size={15} style={{ color: "#60A5FA" }} strokeWidth={2} />
+        </div>
         <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Top AI Score</p>
-          <p className="text-[15px] font-bold tabular-nums leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
-            {topScore}
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)" }}>Top AI Score</p>
+          <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color: "var(--text-1)", letterSpacing: "-0.03em" }}>
+            {topScore > 0 ? topScore : "—"}
           </p>
         </div>
       </div>
@@ -665,21 +668,23 @@ export default function AdsPage() {
       {/* ── Left: Filter panel — hidden on mobile (CSS), sticky on desktop ── */}
       <div className="hidden md:block flex-shrink-0 no-scrollbar"
           style={{
-            width: 192,
+            width: 220,
             position: "sticky",
             top: 56,
             alignSelf: "flex-start",
             height: "calc(100vh - 56px)",
-            background: "linear-gradient(180deg, #16172A 0%, #0F1020 50%, #0B0C18 100%)",
-            borderRight: "1px solid rgba(124,58,237,0.10)",
+            background: "linear-gradient(180deg, #171930 0%, #10112A 50%, #0C0D1E 100%)",
+            borderRight: "1px solid rgba(124,58,237,0.14)",
             overflowY: "auto",
           }}
         >
-          <div className="px-3 pt-3 pb-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.10)" }}>
-            <div className="flex items-center gap-2 mb-0.5">
-              <Brain size={13} style={{ color: "var(--ai-light)" }} />
+          <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.12)" }}>
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="w-7 h-7 rounded-[7px] flex items-center justify-center" style={{ background: "rgba(124,58,237,0.18)" }}>
+                <Brain size={13} style={{ color: "var(--ai-light)" }} />
+              </div>
               <h1 className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
-                AI Ads Intelligence
+                AI Intelligence
               </h1>
             </div>
             <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
@@ -713,7 +718,7 @@ export default function AdsPage() {
                 transition={{ type: "spring", stiffness: 320, damping: 30 }}
                 style={{
                   position: "fixed", top: 56, left: 0, bottom: 0, width: 280, zIndex: 41,
-                  background: "linear-gradient(180deg, #16172A 0%, #0F1020 50%, #0B0C18 100%)", borderRight: "1px solid rgba(124,58,237,0.10)", overflowY: "auto",
+                  background: "linear-gradient(180deg, #171930 0%, #10112A 50%, #0C0D1E 100%)", borderRight: "1px solid rgba(124,58,237,0.14)", overflowY: "auto",
                 }}
                 className="no-scrollbar"
               >
@@ -743,10 +748,10 @@ export default function AdsPage() {
       </div>
 
       {/* ── Center: Content area ── */}
-      <div className="flex-1 min-w-0 flex flex-col" style={{ padding: 16 }}>
+      <div className="flex-1 min-w-0 flex flex-col" style={{ padding: 20 }}>
 
         {/* Search bar */}
-        <div className="mb-2 command-bar flex items-center gap-3 px-4 py-3">
+        <div className="mb-3 command-bar flex items-center gap-3 px-5 py-3.5">
           <button
             onClick={() => setFilterOpen(true)}
             className="md:hidden p-1.5 rounded-[7px] flex-shrink-0"
@@ -770,7 +775,7 @@ export default function AdsPage() {
             {/* Search history dropdown */}
             {showHistory && searchHistory.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 z-30 rounded-[10px] py-1.5 overflow-hidden"
-                style={{ background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 16px 48px rgba(0,0,0,0.7)", backdropFilter: "blur(12px)" }}>
+                style={{ background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)", border: "1px solid rgba(255,255,255,0.10)", boxShadow: "0 16px 48px rgba(0,0,0,0.80)", backdropFilter: "blur(16px)" }}>
                 <p className="px-3 py-1 text-[9px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Recent Searches</p>
                 {searchHistory.map((h, i) => (
                   <button key={i}

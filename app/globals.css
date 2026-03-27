@@ -7,16 +7,16 @@
 
 :root {
   /* ── Backgrounds — deep charcoal navy ── */
-  --bg-base:       #090A11;
-  --bg-surface:    #0F1018;
-  --bg-card:       #141520;
-  --bg-elevated:   #1C1D2C;
-  --bg-hover:      rgba(255, 255, 255, 0.05);
-  --bg-active:     rgba(255, 255, 255, 0.09);
+  --bg-base:       #070810;
+  --bg-surface:    #0D0E1E;
+  --bg-card:       #161830;
+  --bg-elevated:   #1E2038;
+  --bg-hover:      rgba(255, 255, 255, 0.06);
+  --bg-active:     rgba(255, 255, 255, 0.10);
 
   /* ── Borders — refined visibility ── */
-  --border:        rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
+  --border:        rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.18);
 
   /* ── AI Purple (accent) ── */
   --ai:            #7C3AED;
@@ -53,22 +53,22 @@
      ══════════════════════════════════════════ */
 
   /* ── Gradient surface system ── */
-  --card-deep:           linear-gradient(145deg, #1C1D2E 0%, #161724 50%, #121320 100%);
-  --card-elevated:       linear-gradient(135deg, #222338 0%, #1A1B2C 100%);
-  --sidebar-gradient-bg: linear-gradient(180deg, #101118 0%, #0B0C14 100%);
-  --header-glass-bg:     rgba(9, 10, 17, 0.88);
-  --surface-glass:       rgba(255, 255, 255, 0.03);
-  --surface-glass-strong: rgba(255, 255, 255, 0.06);
-  --overlay-dark:        rgba(9, 10, 17, 0.72);
+  --card-deep:           linear-gradient(145deg, #292B4C 0%, #20223A 50%, #181928 100%);
+  --card-elevated:       linear-gradient(135deg, #343660 0%, #292B4E 100%);
+  --sidebar-gradient-bg: linear-gradient(180deg, #131526 0%, #0D0E1C 100%);
+  --header-glass-bg:     rgba(9, 10, 17, 0.92);
+  --surface-glass:       rgba(255, 255, 255, 0.04);
+  --surface-glass-strong: rgba(255, 255, 255, 0.08);
+  --overlay-dark:        rgba(9, 10, 17, 0.80);
 
   /* ── Glow & shadow depth scale ── */
-  --shadow-card:        0 1px 3px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
-  --shadow-hover:       0 8px 32px rgba(0,0,0,0.65), 0 0 0 1px rgba(124,58,237,0.22), 0 0 20px rgba(124,58,237,0.07);
-  --shadow-focus:       0 0 0 2px rgba(124,58,237,0.55), 0 0 0 5px rgba(124,58,237,0.12), 0 8px 32px rgba(0,0,0,0.4);
-  --shadow-active-item: 0 0 16px rgba(124,58,237,0.14), inset 0 0 0 1px rgba(124,58,237,0.12);
-  --shadow-purple-glow: 0 0 20px rgba(124,58,237,0.40), 0 0 60px rgba(124,58,237,0.12);
-  --shadow-ambient:     0 2px 8px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
-  --shadow-elevated:    0 12px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-card:        0 2px 16px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.07);
+  --shadow-hover:       0 12px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(124,58,237,0.35), 0 0 32px rgba(124,58,237,0.12);
+  --shadow-focus:       0 0 0 2px rgba(124,58,237,0.55), 0 0 0 5px rgba(124,58,237,0.15), 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-active-item: 0 0 20px rgba(124,58,237,0.18), inset 0 0 0 1px rgba(124,58,237,0.18);
+  --shadow-purple-glow: 0 0 28px rgba(124,58,237,0.50), 0 0 80px rgba(124,58,237,0.18);
+  --shadow-ambient:     0 4px 16px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-elevated:    0 16px 64px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.08);
 
   /* ── Premium border system ── */
   --border-subtle:       rgba(255, 255, 255, 0.06);
@@ -80,8 +80,8 @@
   --border-inner:        rgba(255, 255, 255, 0.04);
 
   /* ── Ambient background glows ── */
-  --ambient-purple-top:  radial-gradient(ellipse 800px 400px at 50% -10%, rgba(124,58,237,0.07) 0%, transparent 70%);
-  --ambient-purple-hero: radial-gradient(ellipse 600px 500px at 30% 20%, rgba(124,58,237,0.08) 0%, transparent 60%);
+  --ambient-purple-top:  radial-gradient(ellipse 900px 500px at 50% -5%, rgba(124,58,237,0.12) 0%, transparent 70%);
+  --ambient-purple-hero: radial-gradient(ellipse 700px 600px at 30% 20%, rgba(124,58,237,0.10) 0%, transparent 60%);
 
   /* ── Gradient text ── */
   --gradient-purple-blue: linear-gradient(135deg, #C4B5FD 0%, #A78BFA 40%, #60A5FA 100%);
@@ -89,9 +89,9 @@
   --gradient-cta:         linear-gradient(135deg, rgba(124,58,237,0.20) 0%, rgba(79,70,229,0.08) 100%);
 
   /* ── Dashboard font scale ── */
-  --fs-label:   10px;
-  --fs-chip:    9px;
-  --fs-caption: 11px;
+  --fs-label:   11px;
+  --fs-chip:    10px;
+  --fs-caption: 12px;
   --fs-body:    13px;
   --fs-title:   16px;
   --ls-label:   0.10em;
@@ -153,12 +153,12 @@ body {
   font-size: 16px;
 }
 
-/* Very subtle ambient top-glow — matches homepage depth */
+/* Ambient top-glow — matches homepage depth */
 body::before {
   content: '';
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 600px;
+  height: 700px;
   background: var(--ambient-purple-top);
   pointer-events: none;
   z-index: 0;

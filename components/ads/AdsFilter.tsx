@@ -100,7 +100,7 @@ const COUNTRY_INFO: Record<string, { label: string; flag: string }> = {
 function FilterSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[10px] font-semibold uppercase" style={{ color: "var(--text-3)", letterSpacing: "0.09em" }}>
+      <p className="text-[9px] font-bold uppercase" style={{ color: "rgba(167,139,250,0.55)", letterSpacing: "0.13em" }}>
         {label}
       </p>
       {children}
@@ -109,7 +109,7 @@ function FilterSection({ label, children }: { label: string; children: React.Rea
 }
 
 function Divider() {
-  return <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />;
+  return <div style={{ height: 1, background: "rgba(255,255,255,0.07)" }} />;
 }
 
 // ── Platform dropdown multi-select ────────────────────────────────────────────
@@ -161,7 +161,7 @@ function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1"
             style={{
-              background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+              background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)",
               border: "1px solid rgba(255,255,255,0.08)",
               boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
               backdropFilter: "blur(12px)",
@@ -243,7 +243,7 @@ function LanguageDropdown({ selected, onSelect }: { selected: AdLanguage | "all"
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1 max-h-[240px] overflow-y-auto no-scrollbar"
             style={{
-              background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+              background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)",
               border: "1px solid rgba(255,255,255,0.08)",
               boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
               backdropFilter: "blur(12px)",
@@ -319,7 +319,7 @@ function NicheDropdown({ selected, onSelect }: { selected: string | null; onSele
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1 max-h-[280px] overflow-y-auto no-scrollbar"
             style={{
-              background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+              background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)",
               border: "1px solid rgba(255,255,255,0.08)",
               boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
               backdropFilter: "blur(12px)",
@@ -412,7 +412,7 @@ export default function AdsFilter({
   // ── VERTICAL (sidebar) layout ────────────────────────────────────────────────
   if (vertical) {
     return (
-      <div className="flex flex-col gap-3 px-3 py-3">
+      <div className="flex flex-col gap-3 px-4 py-4">
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -615,7 +615,7 @@ export default function AdsFilter({
                 <div className="fixed inset-0 z-10" onClick={() => setShowCountryDrop(false)} />
                 <div
                   className="absolute top-full left-0 right-0 mt-1 rounded-[10px] py-1 z-20 max-h-[280px] overflow-y-auto no-scrollbar"
-                  style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}
+                  style={{ background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 16px 40px rgba(0,0,0,0.70)" }}
                 >
                   {COUNTRY_CODES.map(code => {
                     const isOn = values.country === code;
