@@ -1,5 +1,5 @@
 /**
- * Niche detection — maps Facebook page_categories + keyword fallback to ~15 niches.
+ * Niche detection — maps Facebook page_categories + keyword fallback to 15 niches.
  *
  * Priority:
  *   1. page_categories from Apify rawData (95%+ coverage)
@@ -121,12 +121,37 @@ const CATEGORY_MAP: Record<string, Niche> = {
   "interior design":      "Home & Living",
   "household supplies":   "Home & Living",
   "mattress":             "Home & Living",
+  "home appliances":      "Home & Living",
+  "home repair":          "Home & Living",
+  "appliances":           "Home & Living",
 
   // Baby & Kids
   "baby goods/kids goods": "Baby & Kids",
   "baby & children's clothing store": "Baby & Kids",
   "toy store":            "Baby & Kids",
   "children's toys":      "Baby & Kids",
+  "toys & games":         "Baby & Kids",
+  "baby store":           "Baby & Kids",
+  "children & parenting": "Baby & Kids",
+
+  // Hair
+  "hair salon":           "Health & Beauty",
+  "hair extension":       "Fashion & Apparel",
+  "hair extensions":      "Fashion & Apparel",
+  "wig":                  "Fashion & Apparel",
+  "wigs":                 "Fashion & Apparel",
+
+  // Luggage & Bags
+  "luggage":              "Fashion & Apparel",
+  "luggage store":        "Fashion & Apparel",
+  "travel bags":          "Fashion & Apparel",
+
+  // Automotive
+  "auto dealer":          "E-commerce",
+  "motor vehicle company": "E-commerce",
+  "automotive":           "E-commerce",
+  "car dealer":           "E-commerce",
+  "auto parts":           "E-commerce",
 
   // Jewelry
   "jewelry/watches":      "Jewelry & Accessories",
@@ -191,21 +216,26 @@ const CATEGORY_MAP: Record<string, Niche> = {
 // ── Keyword patterns for fallback ─────────────────────────────────────────────
 
 const KEYWORD_RULES: Array<{ pattern: RegExp; niche: Niche }> = [
-  { pattern: /\b(dress|shirt|hoodie|jeans|sneaker|clothing|fashion|outfit|wear|apparel|tee|jacket|pant|legging|skirt)\b/i, niche: "Fashion & Apparel" },
-  { pattern: /\b(serum|moisturiz|skincare|skin care|makeup|concealer|foundation|lipstick|mascara|beauty|cosmetic|cream|glow|wrinkle|acne)\b/i, niche: "Health & Beauty" },
-  { pattern: /\b(workout|gym|fitness|exercise|weight loss|muscle|training|yoga|pilates|cardio|diet plan)\b/i, niche: "Fitness & Wellness" },
-  { pattern: /\b(supplement|vitamin|protein|collagen|probiotic|omega|herbal|extract|capsule|tablet)\b/i, niche: "Supplements & Nutrition" },
-  { pattern: /\b(recipe|food|cook|meal|snack|coffee|tea|chocolate|organic food|restaurant|delivery|grocery)\b/i, niche: "Food & Beverage" },
-  { pattern: /\b(phone|laptop|tablet|gadget|tech|software|app|wireless|bluetooth|smart home|charger|headphone|earbuds)\b/i, niche: "Electronics & Tech" },
-  { pattern: /\b(furniture|mattress|pillow|blanket|home decor|kitchen|cleaning|candle|lamp|rug|curtain|sofa)\b/i, niche: "Home & Living" },
-  { pattern: /\b(baby|toddler|newborn|kids|children|diaper|stroller|nursery|infant)\b/i, niche: "Baby & Kids" },
-  { pattern: /\b(necklace|bracelet|earring|ring|watch|pendant|gold|silver|diamond|jewelry|jewellery)\b/i, niche: "Jewelry & Accessories" },
-  { pattern: /\b(pet|dog|cat|puppy|kitten|vet|animal|paw|treat|kibble)\b/i, niche: "Pet Supplies" },
-  { pattern: /\b(hiking|camping|fishing|golf|tennis|basketball|football|soccer|cycling|running shoes|outdoor)\b/i, niche: "Sports & Outdoors" },
+  { pattern: /\b(dress|shirt|hoodie|jeans|sneaker|clothing|fashion|outfit|wear|apparel|tee|jacket|pant|legging|skirt|shapewear|activewear|linen|oversized|two piece|polo)\b/i, niche: "Fashion & Apparel" },
+  { pattern: /\b(hair extension|clip in hair|human hair wig|wig|hair mask|hair loss)\b/i, niche: "Fashion & Apparel" },
+  { pattern: /\b(crossbody bag|travel bag|laptop bag|tote bag|backpack|mini bag|gym bag|handbag|luggage)\b/i, niche: "Fashion & Apparel" },
+  { pattern: /\b(serum|moisturiz|skincare|skin care|makeup|concealer|foundation|lipstick|mascara|beauty|cosmetic|cream|glow|wrinkle|acne|retinol|hyaluronic|sunscreen|SPF|vitamin C serum|under eye|IPL|LED face mask|jade roller|curling wand|hair straightener|teeth whitening|nail art)\b/i, niche: "Health & Beauty" },
+  { pattern: /\b(workout|gym|fitness|exercise|weight loss|muscle|training|yoga|pilates|cardio|diet plan|dumbbells|foam roller|resistance bands|yoga mat|jump rope|gym equipment)\b/i, niche: "Fitness & Wellness" },
+  { pattern: /\b(massage gun|back pain|neck pain|acupressure|posture corrector|pain relief|neck massager|massage)\b/i, niche: "Fitness & Wellness" },
+  { pattern: /\b(supplement|vitamin|protein|collagen|probiotic|omega|herbal|extract|capsule|tablet|creatine|gut health|sleep supplement|omega 3|elderberry|magnesium|protein bar|meal replacement)\b/i, niche: "Supplements & Nutrition" },
+  { pattern: /\b(recipe|food|cook|meal|snack|coffee|tea|chocolate|organic food|restaurant|delivery|grocery|matcha|keto|organic coffee|vitamin gummies)\b/i, niche: "Food & Beverage" },
+  { pattern: /\b(phone|laptop|tablet|gadget|tech|software|app|wireless|bluetooth|smart home|charger|headphone|earbuds|smart watch|power bank|phone case|wireless charger|smart plug|smart bulb|mini projector|action camera)\b/i, niche: "Electronics & Tech" },
+  { pattern: /\b(furniture|mattress|pillow|blanket|home decor|kitchen|cleaning|candle|lamp|rug|curtain|sofa|air fryer|robot vacuum|humidifier|electric blanket|induction cooker|garment steamer|stand fan|electric kettle|portable blender|air purifier|dehumidifier|air cooler|portable washing machine|electric fireplace|coffee grinder|food processor|rice cooker|scented candle|essential oils|reed diffuser)\b/i, niche: "Home & Living" },
+  { pattern: /\b(baby|toddler|newborn|kids|children|diaper|stroller|nursery|infant|baby monitor|baby carrier|play mat|maternity|nursing bra|baby products)\b/i, niche: "Baby & Kids" },
+  { pattern: /\b(fidget|sensory toy|building blocks|RC car|toy|toys|kids game)\b/i, niche: "Baby & Kids" },
+  { pattern: /\b(necklace|bracelet|earring|ring|watch|pendant|gold|silver|diamond|jewelry|jewellery|minimalist jewelry|pearl|birthstone|charm necklace|silver bracelet)\b/i, niche: "Jewelry & Accessories" },
+  { pattern: /\b(pet|dog|cat|puppy|kitten|vet|animal|paw|treat|kibble|cat tree|dog harness|dog bed|cat litter|pet camera|dog accessories)\b/i, niche: "Pet Supplies" },
+  { pattern: /\b(hiking|camping|fishing|golf|tennis|basketball|football|soccer|cycling|running shoes|outdoor|hiking boots|pickleball|camping gear|outdoor gear)\b/i, niche: "Sports & Outdoors" },
   { pattern: /\b(course|class|learn|study|tutorial|certificate|online training|masterclass|bootcamp|coaching|webinar)\b/i, niche: "Education & Courses" },
   { pattern: /\b(movie|music|game|streaming|podcast|entertainment|show|concert|ticket|event)\b/i, niche: "Entertainment & Media" },
   { pattern: /\b(insurance|loan|credit|invest|mortgage|bank|financial|trading|crypto|forex|saving)\b/i, niche: "Finance & Insurance" },
-  { pattern: /\b(shop now|buy now|free shipping|order now|limited stock|add to cart|discount|sale|deal)\b/i, niche: "E-commerce" },
+  { pattern: /\b(car accessories|dash cam|car organizer|auto|vehicle|automotive)\b/i, niche: "E-commerce" },
+  { pattern: /\b(shop now|buy now|free shipping|order now|limited stock|add to cart|discount|sale|deal|custom gifts|water bottle|sunglasses|eyewear|beard grooming)\b/i, niche: "E-commerce" },
 ];
 
 // ── Domain hints ──────────────────────────────────────────────────────────────
