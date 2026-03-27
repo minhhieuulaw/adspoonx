@@ -89,7 +89,7 @@ export default function MarketingNav() {
                 boxShadow: "0 0 20px var(--ai-glow)",
               }}
             >
-              Get Started Free
+              Start Free
               <ArrowRight size={14} />
             </Link>
           </div>
@@ -153,7 +153,7 @@ export default function MarketingNav() {
                   boxShadow: "0 0 20px var(--ai-glow)",
                 }}
               >
-                Get Started Free <ArrowRight size={14} />
+                Start Free <ArrowRight size={14} />
               </Link>
             </div>
           </motion.div>
