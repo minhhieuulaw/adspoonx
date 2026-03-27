@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { anthropic } from "@/lib/anthropic";
-import { NICHES, detectNiche, nicheInputFromRaw } from "@/lib/niche-detect";
+import { NICHES, detectNiche, nicheInputFromRaw, detectNicheFromKeywords } from "@/lib/niche-detect";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map(e => e.trim());
 const HAIKU_MODEL  = "claude-haiku-4-5-20251001";
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json() as {
-    action: "normalize" | "reclassify" | "reset" | "reset-invalid" | "bulk-detect" | "split-migration";
+    action: "normalize" | "reclassify" | "reset" | "reset-invalid" | "bulk-detect" | "split-migration" | "split-by-keywords";
     limit?: number;
     confirm?: boolean;
   };
@@ -311,6 +311,59 @@ export async function POST(req: NextRequest) {
       updated,
       breakdown,
     });
+  }
+
+  // ── Action: split broad niches → specific sub-niches using keyword matching ──
+  // Scans ads in 4 broad niches, moves any that match sub-niche keywords.
+  // Does NOT reset ads — safe to run multiple times.
+  if (body.action === "split-by-keywords") {
+    const limit = Math.min(body.limit ?? 5000, 10000);
+    const BROAD_NICHES  = ["Health & Beauty", "Home & Living", "Fashion & Apparel", "E-commerce"];
+    const TARGET_NICHES = new Set(["Hair Care", "Home Appliances", "Bags & Luggage", "Automotive"]);
+
+    const ads = await prisma.ad.findMany({
+      where: { niche: { in: BROAD_NICHES } },
+      select: { adArchiveId: true, bodyText: true, title: true },
+      take:  limit,
+      orderBy: { updatedAt: "asc" },
+    });
+
+    if (ads.length === 0) {
+      return NextResponse.json({ ok: true, action: "split-by-keywords", processed: 0, updated: 0, breakdown: {} });
+    }
+
+    // Group adArchiveIds by detected sub-niche
+    const groups: Record<string, string[]> = {};
+    for (const ad of ads) {
+      const subNiche = detectNicheFromKeywords(ad.bodyText, ad.title);
+      if (subNiche && TARGET_NICHES.has(subNiche)) {
+        groups[subNiche] ??= [];
+        groups[subNiche].push(ad.adArchiveId);
+      }
+    }
+
+    let updated = 0;
+    const breakdown: Record<string, number> = {};
+    for (const [niche, ids] of Object.entries(groups)) {
+      const { count } = await prisma.ad.updateMany({
+        where: { adArchiveId: { in: ids } },
+        data:  { niche },
+      });
+      updated += count;
+      breakdown[niche] = count;
+    }
+
+    // Touch updatedAt on unmatched ads so they move to back of queue next pass
+    const matchedIds = Object.values(groups).flat();
+    const unmatchedIds = ads.map(a => a.adArchiveId).filter(id => !matchedIds.includes(id));
+    if (unmatchedIds.length > 0) {
+      await prisma.ad.updateMany({
+        where: { adArchiveId: { in: unmatchedIds } },
+        data:  { lastCheckedAt: new Date() },
+      });
+    }
+
+    return NextResponse.json({ ok: true, action: "split-by-keywords", processed: ads.length, updated, breakdown });
   }
 
   // ── Action: reset 4 broad niches → "Other" so bulk-detect can re-split them ──

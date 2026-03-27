@@ -330,6 +330,20 @@ export function detectNiche(input: NicheInput): Niche {
 }
 
 /**
+ * Check ONLY KEYWORD_RULES (skip page_categories + domain hints).
+ * Returns the matched niche or null. Used for sub-niche splitting of
+ * already-classified broad categories (e.g. Health & Beauty → Hair Care).
+ */
+export function detectNicheFromKeywords(bodyText?: string | null, title?: string | null): Niche | null {
+  const text = [bodyText ?? "", title ?? ""].join(" ");
+  if (text.length <= 10) return null;
+  for (const rule of KEYWORD_RULES) {
+    if (rule.pattern.test(text)) return rule.niche;
+  }
+  return null;
+}
+
+/**
  * Extract niche input from raw Apify ad data (as stored in DB).
  */
 export function nicheInputFromRaw(raw: Record<string, unknown>, ad: { bodyText?: string | null; title?: string | null }): NicheInput {

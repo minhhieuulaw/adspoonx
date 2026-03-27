@@ -880,33 +880,33 @@ function NicheIntelligence() {
     stopRef.current = false;
     setAutoRunning(true);
     setResult(null);
-
-    // Step 1: reset 4 broad niches → "Other"
     setRunning("split-migration");
-    const r = await fetch("/api/admin/reclassify-niches", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "split-migration", confirm: true }),
-    }).catch(() => null);
-    if (!r?.ok) { setAutoRunning(false); setRunning(null); return; }
 
-    // Step 2: refresh stats
-    const s = await doFetchStats().catch(() => null);
-    if (s) setStats(s);
+    // Loop split-by-keywords until no more ads are moved
+    // (each call processes 5000 ads; touch updatedAt on unmatched → natural rotation)
+    let totalUpdated = 0;
+    let noProgressRounds = 0;
 
-    // Step 3: bulk-detect loop to re-classify into new specific niches
-    setRunning("bulk-detect");
     while (!stopRef.current) {
-      const r2 = await fetch("/api/admin/reclassify-niches", {
+      const r = await fetch("/api/admin/reclassify-niches", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "bulk-detect", limit: 5000 }),
+        body: JSON.stringify({ action: "split-by-keywords", limit: 5000 }),
       }).catch(() => null);
-      if (!r2?.ok) break;
-      const d = await r2.json() as ReclassifyResult;
+      if (!r?.ok) break;
+      const d = await r.json() as ReclassifyResult;
       if ((d.processed ?? 0) === 0) break;
+
+      totalUpdated += d.updated ?? 0;
       setResult(d);
-      const s2 = await doFetchStats().catch(() => null);
-      if (s2) setStats(s2);
-      if ((d.updated ?? 0) === 0) break;
+      const s = await doFetchStats().catch(() => null);
+      if (s) setStats(s);
+
+      if ((d.updated ?? 0) === 0) {
+        noProgressRounds++;
+        if (noProgressRounds >= 2) break; // 2 passes with 0 matches → done
+      } else {
+        noProgressRounds = 0;
+      }
     }
 
     setRunning(null);
