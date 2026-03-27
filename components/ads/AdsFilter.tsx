@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Globe, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, Globe, SlidersHorizontal, Trophy, TrendingUp, Leaf } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { LANGUAGE_OPTIONS, type AdLanguage } from "@/lib/detect-language";
 
@@ -100,9 +100,12 @@ const COUNTRY_INFO: Record<string, { label: string; flag: string }> = {
 function FilterSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[9px] font-bold uppercase" style={{ color: "rgba(167,139,250,0.55)", letterSpacing: "0.13em" }}>
-        {label}
-      </p>
+      <div className="flex items-center gap-1.5">
+        <div style={{ width: 2, height: 10, borderRadius: 2, background: "linear-gradient(180deg, #A78BFA, #7C3AED)", flexShrink: 0 }} />
+        <p className="text-[9px] font-bold uppercase" style={{ color: "rgba(167,139,250,0.70)", letterSpacing: "0.13em" }}>
+          {label}
+        </p>
+      </div>
       {children}
     </div>
   );
@@ -416,17 +419,20 @@ export default function AdsFilter({
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <SlidersHorizontal size={12} style={{ color: "var(--ai-light)" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>Filters</span>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.20), rgba(167,139,250,0.10))", border: "1px solid rgba(124,58,237,0.30)" }}>
+              <SlidersHorizontal size={11} style={{ color: "#A78BFA" }} strokeWidth={2} />
+            </div>
+            <span className="text-[12px] font-bold" style={{ color: "var(--text-1)", letterSpacing: "-0.01em" }}>Filters</span>
           </div>
           {hasFilters && (
             <button
               onClick={clearAll}
-              className="text-[10px] font-medium px-2 py-0.5 rounded-[5px]"
-              style={{ color: "var(--ai-light)", background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.25)" }}
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-[5px]"
+              style={{ color: "#A78BFA", background: "rgba(124,58,237,0.10)", border: "1px solid rgba(124,58,237,0.25)" }}
             >
-              Clear
+              Clear all
             </button>
           )}
         </div>
@@ -435,26 +441,25 @@ export default function AdsFilter({
 
         {/* ★ AI Score Tier — top priority filter */}
         <div
-          className="rounded-[10px] p-2.5"
+          className="rounded-[11px] p-2.5"
           style={{
-            background: values.aiScore === "elite"
-              ? "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(167,139,250,0.08))"
-              : values.aiScore !== "all"
-                ? "rgba(255,255,255,0.02)"
-                : "transparent",
-            border: values.aiScore !== "all" ? "1px solid rgba(124,58,237,0.2)" : "1px solid transparent",
-            transition: "all 200ms var(--ease)",
+            background: values.aiScore !== "all"
+              ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06))"
+              : "rgba(255,255,255,0.025)",
+            border: `1px solid ${values.aiScore !== "all" ? "rgba(124,58,237,0.25)" : "rgba(255,255,255,0.06)"}`,
+            transition: "all 200ms ease",
           }}
         >
-          <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-[11px]" style={{ lineHeight: 1 }}>
-              {values.aiScore === "elite" ? "🔥" : "✦"}
-            </span>
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="w-5 h-5 rounded-[5px] flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.25)" }}>
+              <SlidersHorizontal size={10} style={{ color: "#A78BFA" }} strokeWidth={2} />
+            </div>
             <span
-              className="text-[10px] font-bold uppercase"
+              className="text-[10px] font-bold uppercase flex-1"
               style={{
                 letterSpacing: "0.09em",
-                background: "linear-gradient(135deg, var(--ai-light), var(--ai))",
+                background: "linear-gradient(135deg, #fff, #A78BFA)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -463,7 +468,7 @@ export default function AdsFilter({
             </span>
             {values.aiScore !== "all" && (
               <span
-                className="ml-auto text-[8px] font-semibold px-1.5 py-0.5 rounded-[4px]"
+                className="text-[8px] font-semibold px-1.5 py-0.5 rounded-[4px]"
                 style={{
                   color: AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.color,
                   background: AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.bg,
@@ -474,59 +479,61 @@ export default function AdsFilter({
               </span>
             )}
           </div>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             {AI_SCORE_TIERS.filter(t => t.id !== "all").map(tier => {
               const isOn = values.aiScore === tier.id;
               const isElite = tier.id === "elite";
+              const fillPct = tier.id === "weak" ? 18 : tier.id === "testing" ? 36 : tier.id === "promising" ? 58 : tier.id === "winning" ? 78 : 100;
               return (
                 <button
                   key={tier.id}
                   onClick={() => onChange({ ...values, aiScore: isOn ? "all" : tier.id })}
-                  className="flex items-center gap-2 w-full px-2 py-[6px] rounded-[6px] text-left"
+                  className="relative overflow-hidden flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[8px] text-left"
                   style={{
-                    background: isOn ? tier.bg : "transparent",
-                    border: `1px solid ${isOn ? tier.border : "transparent"}`,
-                    transition: "all 120ms var(--ease)",
+                    background: isOn ? tier.bg : "rgba(255,255,255,0.025)",
+                    border: `1px solid ${isOn ? tier.border : "rgba(255,255,255,0.055)"}`,
+                    boxShadow: isOn ? `0 2px 14px ${tier.color}20` : "none",
+                    transition: "all 150ms ease",
                   }}
                   onMouseEnter={e => {
-                    if (!isOn) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+                    if (!isOn) {
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.10)";
+                    }
                   }}
                   onMouseLeave={e => {
-                    if (!isOn) (e.currentTarget as HTMLElement).style.background = "transparent";
+                    if (!isOn) {
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.055)";
+                    }
                   }}
                 >
-                  <span
-                    className="text-[10px] w-4 text-center flex-shrink-0"
-                    style={{ color: isOn ? tier.color : "var(--text-3)" }}
-                  >
-                    {tier.icon}
-                  </span>
-                  <span
-                    className="text-[10px] font-semibold flex-1"
-                    style={{ color: isOn ? tier.color : "var(--text-2)" }}
-                  >
+                  {/* Bottom strength bar */}
+                  <div style={{
+                    position: "absolute", bottom: 0, left: 0, height: 2,
+                    width: isOn ? `${fillPct}%` : "0%",
+                    background: `linear-gradient(90deg, ${tier.color}90, ${tier.color}15)`,
+                    transition: "width 350ms ease",
+                  }} />
+                  {/* Color dot */}
+                  <div style={{
+                    width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+                    background: tier.color,
+                    boxShadow: isOn ? `0 0 8px ${tier.color}` : "none",
+                    opacity: isOn ? 1 : 0.45,
+                    transition: "all 150ms ease",
+                  }} />
+                  <span className="text-[11px] font-semibold flex-1" style={{ color: isOn ? tier.color : "var(--text-2)" }}>
                     {tier.label}
                   </span>
-                  <span
-                    className="text-[9px] font-mono tabular-nums"
-                    style={{ color: isOn ? tier.color : "var(--text-3)", opacity: 0.7 }}
-                  >
-                    {tier.range}
+                  <span className="text-[9px] font-mono tabular-nums" style={{ color: isOn ? `${tier.color}cc` : "var(--text-3)" }}>
+                    {tier.range || "0–99"}
                   </span>
                   {isElite && (
-                    <span
-                      className="text-[7px] font-bold px-1 py-[1px] rounded-[3px] flex-shrink-0"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(167,139,250,0.15))",
-                        color: "#A78BFA",
-                        border: "1px solid rgba(167,139,250,0.3)",
-                      }}
-                    >
+                    <span className="text-[7px] font-bold px-1 py-[1px] rounded-[3px] flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.30), rgba(167,139,250,0.18))", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.35)" }}>
                       PRO
                     </span>
-                  )}
-                  {isOn && (
-                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: tier.color, flexShrink: 0 }} />
                   )}
                 </button>
               );
@@ -554,36 +561,47 @@ export default function AdsFilter({
           <div className="flex flex-col gap-1.5">
             {PRESETS.map((preset) => {
               const isActive = values.preset === preset.id;
-              const accentColor = preset.id === "top" ? "var(--ai)" : preset.id === "trending" ? "#34D399" : "#F59E0B";
-              const accentBg    = preset.id === "top" ? "rgba(124,58,237,0.08)" : preset.id === "trending" ? "rgba(52,211,153,0.06)" : "rgba(245,158,11,0.06)";
+              const color   = preset.id === "top" ? "#A78BFA" : preset.id === "trending" ? "#34D399" : "#F59E0B";
+              const iconBg  = preset.id === "top" ? "rgba(167,139,250,0.13)" : preset.id === "trending" ? "rgba(52,211,153,0.13)" : "rgba(245,158,11,0.13)";
+              const iconBorder = preset.id === "top" ? "rgba(167,139,250,0.28)" : preset.id === "trending" ? "rgba(52,211,153,0.28)" : "rgba(245,158,11,0.28)";
+              const cardBg  = preset.id === "top" ? "rgba(167,139,250,0.07)" : preset.id === "trending" ? "rgba(52,211,153,0.06)" : "rgba(245,158,11,0.06)";
+              const PresetIcon = preset.id === "top" ? Trophy : preset.id === "trending" ? TrendingUp : Leaf;
               return (
                 <button
                   key={preset.id}
                   onClick={() => togglePreset(preset.id)}
-                  className="flex items-center gap-2 w-full px-2.5 py-2 text-left"
+                  className="flex items-center gap-2.5 w-full px-2.5 py-2.5 rounded-[9px] text-left"
                   style={{
-                    background: isActive ? accentBg : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${isActive ? accentColor : "rgba(255,255,255,0.05)"}`,
-                    borderLeft: `3px solid ${accentColor}`,
-                    borderRadius: "0 8px 8px 0",
-                    transition: "all 120ms var(--ease)",
+                    background: isActive ? cardBg : "rgba(255,255,255,0.025)",
+                    border: `1px solid ${isActive ? iconBorder : "rgba(255,255,255,0.055)"}`,
+                    boxShadow: isActive ? `0 2px 14px ${color}18` : "none",
+                    transition: "all 150ms ease",
                   }}
                   onMouseEnter={e => {
-                    if (!isActive) (e.currentTarget as HTMLElement).style.background = accentBg;
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.09)";
+                    }
                   }}
                   onMouseLeave={e => {
-                    if (!isActive) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)";
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.055)";
+                    }
                   }}
                 >
-                  <span style={{ fontSize: 12, lineHeight: 1 }}>{preset.icon}</span>
+                  <div className="w-7 h-7 rounded-[7px] flex items-center justify-center flex-shrink-0"
+                    style={{ background: iconBg, border: `1px solid ${isActive ? iconBorder : "rgba(255,255,255,0.06)"}`, transition: "all 150ms ease" }}>
+                    <PresetIcon size={13} style={{ color: isActive ? color : "var(--text-3)" }} strokeWidth={2} />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold" style={{ color: isActive ? accentColor : "var(--text-2)" }}>
+                    <p className="text-[11px] font-semibold" style={{ color: isActive ? color : "var(--text-2)" }}>
                       {preset.label}
                     </p>
                     <p className="text-[9px]" style={{ color: "var(--text-3)" }}>{preset.desc}</p>
                   </div>
                   {isActive && (
-                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: accentColor, flexShrink: 0, boxShadow: `0 0 6px ${accentColor}` }} />
+                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0, boxShadow: `0 0 7px ${color}` }} />
                   )}
                 </button>
               );

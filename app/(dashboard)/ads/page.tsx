@@ -668,7 +668,7 @@ export default function AdsPage() {
       {/* ── Left: Filter panel — hidden on mobile (CSS), sticky on desktop ── */}
       <div className="hidden md:block flex-shrink-0 no-scrollbar"
           style={{
-            width: 220,
+            width: 236,
             position: "sticky",
             top: 56,
             alignSelf: "flex-start",
@@ -678,18 +678,29 @@ export default function AdsPage() {
             overflowY: "auto",
           }}
         >
-          <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.12)" }}>
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-7 h-7 rounded-[7px] flex items-center justify-center" style={{ background: "rgba(124,58,237,0.18)" }}>
-                <Brain size={13} style={{ color: "var(--ai-light)" }} />
+          <div className="px-4 pt-5 pb-4" style={{ borderBottom: "1px solid rgba(124,58,237,0.14)" }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(167,139,250,0.10))",
+                  border: "1px solid rgba(124,58,237,0.32)",
+                  boxShadow: "0 0 20px rgba(124,58,237,0.18)",
+                }}>
+                <Brain size={16} style={{ color: "#A78BFA" }} strokeWidth={1.8} />
               </div>
-              <h1 className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
-                AI Intelligence
-              </h1>
+              <div>
+                <h1 className="font-display text-[13px] font-bold leading-tight"
+                  style={{
+                    background: "linear-gradient(135deg, #fff 20%, #A78BFA 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    letterSpacing: "-0.015em",
+                  }}>
+                  AI Intelligence
+                </h1>
+                <p className="text-[10px]" style={{ color: "var(--text-3)" }}>Smart ad discovery</p>
+              </div>
             </div>
-            <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
-              {t.ads.pageSubtitle}
-            </p>
           </div>
           <AdsFilter
             values={filters}
@@ -722,10 +733,13 @@ export default function AdsPage() {
                 }}
                 className="no-scrollbar"
               >
-                <div className="flex items-center justify-between px-3 pt-3 pb-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.10)" }}>
+                <div className="flex items-center justify-between px-3 pt-3 pb-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.12)" }}>
                   <div className="flex items-center gap-2">
-                    <Brain size={13} style={{ color: "var(--ai-light)" }} />
-                    <span className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Filters</span>
+                    <div className="w-6 h-6 rounded-[6px] flex items-center justify-center"
+                      style={{ background: "rgba(124,58,237,0.18)", border: "1px solid rgba(124,58,237,0.30)" }}>
+                      <Brain size={12} style={{ color: "#A78BFA" }} />
+                    </div>
+                    <span className="font-display text-[13px] font-bold" style={{ color: "var(--text-1)" }}>AI Filters</span>
                   </div>
                   <button onClick={() => setFilterOpen(false)}
                     className="p-1.5 rounded-[7px]"
@@ -751,7 +765,7 @@ export default function AdsPage() {
       <div className="flex-1 min-w-0 flex flex-col" style={{ padding: 20 }}>
 
         {/* Search bar */}
-        <div className="mb-3 command-bar flex items-center gap-3 px-5 py-3.5">
+        <div className="mb-3 command-bar flex items-center gap-3 px-5 py-4">
           <button
             onClick={() => setFilterOpen(true)}
             className="md:hidden p-1.5 rounded-[7px] flex-shrink-0"
