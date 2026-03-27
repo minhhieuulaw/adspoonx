@@ -70,9 +70,14 @@ export default function SavedPage() {
   if (loading) {
     return (
       <div className="page-enter">
-        <div className="flex items-center gap-2 mb-6">
-          <Bookmark size={15} style={{ color: "var(--ai-light)" }} />
-          <h1 className="font-display text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>Saved Ads</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
+            style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.20)" }}>
+            <Bookmark size={16} style={{ color: "var(--ai-light)" }} />
+          </div>
+          <div>
+            <h1 className="text-[20px] font-bold leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.022em" }}>Saved Ads</h1>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton" style={{ height: 340, borderRadius: 12 }} />)}
@@ -85,10 +90,16 @@ export default function SavedPage() {
     <div className="page-enter">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Bookmark size={15} style={{ color: "var(--ai-light)" }} />
-          <h1 className="font-display text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>Saved Ads</h1>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
+            style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.20)" }}>
+            <Bookmark size={16} style={{ color: "var(--ai-light)" }} />
+          </div>
+          <div>
+            <h1 className="text-[20px] font-bold leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.022em" }}>Saved Ads</h1>
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>{saved.length} of {planLimit === 9999 ? "∞" : planLimit} ads saved</p>
+          </div>
         </div>
 
         {saved.length > 0 && (

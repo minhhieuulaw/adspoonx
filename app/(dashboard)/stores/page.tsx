@@ -221,8 +221,8 @@ function FilterSidebar({ filters, onChange, onReset, total }: {
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="mb-4 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-      <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: "var(--text-muted)" }}>{label}</p>
+    <div className="mb-4 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+      <p className="text-[9px] font-bold uppercase mb-2.5" style={{ color: "rgba(167,139,250,0.55)", letterSpacing: "0.12em" }}>{label}</p>
       {children}
     </div>
   );
@@ -394,23 +394,27 @@ export default function StoresPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(99,102,241,0.15))" }}>
+      <div className="flex items-center justify-between mb-7">
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-[12px] flex items-center justify-center flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(99,102,241,0.14))",
+              border: "1px solid rgba(124,58,237,0.22)",
+              boxShadow: "0 0 16px rgba(124,58,237,0.12)",
+            }}>
             <Store size={20} style={{ color: "#A78BFA" }} />
           </div>
           <div>
-            <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Stores</h1>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            <h1 className="text-[22px] font-bold leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.025em" }}>Stores</h1>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>
               {total > 0 ? `${total.toLocaleString()} advertisers tracked` : "Discover top advertisers"}
             </p>
           </div>
         </div>
         {/* Mobile filter toggle */}
         <button onClick={() => setShowMobileFilter(!showMobileFilter)}
-          className="lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
-          style={{ background: "rgba(124,58,237,0.1)", color: "#A78BFA", border: "1px solid rgba(124,58,237,0.2)" }}>
+          className="lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[12px] font-medium"
+          style={{ background: "rgba(124,58,237,0.10)", color: "#A78BFA", border: "1px solid rgba(124,58,237,0.22)" }}>
           <SlidersHorizontal size={14} /> Filters
         </button>
       </div>

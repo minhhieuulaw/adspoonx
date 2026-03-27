@@ -116,22 +116,22 @@ function NicheCard({ niche, index, variant }: { niche: NicheData; index: number;
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="grid grid-cols-3 gap-2 mb-3 pt-1">
           <div>
-            <p className="text-[8px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Active</p>
-            <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
+            <p className="text-[8px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)", letterSpacing: "0.10em" }}>Active</p>
+            <p className="text-[18px] font-bold leading-none" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
               {niche.activeAds.toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="text-[8px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>New 24h</p>
-            <p className="text-base font-bold" style={{ color: niche.new24h > 0 ? "#34D399" : "var(--text-muted)" }}>
+            <p className="text-[8px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)", letterSpacing: "0.10em" }}>New 24h</p>
+            <p className="text-[18px] font-bold leading-none" style={{ color: niche.new24h > 0 ? "#34D399" : "var(--text-3)", letterSpacing: "-0.02em" }}>
               {niche.new24h > 0 ? `+${niche.new24h}` : "0"}
             </p>
           </div>
           <div>
-            <p className="text-[8px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>7 days</p>
-            <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
+            <p className="text-[8px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)", letterSpacing: "0.10em" }}>7 days</p>
+            <p className="text-[18px] font-bold leading-none" style={{ color: "var(--text-1)", letterSpacing: "-0.02em" }}>
               {niche.new7d > 0 ? `+${niche.new7d.toLocaleString()}` : "0"}
             </p>
           </div>
@@ -168,14 +168,14 @@ function SectionHeader({ icon: Icon, title, subtitle, color }: {
   icon: typeof Flame; title: string; subtitle: string; color: string;
 }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-        style={{ background: `${color}15` }}>
-        <Icon size={18} style={{ color }} />
+    <div className="flex items-center gap-3 mb-5">
+      <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0"
+        style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
+        <Icon size={15} style={{ color }} strokeWidth={2} />
       </div>
       <div>
-        <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{title}</h2>
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>{subtitle}</p>
+        <h2 className="text-[15px] font-bold" style={{ color: "var(--text-1)", letterSpacing: "-0.018em" }}>{title}</h2>
+        <p className="text-[11px]" style={{ color: "var(--text-3)" }}>{subtitle}</p>
       </div>
     </div>
   );
@@ -202,27 +202,32 @@ export default function TrendingPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.2), rgba(245,158,11,0.15))" }}>
+      <div className="flex items-center justify-between mb-7">
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-[12px] flex items-center justify-center flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg, rgba(239,68,68,0.22), rgba(245,158,11,0.14))",
+              border: "1px solid rgba(239,68,68,0.20)",
+              boxShadow: "0 0 16px rgba(239,68,68,0.12)",
+            }}>
             <TrendingUp size={20} style={{ color: "#F59E0B" }} />
           </div>
           <div>
-            <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Trending Niches</h1>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Discover what&apos;s hot in Facebook advertising right now</p>
+            <h1 className="text-[22px] font-bold leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.025em" }}>Trending Niches</h1>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>Discover what&apos;s hot in Facebook advertising right now</p>
           </div>
         </div>
 
         {/* Country filter */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-1 p-1 rounded-[10px]"
+          style={{ background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.07)" }}>
           {COUNTRIES.map(c => (
             <button key={c.code} onClick={() => setCountry(c.code)}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+              className="px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium transition-all"
               style={{
                 background: country === c.code ? "rgba(124,58,237,0.15)" : "transparent",
-                color: country === c.code ? "#A78BFA" : "var(--text-muted)",
+                color: country === c.code ? "#A78BFA" : "var(--text-3)",
+                border: country === c.code ? "1px solid rgba(124,58,237,0.25)" : "1px solid transparent",
               }}>
               {c.label}
             </button>

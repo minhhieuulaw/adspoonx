@@ -70,11 +70,15 @@ export default function SettingsPage() {
     <div className="page-enter max-w-xl">
 
       {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
-        <Settings size={15} style={{ color: "var(--ai-light)" }} />
-        <h1 className="font-display text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>
-          Settings
-        </h1>
+      <div className="flex items-center gap-3 mb-7">
+        <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
+          style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.20)" }}>
+          <Settings size={16} style={{ color: "var(--ai-light)" }} />
+        </div>
+        <div>
+          <h1 className="text-[20px] font-bold leading-tight" style={{ color: "var(--text-1)", letterSpacing: "-0.022em" }}>Settings</h1>
+          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>Manage your account and preferences</p>
+        </div>
       </div>
 
       {/* Profile card */}

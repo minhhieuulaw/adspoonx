@@ -535,7 +535,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-2.5 py-2 flex flex-col gap-1.5 flex-1 min-h-[80px]">
+        <div className="px-3 py-2.5 flex flex-col gap-2 flex-1 min-h-[88px]">
           {/* Brand row + bookmark */}
           <div className="flex items-center gap-1.5 min-w-0">
             {ad.page_profile_picture_url ? (
