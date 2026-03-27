@@ -37,13 +37,13 @@ function NavContent({ onClose }: { onClose?: () => void }) {
       className="h-full flex flex-col select-none"
       style={{
         width: 256,
-        background: "var(--sidebar-bg)",
-        borderRight: "1px solid var(--sidebar-border)",
+        background: "linear-gradient(180deg, #16172A 0%, #0F1020 50%, #0B0C18 100%)",
+        borderRight: "1px solid rgba(124,58,237,0.10)",
       }}
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 flex-shrink-0"
-        style={{ borderBottom: "1px solid var(--sidebar-border)", height: 56 }}>
+        style={{ borderBottom: "1px solid rgba(124,58,237,0.10)", height: 56, background: "rgba(124,58,237,0.03)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-transparent.png" alt="AdSpoonX" className="h-[60px] flex-shrink-0" style={{ filter: "invert(1)", objectFit: "contain" }} />
         <span className="flex-1" />
@@ -59,8 +59,8 @@ function NavContent({ onClose }: { onClose?: () => void }) {
       <nav className="flex-1 overflow-y-auto px-3 py-3">
         {NAV.map((group, gi) => (
           <div key={group.label} className={cn(gi > 0 && "mt-4")}>
-            <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase"
-              style={{ color: "var(--text-muted)", letterSpacing: "0.1em" }}>
+            <p className="px-2 mb-2 mt-1 text-[9px] font-bold uppercase"
+              style={{ color: "rgba(167,139,250,0.45)", letterSpacing: "0.14em" }}>
               {group.label}
             </p>
             {group.items.map((item) => {
@@ -74,15 +74,16 @@ function NavContent({ onClose }: { onClose?: () => void }) {
                   )}
                   <div className="flex items-center gap-3 px-3 py-[7px] rounded-[8px] mb-0.5"
                     style={{
-                      background: isActive ? "var(--active-bg)" : "transparent",
+                      background: isActive ? "rgba(124,58,237,0.14)" : "transparent",
                       color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
-                      transition: "background 120ms var(--ease)",
+                      boxShadow: isActive ? "inset 0 0 0 1px rgba(124,58,237,0.18), 0 0 12px rgba(124,58,237,0.08)" : "none",
+                      transition: "background 150ms var(--ease), box-shadow 200ms var(--ease)",
                     }}
-                    onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--hover-bg)"; }}
+                    onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; }}
                     onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   >
                     <Icon size={15} strokeWidth={isActive ? 2 : 1.5}
-                      style={{ color: isActive ? "var(--text-primary)" : "var(--text-muted)", flexShrink: 0 }} />
+                      style={{ color: isActive ? "var(--ai-light)" : "var(--text-muted)", flexShrink: 0 }} />
                     <span className="flex-1 text-[13px]" style={{ fontWeight: isActive ? 500 : 400 }}>
                       {item.label}
                     </span>
@@ -101,12 +102,24 @@ function NavContent({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* Upgrade */}
-      <div className="px-3 py-3 flex-shrink-0" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
+      <div className="px-3 py-3 flex-shrink-0" style={{ borderTop: "1px solid rgba(124,58,237,0.10)" }}>
         <Link href="/pricing"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-[9px] w-full"
-          style={{ background: "var(--accent-soft)", border: "1px solid rgba(124,58,237,0.2)" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.18)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--accent-soft)"; }}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] w-full"
+          style={{
+            background: "linear-gradient(135deg, rgba(124,58,237,0.16) 0%, rgba(79,70,229,0.08) 100%)",
+            border: "1px solid rgba(124,58,237,0.30)",
+            transition: "background 150ms var(--ease), box-shadow 150ms var(--ease)",
+          }}
+          onMouseEnter={e => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.background = "linear-gradient(135deg, rgba(124,58,237,0.26) 0%, rgba(79,70,229,0.16) 100%)";
+            el.style.boxShadow = "0 0 20px rgba(124,58,237,0.25), inset 0 0 0 1px rgba(167,139,250,0.15)";
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.background = "linear-gradient(135deg, rgba(124,58,237,0.16) 0%, rgba(79,70,229,0.08) 100%)";
+            el.style.boxShadow = "none";
+          }}
         >
           <div className="w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0"
             style={{ background: "linear-gradient(135deg, var(--purple), var(--accent))" }}>

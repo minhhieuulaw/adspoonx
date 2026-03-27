@@ -33,11 +33,16 @@ const NOTIF_COLOR = {
   stats: "#A78BFA",
 };
 
-const PLAN_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  free:     { bg: "rgba(100,100,120,0.12)", color: "var(--text-muted)",  border: "rgba(100,100,120,0.2)" },
-  starter:  { bg: "rgba(59,130,246,0.12)", color: "#60A5FA",            border: "rgba(59,130,246,0.25)" },
-  premium:  { bg: "rgba(124,58,237,0.12)", color: "var(--ai-light)",    border: "rgba(124,58,237,0.25)" },
-  business: { bg: "rgba(245,158,11,0.12)", color: "#FCD34D",            border: "rgba(245,158,11,0.25)" },
+const PLAN_COLORS: Record<string, { bg: string; color: string; border: string; shadow?: string }> = {
+  free:     { bg: "rgba(80,80,100,0.10)",  color: "var(--text-muted)",  border: "rgba(100,100,120,0.15)" },
+  starter:  { bg: "rgba(59,130,246,0.12)", color: "#60A5FA",            border: "rgba(59,130,246,0.28)" },
+  premium:  {
+    bg: "linear-gradient(135deg, rgba(124,58,237,0.22) 0%, rgba(79,70,229,0.14) 100%)",
+    color: "#C4B5FD",
+    border: "rgba(167,139,250,0.40)",
+    shadow: "0 0 12px rgba(124,58,237,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
+  },
+  business: { bg: "rgba(245,158,11,0.13)", color: "#FCD34D",            border: "rgba(245,158,11,0.28)" },
 };
 
 export default function Header() {
@@ -111,10 +116,11 @@ export default function Header() {
       style={{
         height: 56,
         zIndex: 30,
-        background: "rgba(17,17,19,0.92)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderBottom: "1px solid var(--sidebar-border)",
+        background: "rgba(9,10,17,0.90)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "0 1px 0 rgba(124,58,237,0.06), 0 4px 20px rgba(0,0,0,0.3)",
       }}
     >
       {/* Hamburger — mobile only (hidden on md+) */}
@@ -167,9 +173,10 @@ export default function Header() {
                   transition={{ duration: 0.12 }}
                   className="absolute right-0 top-full mt-1.5 w-72 rounded-[12px] z-50 overflow-hidden"
                   style={{
-                    background: "var(--elevated-bg)",
-                    border: "1px solid var(--card-border)",
-                    boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+                    background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    boxShadow: "0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(124,58,237,0.08)",
+                    backdropFilter: "blur(12px)",
                   }}
                 >
                   {/* Header */}
@@ -236,12 +243,14 @@ export default function Header() {
         {/* Plan badge */}
         <Link
           href="/pricing"
-          className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-semibold uppercase transition-opacity hover:opacity-80"
+          className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[10px] font-bold uppercase"
           style={{
             background: PLAN_COLORS[plan]?.bg ?? PLAN_COLORS.free.bg,
             color: PLAN_COLORS[plan]?.color ?? PLAN_COLORS.free.color,
             border: `1px solid ${PLAN_COLORS[plan]?.border ?? PLAN_COLORS.free.border}`,
-            letterSpacing: "0.06em",
+            boxShadow: PLAN_COLORS[plan]?.shadow ?? "none",
+            letterSpacing: "0.07em",
+            transition: "opacity 150ms",
           }}
         >
           {plan !== "free" && <Zap size={9} strokeWidth={2.5} />}
@@ -290,9 +299,10 @@ export default function Header() {
                 transition={{ duration: 0.1, ease: [0.2, 0, 0, 1] }}
                 className="absolute right-0 top-full mt-1.5 w-48 rounded-[10px] py-1 z-50"
                 style={{
-                  background: "var(--elevated-bg)",
-                  border: "1px solid var(--card-border)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                  background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(124,58,237,0.06)",
+                  backdropFilter: "blur(12px)",
                 }}
               >
                 <div className="px-3 py-2" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
