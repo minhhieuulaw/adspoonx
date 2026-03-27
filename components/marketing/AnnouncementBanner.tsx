@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, ExternalLink } from "lucide-react";
+import { X, ExternalLink, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface Announcement {
@@ -12,18 +12,48 @@ interface Announcement {
   linkText: string | null;
 }
 
-const COLOR_MAP: Record<string, { bg: string; border: string; text: string }> = {
-  purple: { bg: "rgba(124,58,237,0.15)", border: "rgba(124,58,237,0.4)", text: "#c4b5fd" },
-  blue:   { bg: "rgba(59,130,246,0.15)", border: "rgba(59,130,246,0.4)", text: "#93c5fd" },
-  red:    { bg: "rgba(239,68,68,0.15)",  border: "rgba(239,68,68,0.4)",  text: "#fca5a5" },
-  green:  { bg: "rgba(16,185,129,0.15)", border: "rgba(16,185,129,0.4)", text: "#6ee7b7" },
-  yellow: { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", text: "#fcd34d" },
+const COLOR_MAP: Record<string, {
+  bg:     string;
+  border: string;
+  text:   string;
+  dot:    string;
+}> = {
+  purple: {
+    bg:     "linear-gradient(90deg, rgba(124,58,237,0.18) 0%, rgba(167,139,250,0.08) 100%)",
+    border: "rgba(124,58,237,0.35)",
+    text:   "#C4B5FD",
+    dot:    "#A78BFA",
+  },
+  blue: {
+    bg:     "linear-gradient(90deg, rgba(59,130,246,0.18) 0%, rgba(96,165,250,0.08) 100%)",
+    border: "rgba(59,130,246,0.35)",
+    text:   "#93C5FD",
+    dot:    "#60A5FA",
+  },
+  red: {
+    bg:     "linear-gradient(90deg, rgba(239,68,68,0.18) 0%, rgba(252,165,165,0.06) 100%)",
+    border: "rgba(239,68,68,0.35)",
+    text:   "#FCA5A5",
+    dot:    "#F87171",
+  },
+  green: {
+    bg:     "linear-gradient(90deg, rgba(16,185,129,0.18) 0%, rgba(52,211,153,0.06) 100%)",
+    border: "rgba(16,185,129,0.35)",
+    text:   "#6EE7B7",
+    dot:    "#34D399",
+  },
+  yellow: {
+    bg:     "linear-gradient(90deg, rgba(245,158,11,0.18) 0%, rgba(252,211,77,0.06) 100%)",
+    border: "rgba(245,158,11,0.35)",
+    text:   "#FCD34D",
+    dot:    "#FBBF24",
+  },
 };
 
 export default function AnnouncementBanner() {
-  const [items,      setItems]      = useState<Announcement[]>([]);
-  const [dismissed,  setDismissed]  = useState<Set<string>>(new Set());
-  const [current,    setCurrent]    = useState(0);
+  const [items,     setItems]     = useState<Announcement[]>([]);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [current,   setCurrent]   = useState(0);
 
   useEffect(() => {
     fetch("/api/public/announcements")
@@ -34,7 +64,7 @@ export default function AnnouncementBanner() {
       .catch(() => null);
   }, []);
 
-  // Xoay vòng nếu có nhiều hơn 1 banner
+  // Rotate through multiple banners every 6s
   useEffect(() => {
     if (items.length <= 1) return;
     const t = setInterval(() => setCurrent(c => (c + 1) % items.length), 6000);
@@ -43,10 +73,9 @@ export default function AnnouncementBanner() {
 
   const visible = items.filter(i => !dismissed.has(i.id));
 
-  // Thông báo cho nav biết banner đang hiển thị hay không
+  // Notify nav of banner height
   useEffect(() => {
-    const h = visible.length > 0 ? "36px" : "0px";
-    document.documentElement.style.setProperty("--banner-h", h);
+    document.documentElement.style.setProperty("--banner-h", visible.length > 0 ? "36px" : "0px");
   }, [visible.length]);
 
   if (visible.length === 0) return null;
@@ -56,29 +85,48 @@ export default function AnnouncementBanner() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center px-4 py-2 text-center text-[13px] font-medium gap-3"
-      style={{ background: theme.bg, borderBottom: `1px solid ${theme.border}` }}
+      className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center px-4"
+      style={{
+        height: "36px",
+        background: theme.bg,
+        borderBottom: `1px solid ${theme.border}`,
+      }}
     >
-      <span style={{ color: theme.text }}>{item.message}</span>
+      {/* Left sparkle icon */}
+      <Sparkles
+        size={11}
+        className="shrink-0 mr-2 hidden sm:block"
+        style={{ color: theme.dot }}
+      />
 
+      {/* Message */}
+      <span
+        className="text-[12px] font-medium truncate"
+        style={{ color: theme.text }}
+      >
+        {item.message}
+      </span>
+
+      {/* Optional link */}
       {item.link && (
         <Link
           href={item.link}
-          className="flex items-center gap-1 underline underline-offset-2 hover:opacity-80 transition-opacity shrink-0"
+          className="flex items-center gap-1 ml-3 text-[12px] font-semibold underline underline-offset-2 shrink-0 hover:opacity-75 transition-opacity"
           style={{ color: theme.text }}
           target={item.link.startsWith("http") ? "_blank" : undefined}
           rel={item.link.startsWith("http") ? "noopener noreferrer" : undefined}
         >
           {item.linkText ?? "Learn more"}
-          {item.link.startsWith("http") && <ExternalLink size={11} />}
+          {item.link.startsWith("http") && <ExternalLink size={10} />}
         </Link>
       )}
 
+      {/* Dismiss */}
       <button
         onClick={() => setDismissed(d => new Set([...d, item.id]))}
-        className="ml-auto shrink-0 p-0.5 rounded hover:opacity-70 transition-opacity"
+        className="absolute right-4 p-1 rounded transition-opacity hover:opacity-60"
         style={{ color: theme.text }}
-        aria-label="Đóng banner"
+        aria-label="Dismiss announcement"
       >
         <X size={13} />
       </button>
