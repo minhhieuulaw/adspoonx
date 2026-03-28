@@ -20,21 +20,26 @@ interface NicheData {
 }
 
 const NICHE_ICONS: Record<string, string> = {
-  "Skincare & Beauty": "💄",
-  "Hair Care": "💇",
   "Fashion & Apparel": "👗",
+  "Health & Beauty": "💄",
+  "Hair Care": "💇",
+  "Fitness & Wellness": "💪",
+  "Supplements & Nutrition": "💊",
+  "Food & Beverage": "🍕",
+  "Electronics & Tech": "📱",
+  "Home & Living": "🏠",
+  "Home Appliances": "🔌",
+  "Baby & Kids": "🍼",
   "Jewelry & Accessories": "💎",
-  "Health & Supplements": "💊",
-  "Weight Loss & Fitness": "🏋️",
-  "Home & Kitchen": "🏠",
-  "Tech & Gadgets": "📱",
+  "Bags & Luggage": "👜",
   "Pet Supplies": "🐾",
-  "Baby & Kids": "👶",
-  "Food & Beverage": "☕",
-  "Outdoor & Sports": "⛺",
-  "Car & Auto": "🚗",
-  "Dental & Oral Care": "🦷",
-  "Dropshipping & E-com Tools": "🛒",
+  "Sports & Outdoors": "⚽",
+  "Automotive": "🚗",
+  "Education & Courses": "📚",
+  "Entertainment & Media": "🎬",
+  "Finance & Insurance": "💰",
+  "E-commerce": "🛒",
+  "Other": "📦",
 };
 
 const COUNTRIES = [

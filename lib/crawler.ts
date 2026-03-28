@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "./prisma";
+import { detectNiche, type NicheInput } from "./niche-detect";
 
 const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_ID   = "curious_coder~facebook-ads-library-scraper";
@@ -247,6 +248,19 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
       thumbnailUrl: imageUrl,
     };
 
+    // Detect niche from page categories, body text, link URL
+    const rawSnap = raw.snapshot as Record<string, unknown> | undefined;
+    const pageCategories = (rawSnap?.page_categories as string[] | undefined) ?? [];
+    const firstCardRaw = firstCard as Record<string, unknown> | undefined;
+    const linkUrl = (firstCardRaw?.link_url as string | undefined) ?? (rawSnap?.link_url as string | undefined) ?? null;
+    const nicheInput: NicheInput = {
+      pageCategories,
+      bodyText: bodyText ?? undefined,
+      title: firstCard?.title ?? snap?.title ?? undefined,
+      linkUrl: linkUrl ?? undefined,
+    };
+    const detectedNiche = detectNiche(nicheInput);
+
     try {
       await prisma.ad.upsert({
         where:  { adArchiveId },
@@ -258,18 +272,22 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
           title:        firstCard?.title ?? snap?.title ?? null,
           description:  firstCard?.link_description ?? null,
           imageUrl,
+          videoUrl:     videoUrl ?? null,
           adLibraryUrl: raw.ad_library_url ?? null,
           platforms:    raw.publisher_platform ?? [],
           country:      job.country,
           isActive:     raw.is_active ?? true,
           startDate:    raw.start_date ? new Date(raw.start_date * 1000) : null,
           endDate:      raw.end_date   ? new Date(raw.end_date   * 1000) : null,
+          niche:        detectedNiche,
           rawData:      enrichedRaw as object,
         },
         update: {
           isActive:  raw.is_active ?? true,
           endDate:   raw.end_date ? new Date(raw.end_date * 1000) : null,
           imageUrl:  imageUrl ?? undefined,
+          videoUrl:  videoUrl ?? undefined,
+          niche:     detectedNiche,
           scrapedAt: new Date(),
           rawData:   enrichedRaw as object,
         },

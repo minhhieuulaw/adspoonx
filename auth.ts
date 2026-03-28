@@ -36,7 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, account, profile, user }) {
       // Credentials sign-in: user object is available directly
-      if (user?.id && !account?.provider) {
+      if (user?.id && account?.provider === "credentials") {
         token.sub = user.id;
         return token;
       }
