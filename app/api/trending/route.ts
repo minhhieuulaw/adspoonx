@@ -11,7 +11,9 @@ export async function GET(req: NextRequest) {
   const country = req.nextUrl.searchParams.get("country") ?? "";
 
   try {
-    const countryFilter = country ? `AND country = '${country.replace(/'/g, "")}'` : "";
+    const VALID_COUNTRIES = ["US", "GB", "DE", "FR", "NL", "AU", "CA", "BR", "MX"];
+    const safeCountry = VALID_COUNTRIES.includes(country.toUpperCase()) ? country.toUpperCase() : "";
+    const countryFilter = safeCountry ? `AND country = '${safeCountry}'` : "";
 
     // Get niche stats: total active, new last 24h, new last 7d
     const niches = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(`
