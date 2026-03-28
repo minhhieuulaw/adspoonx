@@ -23,53 +23,65 @@ export interface CrawlJob {
 }
 
 export const DEFAULT_CRAWL_JOBS: CrawlJob[] = [
-  // ── US Core (high volume) ──────────────────────────────────────
-  { keyword: "fashion",      country: "US" },
-  { keyword: "clothing",     country: "US" },
-  { keyword: "dress",        country: "US" },
-  { keyword: "sneakers",     country: "US" },
-  { keyword: "jewelry",      country: "US" },
-  { keyword: "skincare",     country: "US" },
-  { keyword: "supplement",   country: "US" },
-  { keyword: "weight loss",  country: "US" },
-  { keyword: "fitness",      country: "US" },
-  { keyword: "home decor",   country: "US" },
-  { keyword: "kitchen",      country: "US" },
-  { keyword: "pet",          country: "US" },
-  { keyword: "tech gadget",  country: "US" },
-  { keyword: "wireless",     country: "US" },
-  { keyword: "dropshipping", country: "US" },
-  { keyword: "beauty",       country: "US" },
-  { keyword: "yoga",         country: "US" },
-  { keyword: "outdoor",      country: "US" },
-  { keyword: "baby",         country: "US" },
-  { keyword: "organic",      country: "US" },
+  // ── US (10 jobs) — Problem-solving + High-margin products ─────
+  { keyword: "posture corrector",   country: "US" },
+  { keyword: "massage gun",         country: "US" },
+  { keyword: "LED facial device",   country: "US" },
+  { keyword: "pet camera",          country: "US" },
+  { keyword: "wireless charger",    country: "US" },
+  { keyword: "smart home gadget",   country: "US" },
+  { keyword: "hair removal device", country: "US" },
+  { keyword: "portable projector",  country: "US" },
+  { keyword: "jewelry handmade",    country: "US" },
+  { keyword: "supplement protein",  country: "US" },
 
-  // ── EU — lấy được impressions + spend data (Facebook bắt buộc) ─
-  { keyword: "fashion",      country: "GB" },
-  { keyword: "skincare",     country: "GB" },
-  { keyword: "fitness",      country: "GB" },
-  { keyword: "beauty",       country: "GB" },
-  { keyword: "supplement",   country: "GB" },
-  { keyword: "fashion",      country: "DE" },
-  { keyword: "skincare",     country: "DE" },
-  { keyword: "fitness",      country: "DE" },
-  { keyword: "fashion",      country: "FR" },
-  { keyword: "beauty",       country: "FR" },
-  { keyword: "clothing",     country: "NL" },
-  { keyword: "tech gadget",  country: "DE" },
+  // ── AU (7 jobs) — Outdoor + Fitness + Pet ─────────────────────
+  { keyword: "camping gear",        country: "AU" },
+  { keyword: "fitness recovery",    country: "AU" },
+  { keyword: "pet wellness",        country: "AU" },
+  { keyword: "skincare serum",      country: "AU" },
+  { keyword: "home organizer",      country: "AU" },
+  { keyword: "wireless earbuds",    country: "AU" },
+  { keyword: "yoga mat",            country: "AU" },
 
-  // ── ANZ & CA ──────────────────────────────────────────────────
-  { keyword: "fashion",      country: "AU" },
-  { keyword: "skincare",     country: "AU" },
-  { keyword: "fitness",      country: "CA" },
-  { keyword: "beauty",       country: "CA" },
+  // ── EU — GB (5 jobs) ──────────────────────────────────────────
+  { keyword: "LED strip lights",    country: "GB" },
+  { keyword: "beauty device",       country: "GB" },
+  { keyword: "kitchen gadget",      country: "GB" },
+  { keyword: "pet toy",             country: "GB" },
+  { keyword: "phone accessory",     country: "GB" },
 
-  // ── Southeast Asia ────────────────────────────────────────────
-  { keyword: "skincare",     country: "SG" },
-  { keyword: "fashion",      country: "MY" },
-  { keyword: "beauty",       country: "TH" },
-  { keyword: "supplement",   country: "PH" },
+  // ── EU — DE (4 jobs) ──────────────────────────────────────────
+  { keyword: "smart home",          country: "DE" },
+  { keyword: "fitness tracker",     country: "DE" },
+  { keyword: "eco friendly product", country: "DE" },
+  { keyword: "hair care device",    country: "DE" },
+
+  // ── EU — FR (3 jobs) ──────────────────────────────────────────
+  { keyword: "skincare routine",    country: "FR" },
+  { keyword: "home decor LED",      country: "FR" },
+  { keyword: "bijoux artisanal",    country: "FR" },
+
+  // ── CA (5 jobs) ───────────────────────────────────────────────
+  { keyword: "home office gadget",  country: "CA" },
+  { keyword: "outdoor gear",        country: "CA" },
+  { keyword: "pet supplies",        country: "CA" },
+  { keyword: "massage roller",      country: "CA" },
+  { keyword: "supplement vitamin",  country: "CA" },
+
+  // ── BR (5 jobs) — Beauty Tech + Gaming HOT market ─────────────
+  { keyword: "LED facial",          country: "BR" },
+  { keyword: "gaming RGB",          country: "BR" },
+  { keyword: "hair removal",        country: "BR" },
+  { keyword: "fitness banda",       country: "BR" },
+  { keyword: "pet acessorio",       country: "BR" },
+
+  // ── MX (5 jobs) — Growing e-commerce market ───────────────────
+  { keyword: "gadget cocina",       country: "MX" },
+  { keyword: "belleza LED",         country: "MX" },
+  { keyword: "fitness accesorio",   country: "MX" },
+  { keyword: "mascota juguete",     country: "MX" },
+  { keyword: "organizador hogar",   country: "MX" },
 ];
 
 // ─── Apify helpers ──────────────────────────────────────────────────────────

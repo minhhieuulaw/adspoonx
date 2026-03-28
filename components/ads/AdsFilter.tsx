@@ -5,8 +5,8 @@ import { ChevronDown, Globe, SlidersHorizontal, Trophy, TrendingUp, Leaf } from 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { LANGUAGE_OPTIONS, type AdLanguage } from "@/lib/detect-language";
 
-// Target markets: US, EU, AU, CA
-const COUNTRY_CODES = ["ALL", "US", "GB", "DE", "FR", "NL", "AU", "CA"] as const;
+// Target markets: US, EU, AU, CA, BR, MX
+const COUNTRY_CODES = ["ALL", "US", "GB", "DE", "FR", "NL", "AU", "CA", "BR", "MX"] as const;
 
 export const PRESETS = [
   { id: "top",          label: "Top Performers", icon: "🏆", desc: "AI Score ≥ 80" },
@@ -97,6 +97,8 @@ const COUNTRY_INFO: Record<string, { label: string; flag: string }> = {
   NL:  { label: "Netherlands", flag: "🇳🇱" },
   AU:  { label: "Australia", flag: "🇦🇺" },
   CA:  { label: "Canada", flag: "🇨🇦" },
+  BR:  { label: "Brazil", flag: "🇧🇷" },
+  MX:  { label: "Mexico", flag: "🇲🇽" },
 };
 
 // ── Section wrapper for vertical sidebar ──────────────────────────────────────
