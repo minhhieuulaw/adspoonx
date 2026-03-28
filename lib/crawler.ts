@@ -8,6 +8,7 @@
 import { prisma } from "./prisma";
 import { detectNiche, type NicheInput } from "./niche-detect";
 import { downloadAndUploadVideo } from "./r2";
+import { isProductAd } from "./product-filter";
 
 const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_ID   = "curious_coder~facebook-ads-library-scraper";
@@ -241,6 +242,9 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
     const hasCta = ctaRaw ? ALLOWED_CTA.includes(ctaRaw.trim().toLowerCase()) : false;
 
     if (!pageName || !hasMedia || !hasBody || !hasCta) continue;
+
+    // Product ad filter — reject service/political/charity/app ads
+    if (!isProductAd(raw as unknown as Record<string, unknown>)) continue;
 
     // Store enriched rawData so extractors in api/ads/route.ts can pull video+thumbnail
     const enrichedRaw = {

@@ -6,6 +6,7 @@
  */
 
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { createHash } from "crypto";
 
 const ACCOUNT_ID = process.env.R2_ACCOUNT_ID ?? "";
 const ACCESS_KEY = process.env.R2_ACCESS_KEY_ID ?? "";
@@ -40,19 +41,30 @@ export async function r2Upload(key: string, body: Buffer, contentType = "video/m
   return `https://pub-${ACCOUNT_ID}.r2.dev/${key}`;
 }
 
+/** Create a deterministic key from a video URL using MD5 hash */
+function videoUrlToKey(videoUrl: string): string {
+  const hash = createHash("md5").update(videoUrl).digest("hex");
+  return `videos/${hash}.mp4`;
+}
+
 /**
  * Download a video from URL and upload to R2.
  * Returns the permanent R2 URL, or null on failure.
- * Skips if already uploaded (by key).
+ *
+ * Uses MD5 hash of video URL as R2 key for deduplication —
+ * different ads with the same creative (same video URL) share one R2 file.
  * Max file size: 50MB to avoid memory issues.
  */
 export async function downloadAndUploadVideo(
   videoUrl: string,
   adId: string,
 ): Promise<string | null> {
-  const key = `videos/${adId}.mp4`;
+  // adId kept in signature for backward compatibility (logging, etc.)
+  void adId;
 
-  // Skip if already uploaded
+  const key = videoUrlToKey(videoUrl);
+
+  // Skip if already uploaded (dedup: same video URL = same key)
   if (await r2Exists(key)) {
     return `https://pub-${ACCOUNT_ID}.r2.dev/${key}`;
   }
