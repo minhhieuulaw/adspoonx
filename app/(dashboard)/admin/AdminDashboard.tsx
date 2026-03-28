@@ -10,6 +10,7 @@ import {
   Star, Globe, Play, Trash2, RefreshCw, Zap,
   Bell, CheckCircle, Clock, AlertCircle, Plus, Pencil, X,
   MessageSquare, ChevronDown, ChevronUp, Server, Timer,
+  Search, Brain, HardDrive, ArrowRight,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -413,20 +414,39 @@ function VpsStatusBar() {
   const [data,    setData]    = useState<VpsStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [prevData, setPrevData] = useState<VpsStatus | null>(null);
+  const [flashKeys, setFlashKeys] = useState<Set<string>>(new Set());
 
   function load() {
     setLoading(true);
     fetch("/api/admin/vps-status")
       .then(r => r.json() as Promise<VpsStatus>)
-      .then(d => { setData(d); setLastRefresh(new Date()); })
+      .then(d => {
+        setPrevData(data);
+        setData(d);
+        setLastRefresh(new Date());
+        // Detect which stats changed for flash animation
+        if (data) {
+          const changed = new Set<string>();
+          if (d.totalNewToday !== data.totalNewToday) changed.add("new");
+          if (d.totalUpdatedToday !== data.totalUpdatedToday) changed.add("updated");
+          if (d.todayClassified !== data.todayClassified) changed.add("classified");
+          if (d.totalUnclassified !== data.totalUnclassified) changed.add("unclassified");
+          if (changed.size > 0) {
+            setFlashKeys(changed);
+            setTimeout(() => setFlashKeys(new Set()), 1200);
+          }
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 60_000);
+    const id = setInterval(load, 15_000);
     return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function fmtCountdown(isoStr: string) {
@@ -441,24 +461,61 @@ function VpsStatusBar() {
     return new Date(isoStr).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
   }
 
+  /** Progress fraction (0..1) of time elapsed between lastRun and nextRun */
+  function countdownProgress(isoStr: string, lastRunIso?: string | null): number {
+    const now = Date.now();
+    const next = new Date(isoStr).getTime();
+    if (next <= now) return 1;
+    // Use 8h (interval between scheduled runs) as total window if no lastRun
+    const totalWindow = lastRunIso
+      ? next - new Date(lastRunIso).getTime()
+      : 8 * 3_600_000;
+    const elapsed = totalWindow - (next - now);
+    return Math.max(0, Math.min(1, elapsed / totalWindow));
+  }
+
   const statusColor = (s: string) =>
     s === "success" ? "#34D399" : s === "error" ? "#F87171" : "#FCD34D";
 
   const statusBg = (s: string) =>
-    s === "success" ? "rgba(52,211,153,0.1)" : s === "error" ? "rgba(248,113,113,0.1)" : "rgba(252,211,77,0.1)";
+    s === "success" ? "rgba(52,211,153,0.08)" : s === "error" ? "rgba(248,113,113,0.08)" : "rgba(252,211,77,0.08)";
+
+  // Pipeline step data derived from today's runs
+  const pipelineStats = (() => {
+    if (!data) return null;
+    const totalScraped = data.totalNewToday + data.totalUpdatedToday;
+    const totalFiltered = data.todayNewAds; // ads that passed filter
+    const totalClassified = data.todayClassified;
+    const totalStored = totalClassified; // classified = stored
+    const hasActiveRun = data.lastRun?.status === "running";
+    return { totalScraped, totalFiltered, totalClassified, totalStored, hasActiveRun };
+  })();
+
+  // CSS keyframes injected once
+  const pulseKeyframes = `
+    @keyframes vpsPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    @keyframes vpsFlash { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
+    @keyframes vpsBreath { 0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,0.3)} 50%{box-shadow:0 0 8px 2px rgba(124,58,237,0.15)} }
+  `;
 
   return (
     <div className="rounded-[12px] p-4 mb-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+      <style>{pulseKeyframes}</style>
+
       {/* Header row */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Server size={13} style={{ color: "var(--ai-light)" }} />
+          <div className="w-6 h-6 rounded-[6px] flex items-center justify-center" style={{ background: "rgba(124,58,237,0.15)" }}>
+            <Server size={12} style={{ color: "#A78BFA" }} />
+          </div>
           <span className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
             VPS Job Monitor
           </span>
           {data && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
-              auto-refresh 60s
+            <span className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full"
+              style={{ background: "rgba(52,211,153,0.1)", color: "#34D399", border: "1px solid rgba(52,211,153,0.15)" }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#34D399", animation: "vpsPulse 2s ease-in-out infinite" }} />
+              live · 15s
             </span>
           )}
         </div>
@@ -488,100 +545,196 @@ function VpsStatusBar() {
         <div className="text-[11px]" style={{ color: "#F87171" }}>Failed to load VPS status.</div>
       ) : (
         <>
-          {/* ── Summary stats row ── */}
+          {/* ── Summary stats row with gradient backgrounds ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-            <div className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5" style={{ background: "var(--bg-hover)" }}>
-              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>New ads today</span>
-              <span className="font-display text-[18px] font-bold" style={{ color: "#60A5FA" }}>
-                {data.totalNewToday.toLocaleString()}
-              </span>
-            </div>
-            <div className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5" style={{ background: "var(--bg-hover)" }}>
-              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Updated today</span>
-              <span className="font-display text-[18px] font-bold" style={{ color: "#A78BFA" }}>
-                {data.totalUpdatedToday.toLocaleString()}
-              </span>
-            </div>
-            <div className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5" style={{ background: "var(--bg-hover)" }}>
-              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Classified today</span>
-              <span className="font-display text-[18px] font-bold" style={{ color: "#34D399" }}>
-                {data.todayClassified.toLocaleString()}
-                <span className="text-[11px] font-normal ml-1" style={{ color: "var(--text-3)" }}>
-                  / {data.todayNewAds}
+            {[
+              { key: "new", label: "New ads today", value: data.totalNewToday, color: "#60A5FA", gradient: "linear-gradient(135deg, rgba(96,165,250,0.12) 0%, rgba(96,165,250,0.04) 100%)" },
+              { key: "updated", label: "Updated today", value: data.totalUpdatedToday, color: "#A78BFA", gradient: "linear-gradient(135deg, rgba(167,139,250,0.12) 0%, rgba(167,139,250,0.04) 100%)" },
+              { key: "classified", label: "Classified today", value: data.todayClassified, color: "#34D399", gradient: "linear-gradient(135deg, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.04) 100%)", extra: data.todayNewAds },
+              { key: "unclassified", label: "Unclassified total", value: data.totalUnclassified, color: data.totalUnclassified > 0 ? "#FCD34D" : "#34D399", gradient: data.totalUnclassified > 0 ? "linear-gradient(135deg, rgba(252,211,77,0.12) 0%, rgba(252,211,77,0.04) 100%)" : "linear-gradient(135deg, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.04) 100%)" },
+            ].map(stat => (
+              <div key={stat.key}
+                className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5"
+                style={{
+                  background: stat.gradient,
+                  border: `1px solid ${stat.color}15`,
+                  animation: flashKeys.has(stat.key) ? "vpsFlash 0.6s ease-out" : undefined,
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{stat.label}</span>
+                  {flashKeys.has(stat.key) && (
+                    <span className="text-[9px] px-1 rounded" style={{ background: `${stat.color}20`, color: stat.color }}>
+                      changed
+                    </span>
+                  )}
+                </div>
+                <span className="font-display text-[18px] font-bold" style={{ color: stat.color }}>
+                  {stat.value.toLocaleString()}
+                  {stat.key === "classified" && (
+                    <span className="text-[11px] font-normal ml-1" style={{ color: "var(--text-3)" }}>
+                      / {stat.extra}
+                    </span>
+                  )}
                 </span>
-              </span>
-            </div>
-            <div className="rounded-[8px] px-3 py-2 flex flex-col gap-0.5" style={{ background: "var(--bg-hover)" }}>
-              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Unclassified total</span>
-              <span className="font-display text-[18px] font-bold" style={{ color: data.totalUnclassified > 0 ? "#FCD34D" : "#34D399" }}>
-                {data.totalUnclassified.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {/* ── Next run + errors ── */}
-          <div className="flex items-center gap-4 mb-3 text-[11px]">
-            <div className="flex items-center gap-1.5" style={{ color: "var(--text-2)" }}>
-              <Timer size={11} style={{ color: "var(--ai-light)" }} />
-              <span style={{ color: "var(--text-3)" }}>Next run</span>
-              <strong style={{ color: "var(--text-1)" }}>
-                {new Date(data.nextRun).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })} UTC
-              </strong>
-              <span style={{ color: "var(--text-3)" }}>({fmtCountdown(data.nextRun)})</span>
-            </div>
-            {data.totalErrorsToday > 0 && (
-              <div className="flex items-center gap-1" style={{ color: "#F87171" }}>
-                <AlertCircle size={11} />
-                <span>{data.totalErrorsToday} errors today</span>
               </div>
-            )}
+            ))}
           </div>
 
-          {/* ── Today's job runs ── */}
+          {/* ── Pipeline Flow Visualization ── */}
+          {pipelineStats && (
+            <div className="rounded-[10px] p-3 mb-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: "var(--text-3)" }}>
+                Pipeline Flow
+              </div>
+              <div className="flex items-center gap-1 overflow-x-auto">
+                {[
+                  { icon: Globe, label: "Crawl", stat: `${pipelineStats.totalScraped.toLocaleString()} scraped`, color: "#60A5FA", bg: "rgba(96,165,250,0.1)", active: pipelineStats.totalScraped > 0 },
+                  { icon: Search, label: "Filter", stat: `${pipelineStats.totalFiltered.toLocaleString()} passed`, color: "#FCD34D", bg: "rgba(252,211,77,0.1)", active: pipelineStats.totalFiltered > 0 },
+                  { icon: Brain, label: "Classify", stat: `${pipelineStats.totalClassified.toLocaleString()} classified`, color: "#A78BFA", bg: "rgba(167,139,250,0.1)", active: pipelineStats.totalClassified > 0 },
+                  { icon: HardDrive, label: "Store", stat: `${pipelineStats.totalStored.toLocaleString()} stored`, color: "#34D399", bg: "rgba(52,211,153,0.1)", active: pipelineStats.totalStored > 0 },
+                ].map((step, i, arr) => {
+                  const StepIcon = step.icon;
+                  return (
+                    <div key={step.label} className="flex items-center gap-1" style={{ flex: "1 1 0", minWidth: 0 }}>
+                      <div className="flex flex-col items-center gap-1 flex-1 min-w-0 rounded-[8px] px-2 py-2"
+                        style={{
+                          background: step.bg,
+                          border: `1px solid ${step.color}20`,
+                          animation: step.active ? "vpsBreath 3s ease-in-out infinite" : undefined,
+                        }}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <div className="relative">
+                            <StepIcon size={13} style={{ color: step.color }} />
+                            {step.active && (
+                              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
+                                style={{ background: step.color, animation: "vpsPulse 2s ease-in-out infinite" }} />
+                            )}
+                          </div>
+                          <span className="text-[11px] font-semibold" style={{ color: step.color }}>{step.label}</span>
+                        </div>
+                        <span className="text-[10px] truncate max-w-full" style={{ color: "var(--text-3)" }}>{step.stat}</span>
+                      </div>
+                      {i < arr.length - 1 && (
+                        <ArrowRight size={11} className="flex-shrink-0 mx-0.5" style={{ color: "var(--text-3)", opacity: 0.4 }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Next run countdown bar ── */}
+          <div className="rounded-[10px] p-3 mb-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5 text-[11px]">
+                <Timer size={11} style={{ color: "#A78BFA" }} />
+                <span style={{ color: "var(--text-3)" }}>Next run</span>
+                <strong className="font-display" style={{ color: "var(--text-1)" }}>
+                  {new Date(data.nextRun).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })} UTC
+                </strong>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-data" style={{ color: "#A78BFA" }}>
+                  {fmtCountdown(data.nextRun)}
+                </span>
+                {data.totalErrorsToday > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full"
+                    style={{ background: "rgba(248,113,113,0.1)", color: "#F87171", border: "1px solid rgba(248,113,113,0.15)" }}>
+                    <AlertCircle size={9} />
+                    {data.totalErrorsToday} errors
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div
+                className="h-full rounded-full transition-all duration-1000"
+                style={{
+                  width: `${Math.round(countdownProgress(data.nextRun, data.lastRun?.runAt) * 100)}%`,
+                  background: "linear-gradient(90deg, #7C3AED, #A78BFA)",
+                }}
+              />
+            </div>
+            <div className="flex justify-between mt-1 text-[9px]" style={{ color: "var(--text-3)", opacity: 0.6 }}>
+              <span>{data.lastRun ? fmtTime(data.lastRun.runAt) : "—"}</span>
+              <span>{new Date(data.nextRun).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}</span>
+            </div>
+          </div>
+
+          {/* ── Today's Runs - Timeline View ── */}
           {data.todayRuns.length === 0 ? (
-            <div className="text-[11px] py-2" style={{ color: "var(--text-3)" }}>
+            <div className="text-[11px] py-3 text-center rounded-[8px]" style={{ color: "var(--text-3)", background: "rgba(255,255,255,0.02)" }}>
               No jobs have run today yet. Schedules: 02:00 · 10:00 · 18:00 UTC
             </div>
           ) : (
-            <div className="space-y-1.5">
-              <div className="text-[10px] font-semibold mb-1" style={{ color: "var(--text-3)" }}>
-                TODAY&apos;S RUNS ({data.todayRuns.length})
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>
+                Today&apos;s Runs ({data.todayRuns.length})
               </div>
-              {data.todayRuns.map(run => (
-                <div key={run.id}
-                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[11px]"
-                  style={{ background: statusBg(run.status), border: `1px solid ${statusColor(run.status)}22` }}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor(run.status) }} />
-                  <span className="font-semibold w-16 flex-shrink-0" style={{ color: statusColor(run.status) }}>
-                    {run.status}
-                  </span>
-                  <span style={{ color: "var(--text-3)" }} className="w-12 flex-shrink-0">
-                    {fmtTime(run.runAt)}
-                  </span>
-                  <span className="flex items-center gap-1" style={{ color: "var(--text-2)" }}>
-                    <span style={{ color: "#60A5FA" }}>+{run.newAds ?? 0}</span>
-                    <span style={{ color: "var(--text-3)" }}>new</span>
-                    <span style={{ color: "var(--text-3)" }}>·</span>
-                    <span style={{ color: "#A78BFA" }}>~{run.updatedAds ?? 0}</span>
-                    <span style={{ color: "var(--text-3)" }}>updated</span>
-                    {(run.errors ?? 0) > 0 && (
-                      <>
-                        <span style={{ color: "var(--text-3)" }}>·</span>
-                        <span style={{ color: "#F87171" }}>{run.errors} err</span>
-                      </>
-                    )}
-                  </span>
-                  {run.durationMs && (
-                    <span className="ml-auto flex-shrink-0 font-data" style={{ color: "var(--text-3)" }}>
-                      {(run.durationMs / 1000).toFixed(1)}s
-                    </span>
-                  )}
-                  <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded" style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
-                    {run.schedule ?? "manual"}
-                  </span>
-                </div>
-              ))}
+              <div className="flex flex-col">
+                {data.todayRuns.map((run, i) => {
+                  const isLast = i === data.todayRuns.length - 1;
+                  const color = statusColor(run.status);
+                  return (
+                    <div key={run.id} className="flex gap-3">
+                      {/* Timeline left: time + line */}
+                      <div className="flex flex-col items-center flex-shrink-0" style={{ width: 48 }}>
+                        <span className="text-[10px] font-data tabular-nums" style={{ color: "var(--text-3)" }}>
+                          {fmtTime(run.runAt)}
+                        </span>
+                        {/* Status dot */}
+                        <div className="relative my-1">
+                          <div className="w-3 h-3 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}40` }} />
+                          {run.status === "success" && i === 0 && (
+                            <div className="absolute inset-0 w-3 h-3 rounded-full" style={{ background: color, animation: "vpsPulse 2s ease-in-out infinite" }} />
+                          )}
+                        </div>
+                        {/* Connecting line */}
+                        {!isLast && (
+                          <div className="flex-1 w-0.5 rounded-full" style={{ background: color, opacity: 0.3, minHeight: 16 }} />
+                        )}
+                      </div>
+                      {/* Timeline right: content card */}
+                      <div className="flex-1 min-w-0 rounded-[8px] px-3 py-2 mb-2"
+                        style={{ background: statusBg(run.status), border: `1px solid ${color}18` }}
+                      >
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[11px] font-semibold capitalize" style={{ color }}>{run.status}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
+                            {run.schedule ?? "manual"}
+                          </span>
+                          {run.durationMs && (
+                            <span className="ml-auto text-[10px] font-data" style={{ color: "var(--text-3)" }}>
+                              {(run.durationMs / 1000).toFixed(1)}s
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px]">
+                          <span className="flex items-center gap-1">
+                            <span className="w-1 h-1 rounded-full" style={{ background: "#60A5FA" }} />
+                            <span style={{ color: "#60A5FA" }}>+{run.newAds ?? 0}</span>
+                            <span style={{ color: "var(--text-3)" }}>new</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-1 h-1 rounded-full" style={{ background: "#A78BFA" }} />
+                            <span style={{ color: "#A78BFA" }}>~{run.updatedAds ?? 0}</span>
+                            <span style={{ color: "var(--text-3)" }}>upd</span>
+                          </span>
+                          {(run.errors ?? 0) > 0 && (
+                            <span className="flex items-center gap-1">
+                              <span className="w-1 h-1 rounded-full" style={{ background: "#F87171" }} />
+                              <span style={{ color: "#F87171" }}>{run.errors} err</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </>
@@ -1353,89 +1506,229 @@ interface WorkflowRunItem {
   durationMs: number | null; notes: string | null;
 }
 
-const STATUS_STYLE: Record<string, { color: string; icon: React.ElementType }> = {
-  success: { color: "#34D399", icon: CheckCircle },
-  error:   { color: "#F87171", icon: AlertCircle },
-  partial: { color: "#FCD34D", icon: AlertCircle },
+const STATUS_STYLE: Record<string, { color: string; bg: string; icon: React.ElementType }> = {
+  success: { color: "#34D399", bg: "rgba(52,211,153,0.08)", icon: CheckCircle },
+  error:   { color: "#F87171", bg: "rgba(248,113,113,0.08)", icon: AlertCircle },
+  partial: { color: "#FCD34D", bg: "rgba(252,211,77,0.08)", icon: AlertCircle },
 };
 
 function WorkflowHistory() {
   const [runs,    setRuns]    = useState<WorkflowRunItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [open,    setOpen]    = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
     fetch("/api/admin/workflow-runs?limit=20")
       .then(r => r.json() as Promise<WorkflowRunItem[]>)
-      .then(d => setRuns(Array.isArray(d) ? d : []))
+      .then(d => { setRuns(Array.isArray(d) ? d : []); setLastRefresh(new Date()); })
       .catch(() => null)
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Compute summary metrics
+  const metrics = (() => {
+    if (runs.length === 0) return null;
+    const successCount = runs.filter(r => r.status === "success").length;
+    const successRate = Math.round((successCount / runs.length) * 100);
+    const durations = runs.filter(r => r.durationMs != null).map(r => r.durationMs!);
+    const avgDuration = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length / 1000) : 0;
+    const totalAds = runs.reduce((s, r) => s + r.totalAds, 0);
+    const totalNew = runs.reduce((s, r) => s + r.newAds, 0);
+    return { successRate, successCount, avgDuration, totalRuns: runs.length, totalAds, totalNew };
+  })();
+
+  // Max duration for proportional bar width
+  const maxDuration = Math.max(...runs.filter(r => r.durationMs != null).map(r => r.durationMs!), 1);
 
   return (
     <div className="rounded-[12px] p-4 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-      <button className="flex items-center justify-between w-full mb-2" onClick={() => setOpen(o => !o)}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-1">
+        <button className="flex items-center gap-2" onClick={() => setOpen(o => !o)}>
+          <div className="w-6 h-6 rounded-[6px] flex items-center justify-center" style={{ background: "rgba(124,58,237,0.15)" }}>
+            <Clock size={12} style={{ color: "#A78BFA" }} />
+          </div>
+          <div>
+            <p className="font-display text-[13px] font-semibold text-left" style={{ color: "var(--text-1)" }}>
+              Workflow History
+            </p>
+            <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
+              Schedule: 02:00 · 10:00 · 18:00 UTC
+            </p>
+          </div>
+        </button>
         <div className="flex items-center gap-2">
-          <Clock size={13} style={{ color: "var(--ai-light)" }} />
-          <p className="font-display text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
-            Workflow History — Daily A
-          </p>
+          <span className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(52,211,153,0.1)", color: "#34D399", border: "1px solid rgba(52,211,153,0.15)" }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#34D399", animation: "vpsPulse 2s ease-in-out infinite" }} />
+            30s
+          </span>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11px]"
+            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+          >
+            <RefreshCw size={10} className={loading ? "animate-spin" : ""} />
+          </button>
+          <button onClick={() => setOpen(o => !o)}>
+            {open ? <ChevronUp size={13} style={{ color: "var(--text-3)" }} /> : <ChevronDown size={13} style={{ color: "var(--text-3)" }} />}
+          </button>
         </div>
-        {open ? <ChevronUp size={13} style={{ color: "var(--text-3)" }} /> : <ChevronDown size={13} style={{ color: "var(--text-3)" }} />}
-      </button>
+      </div>
 
       {open && (
-        loading ? (
-          <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Loading...</p>
-        ) : runs.length === 0 ? (
-          <div className="rounded-[8px] px-3 py-3 text-[12px]"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-3)" }}>
-            No runs yet. VPS scraper should call <code className="text-[11px]">/api/workflow-run</code> after each job.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="text-[10px]" style={{ color: "var(--text-3)" }}>
-                  <th className="text-left pb-2 pr-3">Thời gian</th>
-                  <th className="text-left pb-2 pr-3">Schedule</th>
-                  <th className="text-left pb-2 pr-3">Status</th>
-                  <th className="text-right pb-2 pr-3">Total</th>
-                  <th className="text-right pb-2 pr-3">New</th>
-                  <th className="text-right pb-2 pr-3">Updated</th>
-                  <th className="text-right pb-2 pr-3">Errors</th>
-                  <th className="text-right pb-2">Duration</th>
-                </tr>
-              </thead>
-              <tbody>
-                {runs.map(run => {
-                  const style = STATUS_STYLE[run.status] ?? STATUS_STYLE.error;
-                  const Icon  = style.icon;
-                  return (
-                    <tr key={run.id} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td className="py-1.5 pr-3 tabular-nums" style={{ color: "var(--text-2)" }}>
-                        {new Date(run.runAt).toLocaleString("vi-VN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                      </td>
-                      <td className="py-1.5 pr-3" style={{ color: "var(--text-3)" }}>{run.schedule ?? "manual"}</td>
-                      <td className="py-1.5 pr-3">
-                        <span className="flex items-center gap-1" style={{ color: style.color }}>
-                          <Icon size={11} /> {run.status}
+        <>
+          {/* ── Summary Metrics Row ── */}
+          {metrics && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 mb-3">
+              {/* Success Rate */}
+              <div className="rounded-[8px] px-3 py-2 flex items-center gap-2.5"
+                style={{ background: "linear-gradient(135deg, rgba(52,211,153,0.1) 0%, rgba(52,211,153,0.03) 100%)", border: "1px solid rgba(52,211,153,0.12)" }}>
+                <div className="relative flex-shrink-0" style={{ width: 32, height: 32 }}>
+                  <svg viewBox="0 0 36 36" style={{ width: 32, height: 32, transform: "rotate(-90deg)" }}>
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="#34D399" strokeWidth="3"
+                      strokeDasharray={`${metrics.successRate * 0.88} 88`}
+                      strokeLinecap="round" />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold" style={{ color: "#34D399" }}>
+                    {metrics.successRate}%
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>Success Rate</span>
+                  <span className="text-[12px] font-semibold" style={{ color: "#34D399" }}>{metrics.successCount}/{metrics.totalRuns}</span>
+                </div>
+              </div>
+
+              {/* Avg Duration */}
+              <div className="rounded-[8px] px-3 py-2"
+                style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.1) 0%, rgba(167,139,250,0.03) 100%)", border: "1px solid rgba(167,139,250,0.12)" }}>
+                <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>Avg Duration</span>
+                <span className="font-display text-[18px] font-bold" style={{ color: "#A78BFA" }}>
+                  {metrics.avgDuration}s
+                </span>
+              </div>
+
+              {/* Total Runs */}
+              <div className="rounded-[8px] px-3 py-2"
+                style={{ background: "linear-gradient(135deg, rgba(96,165,250,0.1) 0%, rgba(96,165,250,0.03) 100%)", border: "1px solid rgba(96,165,250,0.12)" }}>
+                <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>Total Runs</span>
+                <span className="font-display text-[18px] font-bold" style={{ color: "#60A5FA" }}>
+                  {metrics.totalRuns}
+                </span>
+              </div>
+
+              {/* Total Ads Processed */}
+              <div className="rounded-[8px] px-3 py-2"
+                style={{ background: "linear-gradient(135deg, rgba(252,211,77,0.1) 0%, rgba(252,211,77,0.03) 100%)", border: "1px solid rgba(252,211,77,0.12)" }}>
+                <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>Ads Processed</span>
+                <span className="font-display text-[18px] font-bold" style={{ color: "#FCD34D" }}>
+                  {metrics.totalAds.toLocaleString()}
+                </span>
+                <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>
+                  +{metrics.totalNew.toLocaleString()} new
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Run Cards Grid ── */}
+          {loading && runs.length === 0 ? (
+            <div className="flex items-center gap-2 h-10 text-[11px]" style={{ color: "var(--text-3)" }}>
+              <div className="w-3 h-3 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />
+              Loading...
+            </div>
+          ) : runs.length === 0 ? (
+            <div className="rounded-[8px] px-3 py-3 text-[12px]"
+              style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-3)" }}>
+              No runs yet. VPS scraper should call <code className="text-[11px]">/api/workflow-run</code> after each job.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {runs.map(run => {
+                const style = STATUS_STYLE[run.status] ?? STATUS_STYLE.error;
+                const Icon = style.icon;
+                const durationPct = run.durationMs != null ? Math.max(8, Math.round((run.durationMs / maxDuration) * 100)) : 0;
+                return (
+                  <div key={run.id} className="rounded-[10px] overflow-hidden"
+                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)", borderLeft: `3px solid ${style.color}` }}>
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-data tabular-nums" style={{ color: "var(--text-2)" }}>
+                          {new Date(run.runAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
                         </span>
-                      </td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums" style={{ color: "var(--text-2)" }}>{run.totalAds.toLocaleString()}</td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums" style={{ color: "#34D399" }}>+{run.newAds.toLocaleString()}</td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums" style={{ color: "#60A5FA" }}>{run.updatedAds.toLocaleString()}</td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums" style={{ color: run.errors > 0 ? "#F87171" : "var(--text-3)" }}>{run.errors}</td>
-                      <td className="py-1.5 text-right tabular-nums" style={{ color: "var(--text-3)" }}>
-                        {run.durationMs != null ? `${Math.round(run.durationMs / 1000)}s` : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded"
+                          style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
+                          {run.schedule ?? "manual"}
+                        </span>
+                        <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                          style={{ background: style.bg, color: style.color }}>
+                          <Icon size={9} /> {run.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Body: 2x2 stats grid */}
+                    <div className="grid grid-cols-2 gap-1.5 px-3 py-2">
+                      <div className="rounded-[6px] px-2 py-1.5" style={{ background: "rgba(255,255,255,0.03)" }}>
+                        <span className="text-[9px] block" style={{ color: "var(--text-3)" }}>Total</span>
+                        <span className="text-[14px] font-bold font-display" style={{ color: "var(--text-1)" }}>
+                          {run.totalAds.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="rounded-[6px] px-2 py-1.5" style={{ background: "rgba(52,211,153,0.05)" }}>
+                        <span className="text-[9px] block" style={{ color: "var(--text-3)" }}>New</span>
+                        <span className="text-[14px] font-bold font-display" style={{ color: "#34D399" }}>
+                          +{run.newAds.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="rounded-[6px] px-2 py-1.5" style={{ background: "rgba(96,165,250,0.05)" }}>
+                        <span className="text-[9px] block" style={{ color: "var(--text-3)" }}>Updated</span>
+                        <span className="text-[14px] font-bold font-display" style={{ color: "#60A5FA" }}>
+                          {run.updatedAds.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="rounded-[6px] px-2 py-1.5" style={{ background: run.errors > 0 ? "rgba(248,113,113,0.05)" : "rgba(255,255,255,0.03)" }}>
+                        <span className="text-[9px] block" style={{ color: "var(--text-3)" }}>Errors</span>
+                        <span className="text-[14px] font-bold font-display" style={{ color: run.errors > 0 ? "#F87171" : "var(--text-3)" }}>
+                          {run.errors}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Footer: duration bar */}
+                    <div className="px-3 pb-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px]" style={{ color: "var(--text-3)" }}>Duration</span>
+                        <span className="text-[10px] font-data tabular-nums" style={{ color: "var(--text-3)" }}>
+                          {run.durationMs != null ? `${Math.round(run.durationMs / 1000)}s` : "—"}
+                        </span>
+                      </div>
+                      <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${durationPct}%`, background: `linear-gradient(90deg, ${style.color}80, ${style.color})` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
