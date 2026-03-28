@@ -403,13 +403,17 @@ export default function HomeDashboardPage() {
               Platform Distribution
             </h2>
           </div>
-          {stats?.platformDist?.length ? (
-            <PlatformChart data={stats.platformDist} />
-          ) : (
+          {!stats ? (
             <div className="flex flex-col gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-6 rounded skeleton" />
               ))}
+            </div>
+          ) : stats.platformDist?.length ? (
+            <PlatformChart data={stats.platformDist} />
+          ) : (
+            <div className="flex items-center justify-center h-[80px] text-[12px]" style={{ color: "var(--text-3)" }}>
+              No data yet
             </div>
           )}
         </motion.div>
@@ -425,10 +429,14 @@ export default function HomeDashboardPage() {
               Ads Added Per Week
             </h2>
           </div>
-          {stats?.weeklyGrowth?.length ? (
+          {!stats ? (
+            <div className="h-[100px] rounded skeleton" />
+          ) : stats.weeklyGrowth?.length ? (
             <WeeklyChart data={stats.weeklyGrowth} />
           ) : (
-            <div className="h-[100px] rounded skeleton" />
+            <div className="flex items-center justify-center h-[100px] text-[12px]" style={{ color: "var(--text-3)" }}>
+              No data yet
+            </div>
           )}
         </motion.div>
       </div>

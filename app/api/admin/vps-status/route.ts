@@ -2,7 +2,7 @@
  * GET /api/admin/vps-status
  * Trả về tình trạng VPS jobs + crawl stats hôm nay.
  */
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -10,7 +10,13 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
   .map(e => e.trim().toLowerCase());
 
-async function assertAdmin() {
+const CRON_SECRET = process.env.CRON_SECRET ?? "";
+
+async function assertAdmin(req: NextRequest): Promise<boolean> {
+  // Allow CRON_SECRET as fallback (same pattern as backfill-videos)
+  const authHeader = req.headers.get("authorization") ?? "";
+  if (CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`) return true;
+
   const session = await auth();
   const email = session?.user?.email?.toLowerCase() ?? "";
   return !!(session && ADMIN_EMAILS.includes(email));
@@ -33,8 +39,8 @@ function getNextRunUtc(): string {
   )).toISOString();
 }
 
-export async function GET() {
-  if (!await assertAdmin()) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export async function GET(req: NextRequest) {
+  if (!await assertAdmin(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const now = new Date();
   const todayStart = new Date(Date.UTC(

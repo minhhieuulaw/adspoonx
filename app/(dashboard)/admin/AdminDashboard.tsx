@@ -8,7 +8,7 @@ import {
 import {
   Users, TrendingUp, Database, DollarSign, Activity,
   Star, Globe, Play, Trash2, RefreshCw, Zap,
-  Bell, CheckCircle, Clock, AlertCircle, Plus, Pencil, X,
+  Bell, CheckCircle, AlertCircle, Plus, Pencil, X,
   MessageSquare, ChevronDown, ChevronUp, Server, Timer,
   Search, Brain, HardDrive, ArrowRight,
 } from "lucide-react";
@@ -399,7 +399,7 @@ export default function AdminDashboard() {
       <AnnouncementsPanel />
 
       {/* ── Workflow History ── */}
-      <WorkflowHistory />
+      {/* WorkflowHistory removed — replaced by Telegram bot daily reports */}
 
       {/* ── Tickets ── */}
       <TicketList />
@@ -1337,9 +1337,15 @@ function AnnouncementsPanel() {
 
   async function load() {
     setLoading(true);
-    const r = await fetch("/api/admin/announcements");
-    setList(await r.json() as AnnouncementItem[]);
-    setLoading(false);
+    try {
+      const r = await fetch("/api/admin/announcements");
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      setList(await r.json() as AnnouncementItem[]);
+    } catch {
+      setList([]);
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => { void load(); }, []);
 
@@ -1498,241 +1504,7 @@ function AnnouncementsPanel() {
   );
 }
 
-// ── Workflow History ──────────────────────────────────────────────────────────
-
-interface WorkflowRunItem {
-  id: string; runAt: string; schedule: string | null; status: string;
-  totalAds: number; newAds: number; updatedAds: number; errors: number;
-  durationMs: number | null; notes: string | null;
-}
-
-const STATUS_STYLE: Record<string, { color: string; bg: string; icon: React.ElementType }> = {
-  success: { color: "#34D399", bg: "rgba(52,211,153,0.08)", icon: CheckCircle },
-  error:   { color: "#F87171", bg: "rgba(248,113,113,0.08)", icon: AlertCircle },
-  partial: { color: "#FCD34D", bg: "rgba(252,211,77,0.08)", icon: AlertCircle },
-};
-
-function WorkflowHistory() {
-  const [runs,    setRuns]    = useState<WorkflowRunItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [open,    setOpen]    = useState(true);
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-
-  function load() {
-    setLoading(true);
-    fetch("/api/admin/workflow-runs?limit=20")
-      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json() as Promise<WorkflowRunItem[]>; })
-      .then(d => { setRuns(Array.isArray(d) ? d : []); setLastRefresh(new Date()); })
-      .catch(() => null)
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 30_000);
-    return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Compute summary metrics
-  const metrics = (() => {
-    if (runs.length === 0) return null;
-    const successCount = runs.filter(r => r.status === "success").length;
-    const successRate = Math.round((successCount / runs.length) * 100);
-    const durations = runs.filter(r => r.durationMs != null).map(r => r.durationMs!);
-    const avgDuration = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length / 1000) : 0;
-    const totalAds = runs.reduce((s, r) => s + r.totalAds, 0);
-    const totalNew = runs.reduce((s, r) => s + r.newAds, 0);
-    return { successRate, successCount, avgDuration, totalRuns: runs.length, totalAds, totalNew };
-  })();
-
-  // Max duration for proportional bar width
-  const maxDuration = Math.max(...runs.filter(r => r.durationMs != null).map(r => r.durationMs!), 1);
-
-  return (
-    <div className="rounded-[12px] p-4 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-1">
-        <button className="flex items-center gap-2" onClick={() => setOpen(o => !o)}>
-          <div className="w-6 h-6 rounded-[6px] flex items-center justify-center" style={{ background: "rgba(124,58,237,0.15)" }}>
-            <Clock size={12} style={{ color: "#A78BFA" }} />
-          </div>
-          <div>
-            <p className="font-display text-[13px] font-semibold text-left" style={{ color: "var(--text-1)" }}>
-              Workflow History
-            </p>
-            <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
-              Schedule: 02:00 · 10:00 · 18:00 UTC
-            </p>
-          </div>
-        </button>
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full"
-            style={{ background: "rgba(52,211,153,0.1)", color: "#34D399", border: "1px solid rgba(52,211,153,0.15)" }}>
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#34D399", animation: "vpsPulse 2s ease-in-out infinite" }} />
-            30s
-          </span>
-          <button
-            onClick={load}
-            disabled={loading}
-            className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11px]"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
-          >
-            <RefreshCw size={10} className={loading ? "animate-spin" : ""} />
-          </button>
-          <button onClick={() => setOpen(o => !o)}>
-            {open ? <ChevronUp size={13} style={{ color: "var(--text-3)" }} /> : <ChevronDown size={13} style={{ color: "var(--text-3)" }} />}
-          </button>
-        </div>
-      </div>
-
-      {open && (
-        <>
-          {/* ── Summary Metrics Row ── */}
-          {metrics && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 mb-3">
-              {/* Success Rate */}
-              <div className="rounded-[8px] px-3 py-2 flex items-center gap-2.5"
-                style={{ background: "linear-gradient(135deg, rgba(52,211,153,0.1) 0%, rgba(52,211,153,0.03) 100%)", border: "1px solid rgba(52,211,153,0.12)" }}>
-                <div className="relative flex-shrink-0" style={{ width: 32, height: 32 }}>
-                  <svg viewBox="0 0 36 36" style={{ width: 32, height: 32, transform: "rotate(-90deg)" }}>
-                    <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                    <circle cx="18" cy="18" r="14" fill="none" stroke="#34D399" strokeWidth="3"
-                      strokeDasharray={`${metrics.successRate * 0.88} 88`}
-                      strokeLinecap="round" />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold" style={{ color: "#34D399" }}>
-                    {metrics.successRate}%
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>Success Rate</span>
-                  <span className="text-[12px] font-semibold" style={{ color: "#34D399" }}>{metrics.successCount}/{metrics.totalRuns}</span>
-                </div>
-              </div>
-
-              {/* Avg Duration */}
-              <div className="rounded-[8px] px-3 py-2"
-                style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.1) 0%, rgba(167,139,250,0.03) 100%)", border: "1px solid rgba(167,139,250,0.12)" }}>
-                <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>Avg Duration</span>
-                <span className="font-display text-[18px] font-bold" style={{ color: "#A78BFA" }}>
-                  {metrics.avgDuration}s
-                </span>
-              </div>
-
-              {/* Total Runs */}
-              <div className="rounded-[8px] px-3 py-2"
-                style={{ background: "linear-gradient(135deg, rgba(96,165,250,0.1) 0%, rgba(96,165,250,0.03) 100%)", border: "1px solid rgba(96,165,250,0.12)" }}>
-                <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>Total Runs</span>
-                <span className="font-display text-[18px] font-bold" style={{ color: "#60A5FA" }}>
-                  {metrics.totalRuns}
-                </span>
-              </div>
-
-              {/* Total Ads Processed */}
-              <div className="rounded-[8px] px-3 py-2"
-                style={{ background: "linear-gradient(135deg, rgba(252,211,77,0.1) 0%, rgba(252,211,77,0.03) 100%)", border: "1px solid rgba(252,211,77,0.12)" }}>
-                <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>Ads Processed</span>
-                <span className="font-display text-[18px] font-bold" style={{ color: "#FCD34D" }}>
-                  {metrics.totalAds.toLocaleString()}
-                </span>
-                <span className="text-[10px] block" style={{ color: "var(--text-3)" }}>
-                  +{metrics.totalNew.toLocaleString()} new
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* ── Run Cards Grid ── */}
-          {loading && runs.length === 0 ? (
-            <div className="flex items-center gap-2 h-10 text-[11px]" style={{ color: "var(--text-3)" }}>
-              <div className="w-3 h-3 rounded-full border-2 border-[var(--ai-light)] border-t-transparent animate-spin" />
-              Loading...
-            </div>
-          ) : runs.length === 0 ? (
-            <div className="rounded-[8px] px-3 py-3 text-[12px]"
-              style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-3)" }}>
-              No runs yet. VPS scraper should call <code className="text-[11px]">/api/workflow-run</code> after each job.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {runs.map(run => {
-                const style = STATUS_STYLE[run.status] ?? STATUS_STYLE.error;
-                const Icon = style.icon;
-                const durationPct = run.durationMs != null ? Math.max(8, Math.round((run.durationMs / maxDuration) * 100)) : 0;
-                return (
-                  <div key={run.id} className="rounded-[10px] overflow-hidden"
-                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)", borderLeft: `3px solid ${style.color}` }}>
-                    {/* Card Header */}
-                    <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-data tabular-nums" style={{ color: "var(--text-2)" }}>
-                          {new Date(run.runAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded"
-                          style={{ background: "var(--bg-hover)", color: "var(--text-3)" }}>
-                          {run.schedule ?? "manual"}
-                        </span>
-                        <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                          style={{ background: style.bg, color: style.color }}>
-                          <Icon size={9} /> {run.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Card Body: 2x2 stats grid */}
-                    <div className="grid grid-cols-2 gap-1.5 px-3 py-2">
-                      <div className="rounded-[6px] px-2 py-1.5" style={{ background: "rgba(255,255,255,0.03)" }}>
-                        <span className="text-[9px] block" style={{ color: "var(--text-3)" }}>Total</span>
-                        <span className="text-[14px] font-bold font-display" style={{ color: "var(--text-1)" }}>
-                          {run.totalAds.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="rounded-[6px] px-2 py-1.5" style={{ background: "rgba(52,211,153,0.05)" }}>
-                        <span className="text-[9px] block" style={{ color: "var(--text-3)" }}>New</span>
-                        <span className="text-[14px] font-bold font-display" style={{ color: "#34D399" }}>
-                          +{run.newAds.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="rounded-[6px] px-2 py-1.5" style={{ background: "rgba(96,165,250,0.05)" }}>
-                        <span className="text-[9px] block" style={{ color: "var(--text-3)" }}>Updated</span>
-                        <span className="text-[14px] font-bold font-display" style={{ color: "#60A5FA" }}>
-                          {run.updatedAds.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="rounded-[6px] px-2 py-1.5" style={{ background: run.errors > 0 ? "rgba(248,113,113,0.05)" : "rgba(255,255,255,0.03)" }}>
-                        <span className="text-[9px] block" style={{ color: "var(--text-3)" }}>Errors</span>
-                        <span className="text-[14px] font-bold font-display" style={{ color: run.errors > 0 ? "#F87171" : "var(--text-3)" }}>
-                          {run.errors}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Card Footer: duration bar */}
-                    <div className="px-3 pb-2.5">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px]" style={{ color: "var(--text-3)" }}>Duration</span>
-                        <span className="text-[10px] font-data tabular-nums" style={{ color: "var(--text-3)" }}>
-                          {run.durationMs != null ? `${Math.round(run.durationMs / 1000)}s` : "—"}
-                        </span>
-                      </div>
-                      <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                        <div className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${durationPct}%`, background: `linear-gradient(90deg, ${style.color}80, ${style.color})` }} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
+// ── Workflow History — REMOVED (replaced by Telegram bot daily reports) ──────
 
 // ── Ticket List ───────────────────────────────────────────────────────────────
 

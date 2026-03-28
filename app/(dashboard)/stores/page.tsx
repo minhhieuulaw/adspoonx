@@ -379,7 +379,7 @@ export default function StoresPage() {
       if (filters.platforms.length) params.set("platforms", filters.platforms.join(","));
       if (filters.minAds) params.set("minAds", filters.minAds);
       if (filters.maxAds) params.set("maxAds", filters.maxAds);
-      const r = await fetch(`/api/stores?${params}`);
+      const r = await fetch(`/api/stores?${params}`, { cache: "no-store" });
       const d = await r.json();
       setStores(d.data ?? []);
       setTotalPages(d.pagination?.pages ?? 1);

@@ -5,7 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Sparkles, Store, TrendingUp, Bookmark, Settings, Zap, Database, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
+
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+  .split(",")
+  .map(e => e.trim().toLowerCase());
 
 const NAV = [
   {
@@ -30,7 +35,7 @@ const NAV = [
   },
 ];
 
-function NavContent({ onClose }: { onClose?: () => void }) {
+function NavContent({ onClose, isAdmin }: { onClose?: () => void; isAdmin: boolean }) {
   const pathname = usePathname();
   return (
     <aside
@@ -63,7 +68,7 @@ function NavContent({ onClose }: { onClose?: () => void }) {
               style={{ color: "rgba(167,139,250,0.45)", letterSpacing: "0.14em" }}>
               {group.label}
             </p>
-            {group.items.map((item) => {
+            {group.items.filter(item => item.href !== "/admin" || isAdmin).map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               const Icon = item.icon;
               return (
@@ -137,6 +142,11 @@ function NavContent({ onClose }: { onClose?: () => void }) {
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session } = useSession();
+
+  const isAdmin = ADMIN_EMAILS.length > 0
+    ? ADMIN_EMAILS.includes(session?.user?.email?.toLowerCase() ?? "")
+    : false;
 
   useEffect(() => {
     const handler = () => setMobileOpen(v => !v);
@@ -148,7 +158,7 @@ export default function Sidebar() {
     <>
       {/* ── Desktop: always visible via CSS, hidden on mobile ── */}
       <div className="hidden md:block" style={{ position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 40, width: 256 }}>
-        <NavContent />
+        <NavContent isAdmin={isAdmin} />
       </div>
 
       {/* ── Mobile: overlay drawer controlled by JS ── */}
@@ -169,7 +179,7 @@ export default function Sidebar() {
               transition={{ type: "spring", stiffness: 320, damping: 30 }}
               style={{ position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 50, width: 256 }}
             >
-              <NavContent onClose={() => setMobileOpen(false)} />
+              <NavContent onClose={() => setMobileOpen(false)} isAdmin={isAdmin} />
             </motion.div>
           </>
         )}
