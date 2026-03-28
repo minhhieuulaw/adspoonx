@@ -4,19 +4,24 @@
  * Processes in batches to avoid timeouts.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { downloadAndUploadVideo } from "@/lib/r2";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map(e => e.trim().toLowerCase());
+const CRON_SECRET = process.env.CRON_SECRET ?? "";
 const BATCH_SIZE = 10; // Process 10 ads per request to stay within timeout
 
-export async function POST() {
-  const session = await auth();
-  const email = session?.user?.email?.toLowerCase() ?? "";
-  if (!session || !ADMIN_EMAILS.includes(email)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(req: NextRequest) {
+  // Allow auth via session OR cron secret header
+  const cronAuth = req.headers.get("authorization")?.replace("Bearer ", "") === CRON_SECRET && CRON_SECRET;
+  if (!cronAuth) {
+    const session = await auth();
+    const email = session?.user?.email?.toLowerCase() ?? "";
+    if (!session || !ADMIN_EMAILS.includes(email)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   // Find ads that have video in rawData but no R2 URL in videoUrl column
@@ -91,11 +96,14 @@ export async function POST() {
   });
 }
 
-export async function GET() {
-  const session = await auth();
-  const email = session?.user?.email?.toLowerCase() ?? "";
-  if (!session || !ADMIN_EMAILS.includes(email)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(req: NextRequest) {
+  const cronAuth = req.headers.get("authorization")?.replace("Bearer ", "") === CRON_SECRET && CRON_SECRET;
+  if (!cronAuth) {
+    const session = await auth();
+    const email = session?.user?.email?.toLowerCase() ?? "";
+    if (!session || !ADMIN_EMAILS.includes(email)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const [total, withR2, withEmpty, withNull] = await Promise.all([
