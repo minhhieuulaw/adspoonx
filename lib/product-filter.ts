@@ -44,6 +44,20 @@ const REJECT_CTAS = new Set([
   "interested",
 ]);
 
+// ── Domain blacklist — marketplaces & brands that are NOT dropshipping ───────
+// Ads linking to these domains are rejected outright; they represent established
+// brands / marketplace listings, not independent dropshipping stores.
+
+const DOMAIN_BLACKLIST = [
+  "amazon.com", "amazon.co.uk", "amazon.de", "amazon.fr", "amazon.ca",
+  "walmart.com", "target.com", "bestbuy.com",
+  "temu.com", "shein.com", "aliexpress.com", "wish.com",
+  "ebay.com", "ebay.co.uk",
+  "apple.com", "samsung.com", "nike.com", "adidas.com",
+  "play.google.com", "apps.apple.com",  // app installs
+  "facebook.com/marketplace",
+];
+
 // ── Service-related text patterns — strong signal to reject ─────────────────
 
 const SERVICE_PATTERNS = [
@@ -60,6 +74,27 @@ const SERVICE_PATTERNS = [
   /\b(church|ministry|sermon|worship|prayer)\b/i,
   /\b(nonprofit|non-profit|charity|fundrais)/i,
   /\b(podcast|episode\s+\d|tune\s+in)\b/i,
+  // App install patterns — ads pushing users to install an app are not product ads
+  /\b(download\s+(the\s+)?app|install\s+now|get\s+the\s+app|available\s+on\s+(app\s+store|google\s+play))\b/i,
+  /\b(play\s+store|app\s+store|google\s+play)\b/i,
+];
+
+// ── Marketplace-specific text patterns — strong rejection signal ─────────────
+// Mentioning these marketplaces / fulfilment phrases signals the ad is NOT
+// an independent dropshipping store.
+
+const MARKETPLACE_PATTERNS = [
+  /\b(amazon\s+prime|prime\s+delivery|sold\s+by|fulfilled\s+by)\b/i,
+  /\b(walmart\s+pickup|target\s+drive|best\s+buy)\b/i,
+  /\b(temu|shein|aliexpress|wish\.com)\b/i,
+];
+
+// ── Blog / content patterns — reject if no product signal ───────────────────
+// These indicate editorial / brand-awareness content, not a product offer.
+
+const CONTENT_PATTERNS = [
+  /\b(read\s+more|blog\s+post|article|news|press\s+release)\b/i,
+  /\b(podcast|episode\s+\d|listen\s+now|watch\s+our\s+video)\b/i,
 ];
 
 // ── Product-signal text patterns — boost confidence ─────────────────────────
@@ -108,15 +143,38 @@ export function isProductAd(raw: Record<string, unknown>): boolean {
   for (const p of SERVICE_PATTERNS) { if (p.test(text)) serviceHits++; }
   if (serviceHits >= 2) return false;
 
+  // 4a) Marketplace text patterns → instant reject (any match)
+  for (const p of MARKETPLACE_PATTERNS) {
+    if (p.test(text)) return false;
+  }
+
   // 5) CTA whitelist → accept (most reliable signal)
   if (ctaRaw && PRODUCT_CTAS.has(ctaRaw)) return true;
 
-  // 6) Product text patterns → accept if any hit
-  for (const p of PRODUCT_PATTERNS) { if (p.test(text)) return true; }
+  // 5a) Content/blog patterns → reject if matched AND no product signal present
+  let hasProductSignal = false;
+  for (const p of PRODUCT_PATTERNS) { if (p.test(text)) { hasProductSignal = true; break; } }
+  if (!hasProductSignal) {
+    for (const p of CONTENT_PATTERNS) {
+      if (p.test(text)) return false;
+    }
+  }
 
-  // 7) Has link_url pointing to a shop → accept
+  // 6) Product text patterns → accept if any hit
+  if (hasProductSignal) return true;
+
+  // 7) Has link_url pointing to a shop → domain checks first, then whitelist
   const linkUrl = (cards?.[0]?.link_url ?? snap?.link_url ?? "") as string;
-  if (/shopify|myshopify|etsy|amazon|ebay|aliexpress|tiktok.*shop/i.test(linkUrl)) return true;
+
+  // 7a) Domain blacklist → reject (marketplaces / big brands are not dropshipping stores)
+  if (linkUrl) {
+    for (const domain of DOMAIN_BLACKLIST) {
+      if (linkUrl.toLowerCase().includes(domain)) return false;
+    }
+  }
+
+  // 7b) Known dropshipping / indie shop platforms → accept
+  if (/shopify|myshopify|etsy|tiktok.*shop/i.test(linkUrl)) return true;
 
   // 8) No signals at all and 1 service hit → reject
   if (serviceHits >= 1) return false;

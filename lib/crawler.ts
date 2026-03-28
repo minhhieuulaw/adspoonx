@@ -2,7 +2,34 @@
  * Crawler service — Apify → PostgreSQL (Supabase)
  *
  * Strategy: start all runs IN PARALLEL → single wait → fetch all datasets at once
- * Faster than sequential: 20 jobs × 45s wait → ~60s total (not 20×30s = 600s)
+ * Faster than sequential: 70 jobs × 45s wait → ~60s total (not 70×30s)
+ *
+ * ─── Keyword Tier System ───────────────────────────────────────────────────
+ * Tier 1 (50 keywords) — Product-specific: exact product names that buyers search
+ *   e.g. "posture corrector", "massage gun", "portable blender"
+ *   Highest conversion intent, best for finding winning ads.
+ *
+ * Tier 2 (10 keywords) — Problem-solution: pain points that lead to product discovery
+ *   e.g. "hair thinning solution", "back pain relief", "better sleep device"
+ *   Catches ads using problem-aware copy.
+ *
+ * Tier 3 (10 keywords) — Category: broad product categories
+ *   e.g. "fitness recovery", "beauty tool", "kitchen gadget"
+ *   Casts a wider net, discovers trending products.
+ *
+ * ─── Market Allocation (70 jobs total) ─────────────────────────────────────
+ * US 18 (14 T1 + 2 T2 + 2 T3)  — largest e-commerce market
+ * UK 12 ( 9 T1 + 2 T2 + 1 T3)  — strong dropshipping market
+ * CA  8 ( 6 T1 + 1 T2 + 1 T3)  — high purchasing power
+ * AU  7 ( 5 T1 + 1 T2 + 1 T3)  — outdoor/fitness/pet niches
+ * DE  6 ( 5 T1 + 0 T2 + 1 T3)  — EU largest economy
+ * FR  5 ( 4 T1 + 1 T2 + 0 T3)  — beauty/skincare strong
+ * BR  5 ( 3 T1 + 1 T2 + 1 T3)  — growing e-commerce
+ * MX  5 ( 3 T1 + 1 T2 + 1 T3)  — growing e-commerce
+ * NL  2 ( 1 T1 + 1 T2 + 0 T3)  — high-tech consumers
+ * IT  2 ( 0 T1 + 0 T2 + 2 T3)  — beauty/fashion market (broad discovery)
+ *
+ * 70% video / 30% all mediaType split for video-first strategy.
  */
 
 import { prisma } from "./prisma";
@@ -11,8 +38,8 @@ import { downloadAndUploadVideo } from "./r2";
 import { isProductAd } from "./product-filter";
 
 const APIFY_BASE = "https://api.apify.com/v2";
-const ACTOR_ID   = "curious_coder~facebook-ads-library-scraper";
-const MAX_RESULTS_PER_JOB = 300;
+const ACTOR_ID   = "bo5X18oGenWEV9vVo";
+const MAX_ITEMS  = 150;
 const WAIT_MS    = 55_000; // 55s for actor to accumulate data
 
 // ─── Job definitions ────────────────────────────────────────────────────────
@@ -20,84 +47,132 @@ const WAIT_MS    = 55_000; // 55s for actor to accumulate data
 export interface CrawlJob {
   keyword: string;
   country: string;
+  mediaType?: "video" | "image_and_meme" | "all";
+  tier?: 1 | 2 | 3;
 }
 
 export const DEFAULT_CRAWL_JOBS: CrawlJob[] = [
-  // ── US (10 jobs) — Problem-solving + High-margin products ─────
-  { keyword: "posture corrector",   country: "US" },
-  { keyword: "massage gun",         country: "US" },
-  { keyword: "LED facial device",   country: "US" },
-  { keyword: "pet camera",          country: "US" },
-  { keyword: "wireless charger",    country: "US" },
-  { keyword: "smart home gadget",   country: "US" },
-  { keyword: "hair removal device", country: "US" },
-  { keyword: "portable projector",  country: "US" },
-  { keyword: "jewelry handmade",    country: "US" },
-  { keyword: "supplement protein",  country: "US" },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // US — 18 jobs (14 Tier 1 + 2 Tier 2 + 2 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "posture corrector",       country: "US", mediaType: "video", tier: 1 },
+  { keyword: "massage gun",            country: "US", mediaType: "video", tier: 1 },
+  { keyword: "neck massager",          country: "US", mediaType: "video", tier: 1 },
+  { keyword: "led facial device",      country: "US", mediaType: "video", tier: 1 },
+  { keyword: "hair removal device",    country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "portable blender",       country: "US", mediaType: "video", tier: 1 },
+  { keyword: "electric spin scrubber", country: "US", mediaType: "video", tier: 1 },
+  { keyword: "wireless charger",       country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "portable projector",     country: "US", mediaType: "video", tier: 1 },
+  { keyword: "dash cam",              country: "US", mediaType: "video", tier: 1 },
+  { keyword: "pet camera",            country: "US", mediaType: "video", tier: 1 },
+  { keyword: "baby monitor",          country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "security camera",       country: "US", mediaType: "video", tier: 1 },
+  { keyword: "smart home gadget",     country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "hair thinning solution", country: "US", mediaType: "video", tier: 2 },
+  { keyword: "back pain relief",       country: "US", mediaType: "video", tier: 2 },
+  { keyword: "fitness recovery",       country: "US", mediaType: "video", tier: 3 },
+  { keyword: "kitchen gadget",         country: "US", mediaType: "all",   tier: 3 },
 
-  // ── AU (7 jobs) — Outdoor + Fitness + Pet ─────────────────────
-  { keyword: "camping gear",        country: "AU" },
-  { keyword: "fitness recovery",    country: "AU" },
-  { keyword: "pet wellness",        country: "AU" },
-  { keyword: "skincare serum",      country: "AU" },
-  { keyword: "home organizer",      country: "AU" },
-  { keyword: "wireless earbuds",    country: "AU" },
-  { keyword: "yoga mat",            country: "AU" },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // UK (GB) — 12 jobs (9 Tier 1 + 2 Tier 2 + 1 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "knee massager",          country: "GB", mediaType: "video", tier: 1 },
+  { keyword: "back stretcher",         country: "GB", mediaType: "video", tier: 1 },
+  { keyword: "teeth whitening kit",    country: "GB", mediaType: "video", tier: 1 },
+  { keyword: "garment steamer",        country: "GB", mediaType: "video", tier: 1 },
+  { keyword: "pet grooming brush",     country: "GB", mediaType: "all",   tier: 1 },
+  { keyword: "pet hair remover",       country: "GB", mediaType: "video", tier: 1 },
+  { keyword: "mini printer",          country: "GB", mediaType: "video", tier: 1 },
+  { keyword: "power bank",            country: "GB", mediaType: "all",   tier: 1 },
+  { keyword: "bottle warmer",         country: "GB", mediaType: "video", tier: 1 },
+  { keyword: "posture support",        country: "GB", mediaType: "video", tier: 2 },
+  { keyword: "neck pain relief",       country: "GB", mediaType: "video", tier: 2 },
+  { keyword: "beauty tool",            country: "GB", mediaType: "all",   tier: 3 },
 
-  // ── EU — GB (5 jobs) ──────────────────────────────────────────
-  { keyword: "LED strip lights",    country: "GB" },
-  { keyword: "beauty device",       country: "GB" },
-  { keyword: "kitchen gadget",      country: "GB" },
-  { keyword: "pet toy",             country: "GB" },
-  { keyword: "phone accessory",     country: "GB" },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CA — 8 jobs (6 Tier 1 + 1 Tier 2 + 1 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "foot massager",          country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "heating pad",            country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "mini vacuum",           country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "storage organizer",      country: "CA", mediaType: "all",   tier: 1 },
+  { keyword: "phone mount",           country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "car vacuum",            country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "better sleep device",    country: "CA", mediaType: "video", tier: 2 },
+  { keyword: "skincare device",        country: "CA", mediaType: "all",   tier: 3 },
 
-  // ── EU — DE (4 jobs) ──────────────────────────────────────────
-  { keyword: "smart home",          country: "DE" },
-  { keyword: "fitness tracker",     country: "DE" },
-  { keyword: "eco friendly product", country: "DE" },
-  { keyword: "hair care device",    country: "DE" },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // AU — 7 jobs (5 Tier 1 + 1 Tier 2 + 1 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "pain relief patch",      country: "AU", mediaType: "video", tier: 1 },
+  { keyword: "scalp massager",         country: "AU", mediaType: "video", tier: 1 },
+  { keyword: "pet water fountain",     country: "AU", mediaType: "all",   tier: 1 },
+  { keyword: "pet toy",               country: "AU", mediaType: "video", tier: 1 },
+  { keyword: "nasal aspirator",        country: "AU", mediaType: "video", tier: 1 },
+  { keyword: "pet anxiety relief",     country: "AU", mediaType: "video", tier: 2 },
+  { keyword: "pet wellness",           country: "AU", mediaType: "all",   tier: 3 },
 
-  // ── EU — FR (3 jobs) ──────────────────────────────────────────
-  { keyword: "skincare routine",    country: "FR" },
-  { keyword: "home decor LED",      country: "FR" },
-  { keyword: "bijoux artisanal",    country: "FR" },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DE — 6 jobs (5 Tier 1 + 0 Tier 2 + 1 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "blackhead remover",      country: "DE", mediaType: "video", tier: 1 },
+  { keyword: "facial cleansing brush", country: "DE", mediaType: "video", tier: 1 },
+  { keyword: "ice face roller",        country: "DE", mediaType: "video", tier: 1 },
+  { keyword: "window cleaner tool",    country: "DE", mediaType: "all",   tier: 1 },
+  { keyword: "cordless cleaning brush",country: "DE", mediaType: "video", tier: 1 },
+  { keyword: "fitness tracker",        country: "DE", mediaType: "video", tier: 3 },
 
-  // ── CA (5 jobs) ───────────────────────────────────────────────
-  { keyword: "home office gadget",  country: "CA" },
-  { keyword: "outdoor gear",        country: "CA" },
-  { keyword: "pet supplies",        country: "CA" },
-  { keyword: "massage roller",      country: "CA" },
-  { keyword: "supplement vitamin",  country: "CA" },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FR — 5 jobs (4 Tier 1 + 1 Tier 2 + 0 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "microcurrent facial device", country: "FR", mediaType: "video", tier: 1 },
+  { keyword: "kitchen organizer",      country: "FR", mediaType: "all",   tier: 1 },
+  { keyword: "baby carrier",           country: "FR", mediaType: "video", tier: 1 },
+  { keyword: "diaper bag",             country: "FR", mediaType: "video", tier: 1 },
+  { keyword: "under eye treatment",    country: "FR", mediaType: "video", tier: 2 },
 
-  // ── BR (5 jobs) — Beauty Tech + Gaming HOT market ─────────────
-  { keyword: "LED facial",          country: "BR" },
-  { keyword: "gaming RGB",          country: "BR" },
-  { keyword: "hair removal",        country: "BR" },
-  { keyword: "fitness banda",       country: "BR" },
-  { keyword: "pet acessorio",       country: "BR" },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BR — 5 jobs (3 Tier 1 + 1 Tier 2 + 1 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "pet feeder",            country: "BR", mediaType: "video", tier: 1 },
+  { keyword: "dog seat cover",         country: "BR", mediaType: "video", tier: 1 },
+  { keyword: "bottle sterilizer",      country: "BR", mediaType: "all",   tier: 1 },
+  { keyword: "skin tightening device", country: "BR", mediaType: "video", tier: 2 },
+  { keyword: "home workout equipment", country: "BR", mediaType: "video", tier: 3 },
 
-  // ── MX (5 jobs) — Growing e-commerce market ───────────────────
-  { keyword: "gadget cocina",       country: "MX" },
-  { keyword: "belleza LED",         country: "MX" },
-  { keyword: "fitness accesorio",   country: "MX" },
-  { keyword: "mascota juguete",     country: "MX" },
-  { keyword: "organizador hogar",   country: "MX" },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MX — 5 jobs (3 Tier 1 + 1 Tier 2 + 1 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "kids drawing tablet",    country: "MX", mediaType: "video", tier: 1 },
+  { keyword: "shoe cleaning brush",    country: "MX", mediaType: "video", tier: 1 },
+  { keyword: "waterproof mattress cover", country: "MX", mediaType: "all", tier: 1 },
+  { keyword: "cellulite massager",     country: "MX", mediaType: "video", tier: 2 },
+  { keyword: "cleaning tool",          country: "MX", mediaType: "video", tier: 3 },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NL — 2 jobs (1 Tier 1 + 1 Tier 2 + 0 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "car scratch remover",    country: "NL", mediaType: "video", tier: 1 },
+  { keyword: "car scratch remover",    country: "NL", mediaType: "all",   tier: 2 },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // IT — 2 jobs (0 Tier 1 + 0 Tier 2 + 2 Tier 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { keyword: "car accessory",          country: "IT", mediaType: "video", tier: 3 },
+  { keyword: "travel accessory",       country: "IT", mediaType: "all",   tier: 3 },
 ];
 
 // ─── Apify helpers ──────────────────────────────────────────────────────────
 
-function buildUrl(job: CrawlJob): string {
-  return (
-    `https://www.facebook.com/ads/library/` +
-    `?active_status=active&ad_type=all&country=${job.country}` +
-    `&q=${encodeURIComponent(job.keyword)}&search_type=keyword_unordered`
-  );
-}
-
 async function startRun(job: CrawlJob, token: string, webhookUrl?: string): Promise<string> {
   const body: Record<string, unknown> = {
-    urls: [{ url: buildUrl(job) }],
-    maxResults: MAX_RESULTS_PER_JOB,
+    search: job.keyword,
+    country: job.country,
+    adType: "PRODUCT",
+    mediaType: job.mediaType || "video",
+    adStatus: "ACTIVE",
+    maxItems: MAX_ITEMS,
   };
   if (webhookUrl) {
     body.webhooks = [{ eventTypes: ["ACTOR.RUN.SUCCEEDED"], requestUrl: webhookUrl }];
@@ -117,7 +192,7 @@ async function startRun(job: CrawlJob, token: string, webhookUrl?: string): Prom
 
 async function fetchDataset(runId: string, token: string): Promise<ApifyRawAd[]> {
   const res = await fetch(
-    `${APIFY_BASE}/actor-runs/${runId}/dataset/items?token=${token}&limit=${MAX_RESULTS_PER_JOB}&format=json`
+    `${APIFY_BASE}/actor-runs/${runId}/dataset/items?token=${token}&limit=${MAX_ITEMS}&format=json`
   );
   if (!res.ok) return [];
   return (await res.json()) as ApifyRawAd[];
@@ -250,7 +325,11 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
       firstCard?.cta_text ??
       (snap?.cards?.[0] as { cta_text?: string } | undefined)?.cta_text ??
       null;
-    const ALLOWED_CTA = ["shop now", "learn more", "order now"];
+    const ALLOWED_CTA = [
+      "shop now", "buy now", "order now", "get offer", "learn more",
+      "see more", "get quote", "subscribe", "watch more", "view more",
+      "order today", "buy today", "shop today",
+    ];
     const hasCta = ctaRaw ? ALLOWED_CTA.includes(ctaRaw.trim().toLowerCase()) : false;
 
     if (!pageName || !hasMedia || !hasBody || !hasCta) continue;
