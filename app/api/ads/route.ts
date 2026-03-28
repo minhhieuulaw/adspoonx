@@ -120,6 +120,9 @@ export async function GET(req: NextRequest) {
   }
   whereParts.push(`"isActive" = $2`);
 
+  // Classified filter: only show ads with a real niche (not NULL, not 'Other')
+  whereParts.push(`"niche" IS NOT NULL AND "niche" != 'Other'`);
+
   // Media type filter
   const videoExpr = `COALESCE("rawData"->>'videoUrl', "rawData"->'snapshot'->>'video_hd_url', "rawData"->'snapshot'->>'video_sd_url')`;
   if (mediaType === "video") {

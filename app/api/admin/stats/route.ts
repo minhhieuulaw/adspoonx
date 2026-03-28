@@ -40,6 +40,8 @@ export async function GET() {
     adsLast7Days,
     googleUsers,
     savedAdsTotal,
+    unclassifiedAds,
+    classifiedAds,
   ] = await Promise.all([
     // 1. Tổng users
     prisma.user.count(),
@@ -123,6 +125,23 @@ export async function GET() {
 
     // 13. Saved ads total
     prisma.savedAd.count(),
+
+    // 14. Unclassified ads (niche IS NULL or 'Other') — hidden from users
+    prisma.ad.count({
+      where: {
+        OR: [
+          { niche: null },
+          { niche: "Other" },
+        ],
+      },
+    }),
+
+    // 15. Classified ads (has real niche, visible to users)
+    prisma.ad.count({
+      where: {
+        niche: { not: null, notIn: ["Other"] },
+      },
+    }),
   ]);
 
   // Tính conversion rate (free → paid)
@@ -168,6 +187,11 @@ export async function GET() {
     ads: {
       total: totalAds,
       active: activeAds,
+      classified: classifiedAds,
+      unclassified: unclassifiedAds,
+      classificationRate: totalAds > 0
+        ? Math.round((classifiedAds / totalAds) * 10000) / 100
+        : 0,
       byCountry: adsByCountry.map(r => ({ country: r.country, count: r._count._all })),
       byNiche: adsByNiche.map(r => ({ niche: r.niche ?? "Unknown", count: r._count._all })),
       last7Days: adsLast7Days.map(r => ({ date: r.date, count: Number(r.count) })),
