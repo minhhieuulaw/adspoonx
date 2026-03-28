@@ -149,6 +149,7 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   const [hovered, setHovered] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [videoError, setVideoError] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   const handleTimeUpdate = useCallback(() => {
     const v = ref.current;
@@ -159,17 +160,32 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
     }
   }, []);
 
+  // Timeout: if metadata doesn't load in 4s, fall back to poster
+  useEffect(() => {
+    if (videoReady || videoError) return;
+    const timeout = setTimeout(() => {
+      if (!videoReady) setVideoError(true);
+    }, 4000);
+    return () => clearTimeout(timeout);
+  }, [videoReady, videoError]);
+
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
-    const handleMeta = () => setDuration(v.duration || 0);
+    const handleMeta = () => { setDuration(v.duration || 0); setVideoReady(true); };
+    const handleError = () => setVideoError(true);
+    const handleStalled = () => { if (!videoReady) setVideoError(true); };
     v.addEventListener("timeupdate", handleTimeUpdate);
     v.addEventListener("loadedmetadata", handleMeta);
+    v.addEventListener("error", handleError);
+    v.addEventListener("stalled", handleStalled);
     return () => {
       v.removeEventListener("timeupdate", handleTimeUpdate);
       v.removeEventListener("loadedmetadata", handleMeta);
+      v.removeEventListener("error", handleError);
+      v.removeEventListener("stalled", handleStalled);
     };
-  }, [handleTimeUpdate]);
+  }, [handleTimeUpdate, videoReady]);
 
   // Auto-play only after deliberate hover (300ms delay)
   function handleMouseEnter() {
@@ -255,11 +271,29 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
     >
       {videoError ? (
         poster ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={poster} alt={alt} className="w-full h-full object-cover" />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={poster} alt={alt} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.2)" }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: "50%",
+                background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)",
+                border: "1.5px solid rgba(255,255,255,0.25)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Play size={14} fill="white" color="white" style={{ marginLeft: 2 }} />
+              </div>
+            </div>
+          </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.3)" }}>
-            <Play size={20} style={{ color: "rgba(255,255,255,0.3)" }} />
+          <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(13,14,30,0.8)" }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: "50%",
+              background: "rgba(124,58,237,0.2)", border: "1.5px solid rgba(124,58,237,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Play size={14} fill="rgba(167,139,250,0.8)" color="rgba(167,139,250,0.8)" style={{ marginLeft: 2 }} />
+            </div>
           </div>
         )
       ) : (
