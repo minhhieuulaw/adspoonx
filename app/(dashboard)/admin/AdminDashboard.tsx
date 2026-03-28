@@ -121,7 +121,7 @@ export default function AdminDashboard() {
   function load() {
     setLoading(true);
     fetch("/api/admin/stats")
-      .then(r => r.json() as Promise<AdminStats & { error?: string }>)
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json() as Promise<AdminStats & { error?: string }>; })
       .then(d => {
         if ("error" in d && d.error) { setError(String(d.error)); return; }
         setStats(d as AdminStats);
@@ -420,7 +420,7 @@ function VpsStatusBar() {
   function load() {
     setLoading(true);
     fetch("/api/admin/vps-status")
-      .then(r => r.json() as Promise<VpsStatus>)
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json() as Promise<VpsStatus>; })
       .then(d => {
         setPrevData(data);
         setData(d);
@@ -1521,7 +1521,7 @@ function WorkflowHistory() {
   function load() {
     setLoading(true);
     fetch("/api/admin/workflow-runs?limit=20")
-      .then(r => r.json() as Promise<WorkflowRunItem[]>)
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json() as Promise<WorkflowRunItem[]>; })
       .then(d => { setRuns(Array.isArray(d) ? d : []); setLastRefresh(new Date()); })
       .catch(() => null)
       .finally(() => setLoading(false));

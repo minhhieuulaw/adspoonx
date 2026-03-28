@@ -495,6 +495,8 @@ export default function AdsPage() {
   const [ads, setAds]               = useState<FbAd[]>([]);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState<string | null>(null);
+  const [mounted, setMounted]       = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [selectedAd, setSelectedAd] = useState<FbAd | null>(null);
   const [gridFade, setGridFade]     = useState(false); // filter transition
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") ?? "");
@@ -1238,8 +1240,8 @@ export default function AdsPage() {
           </div>
         )}
 
-        {/* Active filter tags */}
-        {(() => {
+        {/* Active filter tags (client-only to avoid hydration mismatch from localStorage filters) */}
+        {mounted && (() => {
           const tags: string[] = [];
           if (filters.preset) tags.push(`Preset: ${filters.preset.charAt(0).toUpperCase() + filters.preset.slice(1)}`);
           if (filters.mediaType) tags.push(`Media: ${filters.mediaType === "video" ? "Video" : "Image"}`);
