@@ -148,6 +148,7 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   const [showMenu, setShowMenu] = useState(false);
   const [hovered, setHovered] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [videoError, setVideoError] = useState(false);
 
   const handleTimeUpdate = useCallback(() => {
     const v = ref.current;
@@ -252,12 +253,24 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <video
-        ref={ref} src={src} poster={poster} muted playsInline loop preload="metadata"
-        className="w-full h-full object-cover"
-        style={{ pointerEvents: "none" }}
-        aria-label={alt}
-      />
+      {videoError ? (
+        poster ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={poster} alt={alt} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.3)" }}>
+            <Play size={20} style={{ color: "rgba(255,255,255,0.3)" }} />
+          </div>
+        )
+      ) : (
+        <video
+          ref={ref} src={src} poster={poster} muted playsInline loop preload="metadata"
+          className="w-full h-full object-cover"
+          style={{ pointerEvents: "none" }}
+          aria-label={alt}
+          onError={() => setVideoError(true)}
+        />
+      )}
 
       {/* Center play — only when not hovered & not playing */}
       {!hovered && !playing && (
@@ -621,12 +634,6 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             )}
             {/* Spacer */}
             <div className="flex-1" />
-            {/* Platform icons */}
-            <div className="flex items-center gap-0.5">
-              {platforms.map(p => (
-                <PlatformIcon key={p} platform={p} />
-              ))}
-            </div>
           </div>
         </div>
       </motion.div>
