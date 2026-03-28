@@ -100,9 +100,20 @@ const COUNTRY_INFO: Record<string, { label: string; flag: string }> = {
 function FilterSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-1.5">
-        <div style={{ width: 2, height: 10, borderRadius: 2, background: "linear-gradient(180deg, #A78BFA, #7C3AED)", flexShrink: 0 }} />
-        <p className="text-[9px] font-bold uppercase" style={{ color: "rgba(167,139,250,0.70)", letterSpacing: "0.13em" }}>
+      <div className="flex items-center gap-2">
+        {/* Glowing accent bar */}
+        <div style={{
+          width: 2,
+          height: 12,
+          borderRadius: 2,
+          background: "linear-gradient(180deg, #C4B5FD, #7C3AED, #4C1D95)",
+          boxShadow: "0 0 6px rgba(167,139,250,0.55), 0 0 12px rgba(124,58,237,0.25)",
+          flexShrink: 0,
+        }} />
+        <p className="text-[10px] font-bold uppercase" style={{
+          color: "rgba(196,181,253,0.80)",
+          letterSpacing: "0.14em",
+        }}>
           {label}
         </p>
       </div>
@@ -112,7 +123,12 @@ function FilterSection({ label, children }: { label: string; children: React.Rea
 }
 
 function Divider() {
-  return <div style={{ height: 1, background: "rgba(255,255,255,0.07)" }} />;
+  return (
+    <div style={{
+      height: 1,
+      background: "linear-gradient(90deg, transparent, rgba(124,58,237,0.18) 30%, rgba(255,255,255,0.06) 60%, transparent)",
+    }} />
+  );
 }
 
 // ── Platform dropdown multi-select ────────────────────────────────────────────
@@ -129,10 +145,13 @@ function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle
         onClick={() => setOpen(v => !v)}
         className="flex items-center justify-between w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
         style={{
-          background: count > 0 ? "rgba(124,58,237,0.06)" : "var(--bg-hover)",
-          border: `1px solid ${count > 0 ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+          background: count > 0
+            ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06))"
+            : "rgba(255,255,255,0.035)",
+          border: `1px solid ${count > 0 ? "rgba(124,58,237,0.35)" : "rgba(255,255,255,0.08)"}`,
           color: count > 0 ? "var(--text-1)" : "var(--text-2)",
-          transition: "all 120ms var(--ease)",
+          boxShadow: count > 0 ? "0 0 12px rgba(124,58,237,0.12)" : "none",
+          transition: "all 150ms ease",
         }}
       >
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -142,7 +161,7 @@ function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle
             <div className="flex items-center gap-1 flex-wrap">
               {selectedPlatforms.map(p => (
                 <span key={p.id} className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-[1px] rounded-[4px]"
-                  style={{ background: `${p.color}18`, color: p.color, border: `1px solid ${p.color}30` }}>
+                  style={{ background: `${p.color}18`, color: p.color, border: `1px solid ${p.color}35` }}>
                   <span className="text-[10px]">{p.icon}</span>
                   {p.short}
                 </span>
@@ -151,7 +170,7 @@ function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle
           )}
         </div>
         <ChevronDown size={12} style={{
-          color: "var(--text-3)",
+          color: "rgba(167,139,250,0.60)",
           transform: open ? "rotate(180deg)" : "rotate(0deg)",
           transition: "transform 150ms ease",
           flexShrink: 0,
@@ -164,10 +183,10 @@ function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1"
             style={{
-              background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
-              backdropFilter: "blur(12px)",
+              background: "linear-gradient(160deg, #1E1F3A 0%, #161728 100%)",
+              border: "1px solid rgba(124,58,237,0.20)",
+              boxShadow: "0 20px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04) inset",
+              backdropFilter: "blur(16px)",
             }}>
             {PLATFORMS.map(p => {
               const isOn = selected.includes(p.id);
@@ -177,22 +196,19 @@ function PlatformDropdown({ selected, onToggle }: { selected: string[]; onToggle
                   onClick={() => onToggle(p.id)}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
                   style={{
-                    background: isOn ? `${p.color}10` : "transparent",
+                    background: isOn ? `${p.color}12` : "transparent",
                     color: isOn ? p.color : "var(--text-2)",
                     transition: "all 100ms ease",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? `${p.color}15` : "var(--bg-hover)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? `${p.color}10` : "transparent"; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? `${p.color}1A` : "rgba(255,255,255,0.04)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? `${p.color}12` : "transparent"; }}
                 >
-                  {/* Modern icon */}
                   <span className="text-[14px] flex-shrink-0">{p.icon}</span>
-                  {/* Label */}
                   <span className="flex-1 text-left">{p.label}</span>
-                  {/* Checkbox indicator */}
                   <div className="w-4 h-4 rounded-[4px] flex items-center justify-center flex-shrink-0"
                     style={{
                       background: isOn ? p.color : "transparent",
-                      border: `1.5px solid ${isOn ? p.color : "var(--text-3)"}`,
+                      border: `1.5px solid ${isOn ? p.color : "rgba(255,255,255,0.20)"}`,
                       transition: "all 100ms ease",
                     }}>
                     {isOn && (
@@ -223,10 +239,13 @@ function LanguageDropdown({ selected, onSelect }: { selected: AdLanguage | "all"
         onClick={() => setOpen(v => !v)}
         className="flex items-center justify-between w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
         style={{
-          background: selected !== "all" ? "rgba(124,58,237,0.06)" : "var(--bg-hover)",
-          border: `1px solid ${selected !== "all" ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+          background: selected !== "all"
+            ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06))"
+            : "rgba(255,255,255,0.035)",
+          border: `1px solid ${selected !== "all" ? "rgba(124,58,237,0.35)" : "rgba(255,255,255,0.08)"}`,
           color: selected !== "all" ? "var(--text-1)" : "var(--text-2)",
-          transition: "all 120ms var(--ease)",
+          boxShadow: selected !== "all" ? "0 0 12px rgba(124,58,237,0.12)" : "none",
+          transition: "all 150ms ease",
         }}
       >
         <div className="flex items-center gap-1.5">
@@ -234,7 +253,7 @@ function LanguageDropdown({ selected, onSelect }: { selected: AdLanguage | "all"
           <span>{current.label}</span>
         </div>
         <ChevronDown size={12} style={{
-          color: "var(--text-3)",
+          color: "rgba(167,139,250,0.60)",
           transform: open ? "rotate(180deg)" : "rotate(0deg)",
           transition: "transform 150ms ease",
           flexShrink: 0,
@@ -246,10 +265,10 @@ function LanguageDropdown({ selected, onSelect }: { selected: AdLanguage | "all"
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1 max-h-[240px] overflow-y-auto no-scrollbar"
             style={{
-              background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
-              backdropFilter: "blur(12px)",
+              background: "linear-gradient(160deg, #1E1F3A 0%, #161728 100%)",
+              border: "1px solid rgba(124,58,237,0.20)",
+              boxShadow: "0 20px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04) inset",
+              backdropFilter: "blur(16px)",
             }}>
             {LANGUAGE_OPTIONS.map(l => {
               const isOn = selected === l.id;
@@ -259,17 +278,20 @@ function LanguageDropdown({ selected, onSelect }: { selected: AdLanguage | "all"
                   onClick={() => { onSelect(l.id); setOpen(false); }}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
                   style={{
-                    background: isOn ? "rgba(124,58,237,0.10)" : "transparent",
-                    color: isOn ? "var(--ai-light)" : "var(--text-2)",
+                    background: isOn ? "rgba(124,58,237,0.14)" : "transparent",
+                    color: isOn ? "#C4B5FD" : "var(--text-2)",
                     transition: "all 100ms ease",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.15)" : "var(--bg-hover)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.10)" : "transparent"; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.20)" : "rgba(255,255,255,0.04)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.14)" : "transparent"; }}
                 >
                   <span className="text-[14px] flex-shrink-0">{l.flag}</span>
                   <span className="flex-1 text-left">{l.label}</span>
                   {isOn && l.id !== "all" && (
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--ai-light)" }} />
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{
+                      background: "#A78BFA",
+                      boxShadow: "0 0 5px rgba(167,139,250,0.8)",
+                    }} />
                   )}
                 </button>
               );
@@ -293,10 +315,13 @@ function NicheDropdown({ selected, onSelect }: { selected: string | null; onSele
         onClick={() => setOpen(v => !v)}
         className="flex items-center justify-between w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
         style={{
-          background: selected ? "rgba(124,58,237,0.06)" : "var(--bg-hover)",
-          border: `1px solid ${selected ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+          background: selected
+            ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06))"
+            : "rgba(255,255,255,0.035)",
+          border: `1px solid ${selected ? "rgba(124,58,237,0.35)" : "rgba(255,255,255,0.08)"}`,
           color: selected ? "var(--text-1)" : "var(--text-2)",
-          transition: "all 120ms var(--ease)",
+          boxShadow: selected ? "0 0 12px rgba(124,58,237,0.12)" : "none",
+          transition: "all 150ms ease",
         }}
       >
         <div className="flex items-center gap-1.5">
@@ -310,7 +335,7 @@ function NicheDropdown({ selected, onSelect }: { selected: string | null; onSele
           )}
         </div>
         <ChevronDown size={12} style={{
-          color: "var(--text-3)",
+          color: "rgba(167,139,250,0.60)",
           transform: open ? "rotate(180deg)" : "rotate(0deg)",
           transition: "transform 150ms ease",
           flexShrink: 0,
@@ -322,22 +347,22 @@ function NicheDropdown({ selected, onSelect }: { selected: string | null; onSele
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-[10px] overflow-hidden py-1 max-h-[280px] overflow-y-auto no-scrollbar"
             style={{
-              background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
-              backdropFilter: "blur(12px)",
+              background: "linear-gradient(160deg, #1E1F3A 0%, #161728 100%)",
+              border: "1px solid rgba(124,58,237,0.20)",
+              boxShadow: "0 20px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04) inset",
+              backdropFilter: "blur(16px)",
             }}>
             {/* All option */}
             <button
               onClick={() => { onSelect(null); setOpen(false); }}
               className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
               style={{
-                background: !selected ? "rgba(124,58,237,0.10)" : "transparent",
-                color: !selected ? "var(--ai-light)" : "var(--text-2)",
+                background: !selected ? "rgba(124,58,237,0.14)" : "transparent",
+                color: !selected ? "#C4B5FD" : "var(--text-2)",
                 transition: "all 100ms ease",
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = !selected ? "rgba(124,58,237,0.15)" : "var(--bg-hover)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = !selected ? "rgba(124,58,237,0.10)" : "transparent"; }}
+              onMouseEnter={e => { e.currentTarget.style.background = !selected ? "rgba(124,58,237,0.20)" : "rgba(255,255,255,0.04)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = !selected ? "rgba(124,58,237,0.14)" : "transparent"; }}
             >
               <span className="text-[14px] flex-shrink-0">🔍</span>
               <span className="flex-1 text-left">All Niches</span>
@@ -350,17 +375,20 @@ function NicheDropdown({ selected, onSelect }: { selected: string | null; onSele
                   onClick={() => { onSelect(isOn ? null : n.id); setOpen(false); }}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
                   style={{
-                    background: isOn ? "rgba(124,58,237,0.10)" : "transparent",
-                    color: isOn ? "var(--ai-light)" : "var(--text-2)",
+                    background: isOn ? "rgba(124,58,237,0.14)" : "transparent",
+                    color: isOn ? "#C4B5FD" : "var(--text-2)",
                     transition: "all 100ms ease",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.15)" : "var(--bg-hover)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.10)" : "transparent"; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.20)" : "rgba(255,255,255,0.04)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.14)" : "transparent"; }}
                 >
                   <span className="text-[14px] flex-shrink-0">{n.icon}</span>
                   <span className="flex-1 text-left">{n.short}</span>
                   {isOn && (
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--ai-light)" }} />
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{
+                      background: "#A78BFA",
+                      boxShadow: "0 0 5px rgba(167,139,250,0.8)",
+                    }} />
                   )}
                 </button>
               );
@@ -415,22 +443,36 @@ export default function AdsFilter({
   // ── VERTICAL (sidebar) layout ────────────────────────────────────────────────
   if (vertical) {
     return (
-      <div className="flex flex-col gap-3 px-4 py-4">
+      <div className="flex flex-col gap-4 px-4 py-4">
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.20), rgba(167,139,250,0.10))", border: "1px solid rgba(124,58,237,0.30)" }}>
-              <SlidersHorizontal size={11} style={{ color: "#A78BFA" }} strokeWidth={2} />
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0"
+              style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(167,139,250,0.12))",
+                border: "1px solid rgba(124,58,237,0.35)",
+                boxShadow: "0 0 12px rgba(124,58,237,0.20)",
+              }}>
+              <SlidersHorizontal size={12} style={{ color: "#C4B5FD" }} strokeWidth={2} />
             </div>
-            <span className="text-[12px] font-bold" style={{ color: "var(--text-1)", letterSpacing: "-0.01em" }}>Filters</span>
+            <span className="text-[13px] font-bold" style={{
+              background: "linear-gradient(135deg, #fff 30%, #C4B5FD)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              letterSpacing: "-0.02em",
+            }}>Filters</span>
           </div>
           {hasFilters && (
             <button
               onClick={clearAll}
-              className="text-[10px] font-semibold px-2 py-0.5 rounded-[5px]"
-              style={{ color: "#A78BFA", background: "rgba(124,58,237,0.10)", border: "1px solid rgba(124,58,237,0.25)" }}
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-[6px]"
+              style={{
+                color: "#C4B5FD",
+                background: "rgba(124,58,237,0.12)",
+                border: "1px solid rgba(124,58,237,0.30)",
+                transition: "all 120ms ease",
+              }}
             >
               Clear all
             </button>
@@ -441,25 +483,30 @@ export default function AdsFilter({
 
         {/* ★ AI Score Tier — top priority filter */}
         <div
-          className="rounded-[11px] p-2.5"
+          className="rounded-[12px] p-3"
           style={{
             background: values.aiScore !== "all"
-              ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06))"
+              ? "linear-gradient(135deg, rgba(124,58,237,0.14), rgba(167,139,250,0.06))"
               : "rgba(255,255,255,0.025)",
-            border: `1px solid ${values.aiScore !== "all" ? "rgba(124,58,237,0.25)" : "rgba(255,255,255,0.06)"}`,
+            border: `1px solid ${values.aiScore !== "all" ? "rgba(124,58,237,0.30)" : "rgba(255,255,255,0.07)"}`,
+            boxShadow: values.aiScore !== "all" ? "0 0 20px rgba(124,58,237,0.12)" : "none",
             transition: "all 200ms ease",
           }}
         >
-          <div className="flex items-center gap-2 mb-2.5">
-            <div className="w-5 h-5 rounded-[5px] flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.25)" }}>
-              <SlidersHorizontal size={10} style={{ color: "#A78BFA" }} strokeWidth={2} />
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-[6px] flex items-center justify-center flex-shrink-0"
+              style={{
+                background: "linear-gradient(135deg, rgba(167,139,250,0.20), rgba(124,58,237,0.10))",
+                border: "1px solid rgba(167,139,250,0.30)",
+                boxShadow: "0 0 8px rgba(167,139,250,0.20)",
+              }}>
+              <SlidersHorizontal size={11} style={{ color: "#C4B5FD" }} strokeWidth={2} />
             </div>
             <span
               className="text-[10px] font-bold uppercase flex-1"
               style={{
-                letterSpacing: "0.09em",
-                background: "linear-gradient(135deg, #fff, #A78BFA)",
+                letterSpacing: "0.12em",
+                background: "linear-gradient(135deg, #fff 20%, #C4B5FD)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -468,18 +515,19 @@ export default function AdsFilter({
             </span>
             {values.aiScore !== "all" && (
               <span
-                className="text-[8px] font-semibold px-1.5 py-0.5 rounded-[4px]"
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded-[4px]"
                 style={{
                   color: AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.color,
                   background: AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.bg,
                   border: `1px solid ${AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.border}`,
+                  boxShadow: `0 0 8px ${AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.color}30`,
                 }}
               >
                 {AI_SCORE_TIERS.find(t => t.id === values.aiScore)?.range}
               </span>
             )}
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             {AI_SCORE_TIERS.filter(t => t.id !== "all").map(tier => {
               const isOn = values.aiScore === tier.id;
               const isElite = tier.id === "elite";
@@ -488,23 +536,25 @@ export default function AdsFilter({
                 <button
                   key={tier.id}
                   onClick={() => onChange({ ...values, aiScore: isOn ? "all" : tier.id })}
-                  className="relative overflow-hidden flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[8px] text-left"
+                  className="relative overflow-hidden flex items-center gap-2.5 w-full px-3 py-2.5 rounded-[9px] text-left"
                   style={{
-                    background: isOn ? tier.bg : "rgba(255,255,255,0.025)",
-                    border: `1px solid ${isOn ? tier.border : "rgba(255,255,255,0.055)"}`,
-                    boxShadow: isOn ? `0 2px 14px ${tier.color}20` : "none",
-                    transition: "all 150ms ease",
+                    background: isOn
+                      ? `linear-gradient(135deg, ${tier.bg}, rgba(255,255,255,0.01))`
+                      : "rgba(255,255,255,0.025)",
+                    border: `1px solid ${isOn ? tier.border : "rgba(255,255,255,0.06)"}`,
+                    boxShadow: isOn ? `0 2px 16px ${tier.color}28, 0 0 0 1px ${tier.color}10 inset` : "none",
+                    transition: "all 160ms ease",
                   }}
                   onMouseEnter={e => {
                     if (!isOn) {
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.10)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.045)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)";
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isOn) {
                       (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.055)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)";
                     }
                   }}
                 >
@@ -512,26 +562,39 @@ export default function AdsFilter({
                   <div style={{
                     position: "absolute", bottom: 0, left: 0, height: 2,
                     width: isOn ? `${fillPct}%` : "0%",
-                    background: `linear-gradient(90deg, ${tier.color}90, ${tier.color}15)`,
-                    transition: "width 350ms ease",
+                    background: `linear-gradient(90deg, ${tier.color}CC, ${tier.color}20)`,
+                    borderRadius: "0 0 0 9px",
+                    transition: "width 380ms cubic-bezier(0.34,1.56,0.64,1)",
                   }} />
-                  {/* Color dot */}
+                  {/* Color dot with glow */}
                   <div style={{
-                    width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
                     background: tier.color,
-                    boxShadow: isOn ? `0 0 8px ${tier.color}` : "none",
-                    opacity: isOn ? 1 : 0.45,
-                    transition: "all 150ms ease",
+                    boxShadow: isOn ? `0 0 10px ${tier.color}CC, 0 0 20px ${tier.color}40` : "none",
+                    opacity: isOn ? 1 : 0.40,
+                    transition: "all 160ms ease",
                   }} />
-                  <span className="text-[11px] font-semibold flex-1" style={{ color: isOn ? tier.color : "var(--text-2)" }}>
+                  {/* Label */}
+                  <span className="text-[11px] font-semibold flex-1" style={{
+                    color: isOn ? tier.color : "rgba(255,255,255,0.45)",
+                  }}>
                     {tier.label}
                   </span>
-                  <span className="text-[9px] font-mono tabular-nums" style={{ color: isOn ? `${tier.color}cc` : "var(--text-3)" }}>
+                  {/* Range badge */}
+                  <span className="text-[9px] font-mono tabular-nums" style={{
+                    color: isOn ? `${tier.color}DD` : "rgba(255,255,255,0.22)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}>
                     {tier.range || "0–99"}
                   </span>
                   {isElite && (
-                    <span className="text-[7px] font-bold px-1 py-[1px] rounded-[3px] flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.30), rgba(167,139,250,0.18))", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.35)" }}>
+                    <span className="text-[7px] font-bold px-1.5 py-[2px] rounded-[4px] flex-shrink-0"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(124,58,237,0.40), rgba(167,139,250,0.20))",
+                        color: "#C4B5FD",
+                        border: "1px solid rgba(167,139,250,0.40)",
+                        letterSpacing: "0.06em",
+                      }}>
                       PRO
                     </span>
                   )}
@@ -544,13 +607,16 @@ export default function AdsFilter({
         <Divider />
 
         {/* Result count */}
-        <div className="text-[11px] tabular-nums" style={{ color: "var(--text-3)" }}>
+        <div className="flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: "rgba(255,255,255,0.30)" }}>
           {loading ? (
             <span className="animate-pulse">Loading…</span>
           ) : filteredResults !== undefined && totalResults !== undefined ? (
-            filteredResults === totalResults
-              ? `${totalResults} ads found`
-              : `${filteredResults} of ${totalResults} ads`
+            <>
+              <span style={{ color: "rgba(167,139,250,0.70)", fontWeight: 600 }}>
+                {filteredResults === totalResults ? totalResults : filteredResults}
+              </span>
+              <span>{filteredResults === totalResults ? "ads found" : `of ${totalResults} ads`}</span>
+            </>
           ) : null}
         </div>
 
@@ -562,46 +628,55 @@ export default function AdsFilter({
             {PRESETS.map((preset) => {
               const isActive = values.preset === preset.id;
               const color   = preset.id === "top" ? "#A78BFA" : preset.id === "trending" ? "#34D399" : "#F59E0B";
-              const iconBg  = preset.id === "top" ? "rgba(167,139,250,0.13)" : preset.id === "trending" ? "rgba(52,211,153,0.13)" : "rgba(245,158,11,0.13)";
-              const iconBorder = preset.id === "top" ? "rgba(167,139,250,0.28)" : preset.id === "trending" ? "rgba(52,211,153,0.28)" : "rgba(245,158,11,0.28)";
-              const cardBg  = preset.id === "top" ? "rgba(167,139,250,0.07)" : preset.id === "trending" ? "rgba(52,211,153,0.06)" : "rgba(245,158,11,0.06)";
+              const iconBg  = preset.id === "top" ? "rgba(167,139,250,0.15)" : preset.id === "trending" ? "rgba(52,211,153,0.15)" : "rgba(245,158,11,0.15)";
+              const iconBorder = preset.id === "top" ? "rgba(167,139,250,0.32)" : preset.id === "trending" ? "rgba(52,211,153,0.32)" : "rgba(245,158,11,0.32)";
+              const cardBg  = preset.id === "top" ? "linear-gradient(135deg, rgba(167,139,250,0.10), rgba(124,58,237,0.04))" : preset.id === "trending" ? "linear-gradient(135deg, rgba(52,211,153,0.10), rgba(16,185,129,0.04))" : "linear-gradient(135deg, rgba(245,158,11,0.10), rgba(217,119,6,0.04))";
               const PresetIcon = preset.id === "top" ? Trophy : preset.id === "trending" ? TrendingUp : Leaf;
               return (
                 <button
                   key={preset.id}
                   onClick={() => togglePreset(preset.id)}
-                  className="flex items-center gap-2.5 w-full px-2.5 py-2.5 rounded-[9px] text-left"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[10px] text-left"
                   style={{
                     background: isActive ? cardBg : "rgba(255,255,255,0.025)",
-                    border: `1px solid ${isActive ? iconBorder : "rgba(255,255,255,0.055)"}`,
-                    boxShadow: isActive ? `0 2px 14px ${color}18` : "none",
-                    transition: "all 150ms ease",
+                    border: `1px solid ${isActive ? iconBorder : "rgba(255,255,255,0.06)"}`,
+                    boxShadow: isActive ? `0 4px 20px ${color}22, 0 0 0 1px ${color}10 inset` : "none",
+                    transition: "all 160ms ease",
                   }}
                   onMouseEnter={e => {
                     if (!isActive) {
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.09)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.045)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.10)";
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isActive) {
                       (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.055)";
+                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)";
                     }
                   }}
                 >
-                  <div className="w-7 h-7 rounded-[7px] flex items-center justify-center flex-shrink-0"
-                    style={{ background: iconBg, border: `1px solid ${isActive ? iconBorder : "rgba(255,255,255,0.06)"}`, transition: "all 150ms ease" }}>
-                    <PresetIcon size={13} style={{ color: isActive ? color : "var(--text-3)" }} strokeWidth={2} />
+                  <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: isActive ? iconBg : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${isActive ? iconBorder : "rgba(255,255,255,0.07)"}`,
+                      boxShadow: isActive ? `0 0 12px ${color}30` : "none",
+                      transition: "all 160ms ease",
+                    }}>
+                    <PresetIcon size={14} style={{ color: isActive ? color : "rgba(255,255,255,0.30)" }} strokeWidth={2} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold" style={{ color: isActive ? color : "var(--text-2)" }}>
+                    <p className="text-[11px] font-semibold" style={{ color: isActive ? color : "rgba(255,255,255,0.60)" }}>
                       {preset.label}
                     </p>
-                    <p className="text-[9px]" style={{ color: "var(--text-3)" }}>{preset.desc}</p>
+                    <p className="text-[9px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)" }}>{preset.desc}</p>
                   </div>
                   {isActive && (
-                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0, boxShadow: `0 0 7px ${color}` }} />
+                    <div style={{
+                      width: 6, height: 6, borderRadius: "50%",
+                      background: color, flexShrink: 0,
+                      boxShadow: `0 0 8px ${color}CC, 0 0 16px ${color}55`,
+                    }} />
                   )}
                 </button>
               );
@@ -616,24 +691,37 @@ export default function AdsFilter({
           <div className="relative">
             <button
               onClick={() => { setShowCountryDrop(v => !v); setShowSortDrop(false); }}
-              className="flex items-center gap-1.5 w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
+              className="flex items-center gap-2 w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
               style={{
-                background: values.country !== "US" ? "rgba(124,58,237,0.06)" : "var(--bg-hover)",
-                border: `1px solid ${values.country !== "US" ? "rgba(124,58,237,0.25)" : "var(--border)"}`,
+                background: values.country !== "US"
+                  ? "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06))"
+                  : "rgba(255,255,255,0.035)",
+                border: `1px solid ${values.country !== "US" ? "rgba(124,58,237,0.35)" : "rgba(255,255,255,0.08)"}`,
                 color: values.country !== "US" ? "var(--text-1)" : "var(--text-2)",
-                transition: "all 120ms var(--ease)",
+                boxShadow: values.country !== "US" ? "0 0 12px rgba(124,58,237,0.12)" : "none",
+                transition: "all 150ms ease",
               }}
             >
-              <span className="text-[13px]">{COUNTRY_INFO[values.country]?.flag ?? "🌐"}</span>
+              <span className="text-[14px] flex-shrink-0">{COUNTRY_INFO[values.country]?.flag ?? "🌐"}</span>
               <span className="flex-1 text-left">{COUNTRY_INFO[values.country]?.label ?? values.country}</span>
-              <ChevronDown size={12} style={{ color: "var(--text-3)", transform: showCountryDrop ? "rotate(180deg)" : "none", transition: "transform 150ms", flexShrink: 0 }} />
+              <ChevronDown size={12} style={{
+                color: "rgba(167,139,250,0.60)",
+                transform: showCountryDrop ? "rotate(180deg)" : "none",
+                transition: "transform 150ms",
+                flexShrink: 0,
+              }} />
             </button>
             {showCountryDrop && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowCountryDrop(false)} />
                 <div
                   className="absolute top-full left-0 right-0 mt-1 rounded-[10px] py-1 z-20 max-h-[280px] overflow-y-auto no-scrollbar"
-                  style={{ background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 16px 40px rgba(0,0,0,0.70)" }}
+                  style={{
+                    background: "linear-gradient(160deg, #1E1F3A 0%, #161728 100%)",
+                    border: "1px solid rgba(124,58,237,0.20)",
+                    boxShadow: "0 20px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04) inset",
+                    backdropFilter: "blur(16px)",
+                  }}
                 >
                   {COUNTRY_CODES.map(code => {
                     const isOn = values.country === code;
@@ -644,17 +732,20 @@ export default function AdsFilter({
                         onClick={() => { onChange({ ...values, country: code }); setShowCountryDrop(false); }}
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium"
                         style={{
-                          background: isOn ? "rgba(124,58,237,0.10)" : "transparent",
-                          color: isOn ? "var(--ai-light)" : "var(--text-2)",
+                          background: isOn ? "rgba(124,58,237,0.14)" : "transparent",
+                          color: isOn ? "#C4B5FD" : "var(--text-2)",
                           transition: "all 100ms ease",
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.15)" : "var(--bg-hover)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.10)" : "transparent"; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.20)" : "rgba(255,255,255,0.04)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isOn ? "rgba(124,58,237,0.14)" : "transparent"; }}
                       >
                         <span className="text-[14px] flex-shrink-0">{info?.flag ?? "🌐"}</span>
                         <span className="flex-1 text-left">{info?.label ?? code}</span>
                         {isOn && (
-                          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--ai-light)" }} />
+                          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{
+                            background: "#A78BFA",
+                            boxShadow: "0 0 5px rgba(167,139,250,0.8)",
+                          }} />
                         )}
                       </button>
                     );
@@ -680,18 +771,30 @@ export default function AdsFilter({
         {/* Media type */}
         <FilterSection label="Media Type">
           <div
-            className="flex items-center p-0.5 rounded-[8px] gap-0.5 w-full"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}
+            className="flex items-center p-[3px] rounded-[9px] gap-[3px] w-full"
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              backdropFilter: "blur(8px)",
+            }}
           >
             {([{ value: null, label: "All" }, { value: "video", label: "🎬 Video" }, { value: "image", label: "🖼 Image" }] as const).map(opt => (
               <button
                 key={String(opt.value)}
                 onClick={() => onChange({ ...values, mediaType: opt.value })}
-                className="flex-1 py-1.5 rounded-[6px] text-[10px] font-medium"
+                className="flex-1 py-1.5 rounded-[7px] text-[10px] font-semibold"
                 style={
                   values.mediaType === opt.value
-                    ? { background: "var(--bg-active)", color: "var(--text-1)" }
-                    : { color: "var(--text-3)" }
+                    ? {
+                        background: "linear-gradient(135deg, rgba(124,58,237,0.35), rgba(91,33,182,0.25))",
+                        color: "#E9D5FF",
+                        border: "1px solid rgba(124,58,237,0.40)",
+                        boxShadow: "0 2px 8px rgba(124,58,237,0.25)",
+                      }
+                    : {
+                        color: "rgba(255,255,255,0.35)",
+                        border: "1px solid transparent",
+                      }
                 }
               >
                 {opt.label}
@@ -724,7 +827,7 @@ export default function AdsFilter({
 
         {/* Duration buckets */}
         <FilterSection label="Duration">
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-1.5">
             {([
               { id: "any",      label: "Any" },
               { id: "new",      label: "0–14d" },
@@ -737,12 +840,15 @@ export default function AdsFilter({
                 <button
                   key={opt.id}
                   onClick={() => onChange({ ...values, duration: opt.id })}
-                  className="py-1.5 px-2 rounded-[6px] text-[10px] font-medium text-center"
+                  className="py-1.5 px-2 rounded-[7px] text-[10px] font-semibold text-center"
                   style={{
-                    background: isOn ? "rgba(124,58,237,0.15)" : "var(--bg-hover)",
-                    border:     `1px solid ${isOn ? "rgba(124,58,237,0.4)" : "var(--border)"}`,
-                    color:      isOn ? "var(--ai-light)" : "var(--text-2)",
-                    transition: "all 120ms var(--ease)",
+                    background: isOn
+                      ? "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(167,139,250,0.10))"
+                      : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${isOn ? "rgba(124,58,237,0.45)" : "rgba(255,255,255,0.07)"}`,
+                    color: isOn ? "#C4B5FD" : "rgba(255,255,255,0.35)",
+                    boxShadow: isOn ? "0 0 10px rgba(124,58,237,0.18)" : "none",
+                    transition: "all 130ms ease",
                   }}
                 >
                   {opt.label}
@@ -759,27 +865,43 @@ export default function AdsFilter({
           <div className="relative">
             <button
               onClick={() => { setShowSortDrop(v => !v); setShowCountryDrop(false); }}
-              className="flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium"
-              style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+              className="flex items-center gap-1.5 w-full px-2.5 py-2 rounded-[8px] text-[11px] font-medium"
+              style={{
+                background: "rgba(255,255,255,0.035)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "var(--text-2)",
+                transition: "all 120ms ease",
+              }}
             >
               <span className="flex-1 text-left">{activeSort.label}</span>
-              <ChevronDown size={11} style={{ color: "var(--text-3)", transform: showSortDrop ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+              <ChevronDown size={11} style={{
+                color: "rgba(167,139,250,0.60)",
+                transform: showSortDrop ? "rotate(180deg)" : "none",
+                transition: "transform 150ms",
+              }} />
             </button>
             {showSortDrop && (
               <div
                 className="absolute top-full left-0 right-0 mt-1 rounded-[10px] py-1 z-20"
-                style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
+                style={{
+                  background: "linear-gradient(160deg, #1E1F3A 0%, #161728 100%)",
+                  border: "1px solid rgba(124,58,237,0.20)",
+                  boxShadow: "0 20px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04) inset",
+                  backdropFilter: "blur(16px)",
+                }}
               >
                 {SORT_OPTIONS.map(opt => (
                   <button
                     key={opt.id}
                     onClick={() => { onChange({ ...values, sortBy: opt.id as FilterValues["sortBy"] }); setShowSortDrop(false); }}
-                    className="w-full text-left px-3 py-1.5 text-[12px]"
+                    className="w-full text-left px-3 py-2 text-[11px]"
                     style={{
-                      color:      values.sortBy === opt.id ? "var(--ai-light)" : "var(--text-2)",
-                      fontWeight: values.sortBy === opt.id ? 500 : 400,
+                      color:      values.sortBy === opt.id ? "#C4B5FD" : "var(--text-2)",
+                      fontWeight: values.sortBy === opt.id ? 600 : 400,
+                      background: "transparent",
+                      transition: "all 100ms ease",
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   >
                     {opt.label}
@@ -807,15 +929,28 @@ export default function AdsFilter({
               key={preset.id}
               onClick={() => togglePreset(preset.id)}
               title={preset.desc}
-              className="flex items-center gap-1.5 flex-shrink-0 px-3 py-1.5 rounded-[8px] text-[12px] font-medium"
+              className="flex items-center gap-1.5 flex-shrink-0 px-3 py-1.5 rounded-[8px] text-[12px] font-semibold"
               style={{
-                background: isActive ? "rgba(124,58,237,0.18)" : "var(--bg-hover)",
-                border:     `1px solid ${isActive ? "rgba(124,58,237,0.45)" : "var(--border)"}`,
-                color:      isActive ? "var(--ai-light)" : "var(--text-2)",
-                transition: "all 120ms var(--ease)",
+                background: isActive
+                  ? "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(167,139,250,0.10))"
+                  : "rgba(255,255,255,0.04)",
+                border:     `1px solid ${isActive ? "rgba(124,58,237,0.50)" : "rgba(255,255,255,0.08)"}`,
+                color:      isActive ? "#C4B5FD" : "rgba(255,255,255,0.50)",
+                boxShadow:  isActive ? "0 2px 14px rgba(124,58,237,0.25)" : "none",
+                transition: "all 140ms ease",
               }}
-              onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.borderColor = "var(--border-strong)"; }}
-              onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; }}
+              onMouseEnter={e => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.15)";
+                  (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.70)";
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.08)";
+                  (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.50)";
+                }
+              }}
             >
               <span style={{ fontSize: 13 }}>{preset.icon}</span>
               {preset.label}
@@ -826,7 +961,12 @@ export default function AdsFilter({
           <button
             onClick={clearAll}
             className="flex items-center gap-1 flex-shrink-0 px-2.5 py-1.5 rounded-[8px] text-[11px] font-medium"
-            style={{ color: "var(--text-3)", border: "1px solid var(--border)", background: "transparent" }}
+            style={{
+              color: "rgba(255,255,255,0.35)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "transparent",
+              transition: "all 120ms ease",
+            }}
           >
             ✕ Clear
           </button>
@@ -840,15 +980,26 @@ export default function AdsFilter({
         {/* Status — hidden: 99.7% active */}
 
         {/* Media type toggle */}
-        <div className="flex items-center p-0.5 rounded-[8px] gap-0.5"
-          style={{ background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+        <div className="flex items-center p-[3px] rounded-[8px] gap-[3px]"
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}>
           {([{ value: null, label: "All" }, { value: "video", label: "🎬 Video" }, { value: "image", label: "🖼 Image" }] as const).map(opt => (
             <button key={String(opt.value)}
               onClick={() => onChange({ ...values, mediaType: opt.value })}
-              className="px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
+              className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold"
               style={values.mediaType === opt.value
-                ? { background: "var(--bg-active)", color: "var(--text-1)" }
-                : { color: "var(--text-3)" }}>
+                ? {
+                    background: "linear-gradient(135deg, rgba(124,58,237,0.35), rgba(91,33,182,0.25))",
+                    color: "#E9D5FF",
+                    border: "1px solid rgba(124,58,237,0.40)",
+                    boxShadow: "0 1px 6px rgba(124,58,237,0.20)",
+                  }
+                : {
+                    color: "rgba(255,255,255,0.35)",
+                    border: "1px solid transparent",
+                  }}>
               {opt.label}
             </button>
           ))}
@@ -860,12 +1011,13 @@ export default function AdsFilter({
             const isOn = values.platforms.includes(p.id);
             return (
               <button key={p.id} onClick={() => togglePlatform(p.id)}
-                className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-[5px]"
+                className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-[6px]"
                 style={{
-                  color:      isOn ? p.color : "var(--text-3)",
-                  background: isOn ? `${p.color}18` : "var(--bg-hover)",
-                  border:     `1px solid ${isOn ? `${p.color}40` : "var(--border)"}`,
-                  transition: "all 120ms var(--ease)",
+                  color:      isOn ? p.color : "rgba(255,255,255,0.35)",
+                  background: isOn ? `${p.color}18` : "rgba(255,255,255,0.03)",
+                  border:     `1px solid ${isOn ? `${p.color}45` : "rgba(255,255,255,0.08)"}`,
+                  boxShadow:  isOn ? `0 0 8px ${p.color}30` : "none",
+                  transition: "all 130ms ease",
                 }}>
                 <span className="text-[11px]">{p.icon}</span>
                 {p.short}
@@ -879,21 +1031,36 @@ export default function AdsFilter({
           <button
             onClick={() => { setShowSortDrop(v => !v); setShowCountryDrop(false); }}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[7px] text-[12px] font-medium"
-            style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              color: "rgba(255,255,255,0.55)",
+              transition: "all 120ms ease",
+            }}
           >
-            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Sort:</span>
+            <span className="text-[10px]" style={{ color: "rgba(167,139,250,0.55)" }}>Sort:</span>
             {activeSort.label}
-            <ChevronDown size={11} style={{ color: "var(--text-3)" }} />
+            <ChevronDown size={11} style={{ color: "rgba(167,139,250,0.55)" }} />
           </button>
           {showSortDrop && (
             <div className="absolute top-full right-0 mt-1 w-48 rounded-[10px] py-1 z-20"
-              style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+              style={{
+                background: "linear-gradient(160deg, #1E1F3A 0%, #161728 100%)",
+                border: "1px solid rgba(124,58,237,0.20)",
+                boxShadow: "0 20px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04) inset",
+                backdropFilter: "blur(16px)",
+              }}>
               {SORT_OPTIONS.map(opt => (
                 <button key={opt.id}
                   onClick={() => { onChange({ ...values, sortBy: opt.id as FilterValues["sortBy"] }); setShowSortDrop(false); }}
-                  className="w-full text-left px-3 py-1.5 text-[12px]"
-                  style={{ color: values.sortBy === opt.id ? "var(--ai-light)" : "var(--text-2)", fontWeight: values.sortBy === opt.id ? 500 : 400 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                  className="w-full text-left px-3 py-2 text-[11px]"
+                  style={{
+                    color: values.sortBy === opt.id ? "#C4B5FD" : "var(--text-2)",
+                    fontWeight: values.sortBy === opt.id ? 600 : 400,
+                    background: "transparent",
+                    transition: "all 100ms ease",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
                   {opt.label}
                 </button>
@@ -904,9 +1071,9 @@ export default function AdsFilter({
 
         {/* Result count */}
         {loading ? (
-          <span className="text-[11px] animate-pulse" style={{ color: "var(--text-3)" }}>Loading…</span>
+          <span className="text-[11px] animate-pulse" style={{ color: "rgba(255,255,255,0.28)" }}>Loading…</span>
         ) : filteredResults !== undefined && totalResults !== undefined ? (
-          <span className="text-[11px] tabular-nums" style={{ color: "var(--text-3)" }}>
+          <span className="text-[11px] tabular-nums" style={{ color: "rgba(255,255,255,0.28)" }}>
             {filteredResults === totalResults ? `${totalResults} ads` : `${filteredResults} / ${totalResults} ads`}
           </span>
         ) : null}

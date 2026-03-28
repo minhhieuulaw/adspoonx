@@ -141,69 +141,142 @@ function LiveStatsBar({ topScore }: { topScore: number }) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex items-center gap-0 mb-4 rounded-[14px] overflow-hidden"
-      style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "var(--shadow-card)" }}
+      className="relative mb-4 rounded-[14px] overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #0D0E1E 0%, #111328 50%, #0D0E1E 100%)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(124,58,237,0.06)",
+      }}
     >
-      {/* Total Ads */}
-      <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0">
-        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: "rgba(167,139,250,0.12)" }}>
-          <Sparkles size={15} style={{ color: "#A78BFA" }} strokeWidth={2} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)" }}>Total Ads</p>
-          <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color: "var(--text-1)", letterSpacing: "-0.03em" }}>
-            {fmtNum(totalAds)}
-          </p>
-        </div>
-      </div>
+      {/* Top gradient accent line */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 1,
+        background: "linear-gradient(90deg, transparent 0%, #7C3AED 25%, #A78BFA 50%, #7C3AED 75%, transparent 100%)",
+        opacity: 0.5,
+      }} />
 
-      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.06)" }} />
-      <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0">
-        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 relative" style={{ background: "rgba(52,211,153,0.12)" }}>
-          <Users size={15} style={{ color: "#34D399" }} strokeWidth={2} />
-          <span className="live-dot" style={{
-            position: "absolute", top: -1, right: -1,
-            width: 6, height: 6, borderRadius: "50%",
-            background: "#34D399", boxShadow: "0 0 6px #34D399",
+      <div className="flex items-center gap-0">
+        {/* Total Ads */}
+        <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0 relative">
+          <div style={{
+            position: "absolute", inset: 0, opacity: 0.04,
+            background: "radial-gradient(ellipse at 30% 50%, #A78BFA, transparent 70%)",
           }} />
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 relative" style={{
+            background: "linear-gradient(135deg, rgba(167,139,250,0.15), rgba(124,58,237,0.08))",
+            border: "1px solid rgba(167,139,250,0.18)",
+            boxShadow: "0 0 16px rgba(167,139,250,0.10)",
+          }}>
+            <Sparkles size={16} style={{ color: "#A78BFA" }} strokeWidth={2} />
+          </div>
+          <div className="min-w-0 relative">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "rgba(167,139,250,0.6)" }}>Total Ads</p>
+            <p className="font-bold leading-none" style={{
+              color: "var(--text-1)", letterSpacing: "-0.03em",
+              fontSize: 24, fontVariantNumeric: "tabular-nums",
+              fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)",
+            }}>
+              {fmtNum(totalAds)}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)" }}>Users Online</p>
-          <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color: "#34D399", letterSpacing: "-0.03em", transition: "all 300ms ease" }}>
-            {fmtNum(usersOnline)}
-          </p>
+
+        <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
+
+        {/* Users Online */}
+        <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0 relative">
+          <div style={{
+            position: "absolute", inset: 0, opacity: 0.04,
+            background: "radial-gradient(ellipse at 30% 50%, #34D399, transparent 70%)",
+          }} />
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 relative" style={{
+            background: "linear-gradient(135deg, rgba(52,211,153,0.15), rgba(16,185,129,0.08))",
+            border: "1px solid rgba(52,211,153,0.18)",
+            boxShadow: "0 0 16px rgba(52,211,153,0.10)",
+          }}>
+            <Users size={16} style={{ color: "#34D399" }} strokeWidth={2} />
+            <span style={{
+              position: "absolute", top: -2, right: -2,
+              width: 8, height: 8, borderRadius: "50%",
+              background: "#34D399",
+              boxShadow: "0 0 8px #34D399, 0 0 16px rgba(52,211,153,0.4)",
+              animation: "livePulse 2s ease-in-out infinite",
+            }} />
+          </div>
+          <div className="min-w-0 relative">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "rgba(52,211,153,0.6)" }}>Users Online</p>
+            <p className="font-bold leading-none" style={{
+              color: "#34D399", letterSpacing: "-0.03em", transition: "all 300ms ease",
+              fontSize: 24, fontVariantNumeric: "tabular-nums",
+              fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)",
+            }}>
+              {fmtNum(usersOnline)}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
+
+        {/* New Products Today */}
+        <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0 relative">
+          <div style={{
+            position: "absolute", inset: 0, opacity: 0.04,
+            background: "radial-gradient(ellipse at 30% 50%, #FCD34D, transparent 70%)",
+          }} />
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{
+            background: "linear-gradient(135deg, rgba(252,211,77,0.15), rgba(245,158,11,0.08))",
+            border: "1px solid rgba(252,211,77,0.18)",
+            boxShadow: "0 0 16px rgba(252,211,77,0.08)",
+          }}>
+            <TrendingUp size={16} style={{ color: "#FCD34D" }} strokeWidth={2} />
+          </div>
+          <div className="min-w-0 relative">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "rgba(252,211,77,0.6)" }}>New Today</p>
+            <p className="font-bold leading-none" style={{
+              color: "#FCD34D", letterSpacing: "-0.03em",
+              fontSize: 24, fontVariantNumeric: "tabular-nums",
+              fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)",
+            }}>
+              +{fmtNum(newToday)}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.05)" }} />
+
+        {/* Top AI Score */}
+        <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0 relative">
+          <div style={{
+            position: "absolute", inset: 0, opacity: 0.04,
+            background: "radial-gradient(ellipse at 30% 50%, #60A5FA, transparent 70%)",
+          }} />
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{
+            background: "linear-gradient(135deg, rgba(96,165,250,0.15), rgba(59,130,246,0.08))",
+            border: "1px solid rgba(96,165,250,0.18)",
+            boxShadow: "0 0 16px rgba(96,165,250,0.08)",
+          }}>
+            <Brain size={16} style={{ color: "#60A5FA" }} strokeWidth={2} />
+          </div>
+          <div className="min-w-0 relative">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "rgba(96,165,250,0.6)" }}>Top AI Score</p>
+            <p className="font-bold leading-none" style={{
+              color: "var(--text-1)", letterSpacing: "-0.03em",
+              fontSize: 24, fontVariantNumeric: "tabular-nums",
+              fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)",
+            }}>
+              {topScore > 0 ? topScore : "—"}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.06)" }} />
-
-      {/* New Products Today */}
-      <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0">
-        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: "rgba(252,211,77,0.12)" }}>
-          <TrendingUp size={15} style={{ color: "#FCD34D" }} strokeWidth={2} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)" }}>New Today</p>
-          <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color: "#FCD34D", letterSpacing: "-0.03em" }}>
-            +{fmtNum(newToday)}
-          </p>
-        </div>
-      </div>
-
-      <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.06)" }} />
-
-      {/* Top AI Score */}
-      <div className="flex items-center gap-3 px-5 py-4 flex-1 min-w-0">
-        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: "rgba(96,165,250,0.12)" }}>
-          <Brain size={15} style={{ color: "#60A5FA" }} strokeWidth={2} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: "var(--text-3)" }}>Top AI Score</p>
-          <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color: "var(--text-1)", letterSpacing: "-0.03em" }}>
-            {topScore > 0 ? topScore : "—"}
-          </p>
-        </div>
-      </div>
+      {/* Pulse animation keyframes */}
+      <style>{`
+        @keyframes livePulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.6); opacity: 0.5; }
+        }
+      `}</style>
     </motion.div>
   );
 }
@@ -215,9 +288,19 @@ function SkeletonAdCard({ delay = 0 }: { delay?: number }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay }}
-      className="rounded-[10px] overflow-hidden flex flex-col"
-      style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.05)" }}
+      className="rounded-[12px] overflow-hidden flex flex-col relative"
+      style={{
+        background: "linear-gradient(160deg, #111328 0%, #0D0E1E 100%)",
+        border: "1px solid rgba(255,255,255,0.05)",
+      }}
     >
+      {/* Purple shimmer accent at top */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 1,
+        background: "linear-gradient(90deg, transparent, rgba(124,58,237,0.3), transparent)",
+        zIndex: 1,
+      }} />
+
       {/* Creative area */}
       <div className="skeleton" style={{ aspectRatio: "1/1", borderRadius: 0 }} />
 
@@ -236,9 +319,9 @@ function SkeletonAdCard({ delay = 0 }: { delay?: number }) {
         </div>
         {/* Tags row */}
         <div className="flex items-center gap-1.5">
-          <div className="skeleton-line" style={{ width: 52, height: 16, borderRadius: 4 }} />
-          <div className="skeleton-line" style={{ width: 44, height: 16, borderRadius: 4 }} />
-          <div className="skeleton-line" style={{ width: 36, height: 16, borderRadius: 4 }} />
+          <div className="skeleton-line" style={{ width: 52, height: 16, borderRadius: 6 }} />
+          <div className="skeleton-line" style={{ width: 44, height: 16, borderRadius: 6 }} />
+          <div className="skeleton-line" style={{ width: 36, height: 16, borderRadius: 6 }} />
         </div>
       </div>
     </motion.div>
@@ -673,32 +756,42 @@ export default function AdsPage() {
             top: 56,
             alignSelf: "flex-start",
             height: "calc(100vh - 56px)",
-            background: "linear-gradient(180deg, #171930 0%, #10112A 50%, #0C0D1E 100%)",
-            borderRight: "1px solid rgba(124,58,237,0.14)",
+            background: "linear-gradient(180deg, #0F1029 0%, #0B0C1E 50%, #080919 100%)",
+            borderRight: "1px solid rgba(124,58,237,0.12)",
             overflowY: "auto",
           }}
         >
-          <div className="px-4 pt-5 pb-4" style={{ borderBottom: "1px solid rgba(124,58,237,0.14)" }}>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
+          <div className="px-4 pt-5 pb-4 relative" style={{ borderBottom: "1px solid rgba(124,58,237,0.12)" }}>
+            {/* Subtle glow behind icon */}
+            <div style={{
+              position: "absolute", top: 10, left: 16, width: 60, height: 60,
+              background: "radial-gradient(circle, rgba(124,58,237,0.20) 0%, transparent 70%)",
+              filter: "blur(12px)", pointerEvents: "none",
+            }} />
+            <div className="flex items-center gap-3 mb-2 relative">
+              <div className="w-10 h-10 rounded-[11px] flex items-center justify-center flex-shrink-0"
                 style={{
-                  background: "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(167,139,250,0.10))",
-                  border: "1px solid rgba(124,58,237,0.32)",
-                  boxShadow: "0 0 20px rgba(124,58,237,0.18)",
+                  background: "linear-gradient(135deg, rgba(124,58,237,0.28), rgba(167,139,250,0.12))",
+                  border: "1px solid rgba(124,58,237,0.35)",
+                  boxShadow: "0 0 24px rgba(124,58,237,0.22), inset 0 1px 0 rgba(255,255,255,0.06)",
                 }}>
-                <Brain size={16} style={{ color: "#A78BFA" }} strokeWidth={1.8} />
+                <Brain size={18} style={{ color: "#A78BFA", filter: "drop-shadow(0 0 6px rgba(167,139,250,0.4))" }} strokeWidth={1.8} />
               </div>
               <div>
-                <h1 className="font-display text-[13px] font-bold leading-tight"
+                <h1 className="font-display text-[14px] font-bold leading-tight"
                   style={{
-                    background: "linear-gradient(135deg, #fff 20%, #A78BFA 100%)",
+                    background: "linear-gradient(135deg, #fff 10%, #C4B5FD 50%, #A78BFA 100%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
-                    letterSpacing: "-0.015em",
+                    letterSpacing: "-0.02em",
                   }}>
                   AI Intelligence
                 </h1>
-                <p className="text-[10px]" style={{ color: "var(--text-3)" }}>Smart ad discovery</p>
+                <p className="text-[10px] font-medium mt-0.5" style={{
+                  background: "linear-gradient(90deg, rgba(167,139,250,0.5), rgba(255,255,255,0.3))",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}>Powered by AI analysis</p>
               </div>
             </div>
           </div>
@@ -720,7 +813,7 @@ export default function AdsPage() {
               <motion.div
                 key="filter-backdrop"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,0.6)" }}
+                style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
                 onClick={() => setFilterOpen(false)}
               />
               <motion.div
@@ -729,21 +822,25 @@ export default function AdsPage() {
                 transition={{ type: "spring", stiffness: 320, damping: 30 }}
                 style={{
                   position: "fixed", top: 56, left: 0, bottom: 0, width: 280, zIndex: 41,
-                  background: "linear-gradient(180deg, #171930 0%, #10112A 50%, #0C0D1E 100%)", borderRight: "1px solid rgba(124,58,237,0.14)", overflowY: "auto",
+                  background: "linear-gradient(180deg, #0F1029 0%, #0B0C1E 50%, #080919 100%)", borderRight: "1px solid rgba(124,58,237,0.12)", overflowY: "auto",
                 }}
                 className="no-scrollbar"
               >
                 <div className="flex items-center justify-between px-3 pt-3 pb-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.12)" }}>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-[6px] flex items-center justify-center"
-                      style={{ background: "rgba(124,58,237,0.18)", border: "1px solid rgba(124,58,237,0.30)" }}>
-                      <Brain size={12} style={{ color: "#A78BFA" }} />
+                    <div className="w-7 h-7 rounded-[7px] flex items-center justify-center"
+                      style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(167,139,250,0.10))", border: "1px solid rgba(124,58,237,0.32)", boxShadow: "0 0 12px rgba(124,58,237,0.15)" }}>
+                      <Brain size={13} style={{ color: "#A78BFA" }} />
                     </div>
-                    <span className="font-display text-[13px] font-bold" style={{ color: "var(--text-1)" }}>AI Filters</span>
+                    <span className="font-display text-[13px] font-bold" style={{
+                      background: "linear-gradient(135deg, #fff 20%, #A78BFA 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}>AI Filters</span>
                   </div>
                   <button onClick={() => setFilterOpen(false)}
-                    className="p-1.5 rounded-[7px]"
-                    style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}>
+                    className="p-1.5 rounded-[7px] transition-colors"
+                    style={{ color: "var(--text-3)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <X size={13} strokeWidth={2} />
                   </button>
                 </div>
@@ -762,18 +859,35 @@ export default function AdsPage() {
       </div>
 
       {/* ── Center: Content area ── */}
-      <div className="flex-1 min-w-0 flex flex-col" style={{ padding: 20 }}>
+      <div className="flex-1 min-w-0 flex flex-col relative" style={{
+        padding: 20,
+        background: "linear-gradient(180deg, #070810 0%, #0A0B18 100%)",
+      }}>
+        {/* Subtle background grid pattern */}
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.03,
+          backgroundImage: "linear-gradient(rgba(124,58,237,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.3) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+          maskImage: "radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)",
+          WebkitMaskImage: "radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)",
+        }} />
 
         {/* Search bar */}
-        <div className="mb-3 command-bar flex items-center gap-3 px-5 py-4">
+        <div className="mb-3 relative rounded-[12px] flex items-center gap-3 px-5 py-4"
+          style={{
+            background: "linear-gradient(135deg, rgba(13,14,30,0.9) 0%, rgba(17,19,40,0.9) 100%)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 2px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)",
+            backdropFilter: "blur(12px)",
+          }}>
           <button
             onClick={() => setFilterOpen(true)}
-            className="md:hidden p-1.5 rounded-[7px] flex-shrink-0"
-            style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)" }}
+            className="md:hidden p-1.5 rounded-[8px] flex-shrink-0 transition-colors"
+            style={{ color: "var(--text-3)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
             <SlidersHorizontal size={14} strokeWidth={1.5} />
           </button>
-          <Search size={15} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+          <Search size={15} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.5)", flexShrink: 0 }} />
           <div className="flex-1 relative">
             <input
               type="text"
@@ -782,24 +896,32 @@ export default function AdsPage() {
               onKeyDown={e => e.key === "Enter" && handleSearch()}
               onFocus={() => { if (searchHistory.length > 0 && !searchTerm) setShowHistory(true); }}
               onBlur={() => { setTimeout(() => setShowHistory(false), 150); }}
-              placeholder="Search ads, products, brands…"
-              className="w-full bg-transparent text-[13px] outline-none"
+              placeholder="Search ads by brand, product, keyword..."
+              className="w-full bg-transparent text-[13px] outline-none placeholder:text-[rgba(255,255,255,0.25)]"
               style={{ color: "var(--text-1)" }}
             />
             {/* Search history dropdown */}
             {showHistory && searchHistory.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 z-30 rounded-[10px] py-1.5 overflow-hidden"
-                style={{ background: "linear-gradient(160deg, #252748 0%, #1C1E38 100%)", border: "1px solid rgba(255,255,255,0.10)", boxShadow: "0 16px 48px rgba(0,0,0,0.80)", backdropFilter: "blur(16px)" }}>
-                <p className="px-3 py-1 text-[9px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Recent Searches</p>
+              <div className="absolute top-full left-0 right-0 mt-2 z-30 rounded-[12px] py-1.5 overflow-hidden"
+                style={{
+                  background: "linear-gradient(160deg, #1A1C38 0%, #12132A 100%)",
+                  border: "1px solid rgba(124,58,237,0.15)",
+                  boxShadow: "0 16px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04)",
+                  backdropFilter: "blur(20px)",
+                }}>
+                <p className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5" style={{ color: "rgba(167,139,250,0.5)" }}>
+                  <Search size={8} strokeWidth={2} />
+                  Recent Searches
+                </p>
                 {searchHistory.map((h, i) => (
                   <button key={i}
                     onMouseDown={e => { e.preventDefault(); handleSearch(h); }}
-                    className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] font-medium text-left"
-                    style={{ color: "var(--text-2)" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-hover)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-[11px] font-medium text-left transition-colors rounded-[6px] mx-1"
+                    style={{ color: "var(--text-2)", width: "calc(100% - 8px)" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(124,58,237,0.10)"; e.currentTarget.style.color = "var(--text-1)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-2)"; }}
                   >
-                    <Search size={10} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                    <Search size={10} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.4)", flexShrink: 0 }} />
                     {h}
                   </button>
                 ))}
@@ -809,24 +931,26 @@ export default function AdsPage() {
           {/* Toggle regex */}
           <button
             onClick={() => setUseRegex(!useRegex)}
-            className="p-1.5 rounded-[6px] flex-shrink-0"
+            className="p-1.5 rounded-[7px] flex-shrink-0 transition-all"
             style={{
-              color: useRegex ? "var(--ai-light)" : "var(--text-3)",
-              background: useRegex ? "var(--ai-soft)" : "transparent",
-              border: useRegex ? "1px solid rgba(124,58,237,0.3)" : "1px solid transparent",
+              color: useRegex ? "#A78BFA" : "var(--text-3)",
+              background: useRegex ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.03)",
+              border: useRegex ? "1px solid rgba(124,58,237,0.35)" : "1px solid rgba(255,255,255,0.06)",
+              boxShadow: useRegex ? "0 0 12px rgba(124,58,237,0.15)" : "none",
             }}
-            title={useRegex ? "Regex đang bật" : "Bật chế độ Regex"}
+            title={useRegex ? "Regex enabled" : "Enable Regex mode"}
           >
             <Code size={13} strokeWidth={1.8} />
           </button>
           {/* Toggle advanced */}
           <button
             onClick={() => setAdvancedOpen(!advancedOpen)}
-            className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11px] font-medium flex-shrink-0"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium flex-shrink-0 transition-all"
             style={{
-              color: advancedOpen ? "var(--ai-light)" : "var(--text-3)",
-              background: advancedOpen ? "var(--ai-soft)" : "var(--bg-hover)",
-              border: `1px solid ${advancedOpen ? "rgba(124,58,237,0.3)" : "var(--border)"}`,
+              color: advancedOpen ? "#A78BFA" : "var(--text-3)",
+              background: advancedOpen ? "rgba(124,58,237,0.12)" : "rgba(255,255,255,0.03)",
+              border: `1px solid ${advancedOpen ? "rgba(124,58,237,0.30)" : "rgba(255,255,255,0.06)"}`,
+              boxShadow: advancedOpen ? "0 0 12px rgba(124,58,237,0.10)" : "none",
             }}
           >
             <ChevronDown size={11} style={{ transform: advancedOpen ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
@@ -836,11 +960,11 @@ export default function AdsPage() {
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setSavedOpen(!savedOpen)}
-              className="p-1.5 rounded-[6px] flex-shrink-0"
+              className="p-1.5 rounded-[7px] flex-shrink-0 transition-all"
               style={{
-                color: savedSearches.length > 0 ? "var(--ai-light)" : "var(--text-3)",
-                background: "var(--bg-hover)",
-                border: "1px solid var(--border)",
+                color: savedSearches.length > 0 ? "#A78BFA" : "var(--text-3)",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.06)",
               }}
               title="Saved searches"
             >
@@ -848,57 +972,62 @@ export default function AdsPage() {
             </button>
             {savedOpen && (
               <div
-                className="absolute right-0 top-full mt-1 z-20 rounded-[10px] overflow-hidden"
+                className="absolute right-0 top-full mt-1 z-20 rounded-[12px] overflow-hidden"
                 style={{
-                  width: 280, background: "linear-gradient(160deg, #1C1D2E 0%, #161724 100%)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: "0 16px 48px rgba(0,0,0,0.7)", backdropFilter: "blur(12px)",
+                  width: 300,
+                  background: "linear-gradient(160deg, #161830 0%, #0F1025 100%)",
+                  border: "1px solid rgba(124,58,237,0.15)",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03)",
+                  backdropFilter: "blur(16px)",
                 }}
               >
-                <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+                <div className="px-3.5 py-2.5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(124,58,237,0.10)" }}>
                   <span className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>Saved searches</span>
                   <button onClick={() => setShowSaveInput(!showSaveInput)}
-                    className="text-[10px] font-medium px-2 py-0.5 rounded-[5px]"
-                    style={{ color: "var(--ai-light)", background: "var(--ai-soft)" }}>
+                    className="text-[10px] font-semibold px-2.5 py-1 rounded-[6px] transition-all"
+                    style={{ color: "#A78BFA", background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.20)" }}>
                     + Save current
                   </button>
                 </div>
                 {showSaveInput && (
-                  <div className="px-3 py-2 flex gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                  <div className="px-3.5 py-2.5 flex gap-2" style={{ borderBottom: "1px solid rgba(124,58,237,0.10)" }}>
                     <input
                       type="text"
                       value={saveName}
                       onChange={e => setSaveName(e.target.value)}
                       onKeyDown={e => e.key === "Enter" && handleSaveSearch()}
-                      placeholder="Search name…"
-                      className="flex-1 bg-transparent text-[12px] outline-none"
-                      style={{ color: "var(--text-1)" }}
+                      placeholder="Search name..."
+                      className="flex-1 bg-transparent text-[12px] outline-none px-2 py-1 rounded-[6px]"
+                      style={{ color: "var(--text-1)", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}
                       autoFocus
                     />
                     <button onClick={handleSaveSearch}
-                      className="text-[10px] font-bold px-2 py-1 rounded-[5px]"
-                      style={{ background: "var(--ai)", color: "white" }}>
+                      className="text-[10px] font-bold px-3 py-1 rounded-[6px]"
+                      style={{ background: "linear-gradient(135deg, #7C3AED, #5B21B6)", color: "white", boxShadow: "0 2px 8px rgba(124,58,237,0.3)" }}>
                       Save
                     </button>
                   </div>
                 )}
                 {savedSearches.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-[11px]" style={{ color: "var(--text-3)" }}>
+                  <div className="px-3.5 py-5 text-center text-[11px]" style={{ color: "var(--text-3)" }}>
                     No saved searches yet
                   </div>
                 ) : (
                   <div className="max-h-48 overflow-y-auto">
                     {savedSearches.map(s => (
-                      <div key={s.id} className="px-3 py-2 flex items-center gap-2 group"
-                        style={{ borderBottom: "1px solid var(--border)" }}>
+                      <div key={s.id} className="px-3.5 py-2.5 flex items-center gap-2 group transition-colors"
+                        style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(124,58,237,0.06)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                      >
                         <button onClick={() => handleApplySearch(s)}
                           className="flex-1 text-left text-[12px] font-medium truncate"
                           style={{ color: "var(--text-1)" }}>
                           {s.name}
                         </button>
                         <button onClick={() => handleDeleteSearch(s.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity"
-                          style={{ color: "var(--red-light)" }}>
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded-[5px] transition-all"
+                          style={{ color: "var(--red-light)", background: "rgba(239,68,68,0.08)" }}>
                           <Trash2 size={11} />
                         </button>
                       </div>
@@ -908,7 +1037,7 @@ export default function AdsPage() {
               </div>
             )}
           </div>
-          <span className="kbd hidden sm:inline-flex">↵</span>
+          <span className="kbd hidden sm:inline-flex" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 5, padding: "2px 6px", fontSize: 10, color: "var(--text-3)" }}>&#x21B5;</span>
         </div>
 
         {/* Advanced search panel */}
@@ -921,10 +1050,15 @@ export default function AdsPage() {
               transition={{ duration: 0.15 }}
               className="overflow-hidden mb-4"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 rounded-[10px]"
-                style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "var(--shadow-card)" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-[12px]"
+                style={{
+                  background: "linear-gradient(160deg, #111328 0%, #0D0E1E 100%)",
+                  border: "1px solid rgba(124,58,237,0.10)",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02)",
+                }}>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block flex items-center gap-1.5" style={{ color: "rgba(167,139,250,0.5)" }}>
+                    <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#7C3AED", display: "inline-block" }} />
                     Page Name
                   </label>
                   <input
@@ -933,12 +1067,19 @@ export default function AdsPage() {
                     onChange={e => setSearchPage(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSearch()}
                     placeholder={useRegex ? "e.g. nike|adidas" : "e.g. Nike"}
-                    className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
-                    style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
+                    className="w-full bg-transparent text-[12px] outline-none px-3 py-2.5 rounded-[8px] transition-all placeholder:text-[rgba(255,255,255,0.2)]"
+                    style={{
+                      color: "var(--text-1)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "rgba(255,255,255,0.02)",
+                    }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "rgba(124,58,237,0.35)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.08)"; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block flex items-center gap-1.5" style={{ color: "rgba(167,139,250,0.5)" }}>
+                    <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#7C3AED", display: "inline-block" }} />
                     Body / Title
                   </label>
                   <input
@@ -947,12 +1088,19 @@ export default function AdsPage() {
                     onChange={e => setSearchBody(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSearch()}
                     placeholder={useRegex ? "e.g. free.?shipping|sale" : "e.g. free shipping"}
-                    className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
-                    style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
+                    className="w-full bg-transparent text-[12px] outline-none px-3 py-2.5 rounded-[8px] transition-all placeholder:text-[rgba(255,255,255,0.2)]"
+                    style={{
+                      color: "var(--text-1)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "rgba(255,255,255,0.02)",
+                    }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "rgba(124,58,237,0.35)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.08)"; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-widest mb-1 block" style={{ color: "var(--text-3)" }}>
+                  <label className="text-[10px] font-bold uppercase tracking-widest mb-1.5 block flex items-center gap-1.5" style={{ color: "rgba(167,139,250,0.5)" }}>
+                    <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#7C3AED", display: "inline-block" }} />
                     Niche
                   </label>
                   <input
@@ -961,16 +1109,22 @@ export default function AdsPage() {
                     onChange={e => setSearchNiche(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSearch()}
                     placeholder={useRegex ? "e.g. fashion|beauty" : "e.g. Fashion"}
-                    className="w-full bg-transparent text-[12px] outline-none px-2.5 py-2 rounded-[7px]"
-                    style={{ color: "var(--text-1)", border: "1px solid var(--border)", background: "var(--bg-hover)" }}
+                    className="w-full bg-transparent text-[12px] outline-none px-3 py-2.5 rounded-[8px] transition-all placeholder:text-[rgba(255,255,255,0.2)]"
+                    style={{
+                      color: "var(--text-1)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "rgba(255,255,255,0.02)",
+                    }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "rgba(124,58,237,0.35)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.08)"; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.boxShadow = "none"; }}
                   />
                 </div>
               </div>
               {useRegex && (
-                <div className="mt-1.5 flex items-center gap-1.5 px-1">
-                  <Code size={10} style={{ color: "var(--ai-light)" }} />
-                  <span className="text-[10px]" style={{ color: "var(--text-3)" }}>
-                    Regex enabled — PostgreSQL syntax: <code style={{ color: "var(--ai-light)" }}>word1|word2</code>, <code style={{ color: "var(--ai-light)" }}>free.?ship</code>, <code style={{ color: "var(--ai-light)" }}>^Sale</code>
+                <div className="mt-2 flex items-center gap-2 px-1.5 py-1.5 rounded-[8px]" style={{ background: "rgba(124,58,237,0.05)" }}>
+                  <Code size={11} style={{ color: "#A78BFA" }} />
+                  <span className="text-[10px] font-medium" style={{ color: "rgba(167,139,250,0.6)" }}>
+                    Regex enabled — PostgreSQL syntax: <code className="font-mono" style={{ color: "#A78BFA", background: "rgba(124,58,237,0.12)", padding: "1px 4px", borderRadius: 3 }}>word1|word2</code>, <code className="font-mono" style={{ color: "#A78BFA", background: "rgba(124,58,237,0.12)", padding: "1px 4px", borderRadius: 3 }}>free.?ship</code>, <code className="font-mono" style={{ color: "#A78BFA", background: "rgba(124,58,237,0.12)", padding: "1px 4px", borderRadius: 3 }}>^Sale</code>
                   </span>
                 </div>
               )}
@@ -983,8 +1137,13 @@ export default function AdsPage() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-[10px] p-3.5 text-[13px] mb-4"
-            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", color: "var(--red-light)" }}>
+          <div className="rounded-[10px] p-3.5 text-[13px] mb-4 flex items-center gap-3"
+            style={{
+              background: "linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.04) 100%)",
+              border: "1px solid rgba(239,68,68,0.18)",
+              color: "var(--red-light)",
+              boxShadow: "0 0 20px rgba(239,68,68,0.06)",
+            }}>
             {error}
           </div>
         )}
@@ -992,22 +1151,79 @@ export default function AdsPage() {
         {/* Empty: no data */}
         {!loading && !error && filteredAds.length === 0 && ads.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-14 h-14 rounded-[12px] flex items-center justify-center mb-4"
-              style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.25)" }}>
-              <Brain size={24} style={{ color: "var(--ai-light)" }} />
+            className="flex flex-col items-center justify-center py-24 text-center relative">
+            {/* Background glow */}
+            <div style={{
+              position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)",
+              width: 200, height: 200,
+              background: "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)",
+              filter: "blur(40px)", pointerEvents: "none",
+            }} />
+            <div className="w-16 h-16 rounded-[14px] flex items-center justify-center mb-5 relative"
+              style={{
+                background: "linear-gradient(135deg, rgba(124,58,237,0.20), rgba(167,139,250,0.08))",
+                border: "1px solid rgba(124,58,237,0.25)",
+                boxShadow: "0 0 40px rgba(124,58,237,0.15), inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+              <Brain size={28} style={{ color: "#A78BFA", filter: "drop-shadow(0 0 8px rgba(167,139,250,0.4))" }} />
             </div>
-            <p className="text-[14px] font-medium mb-1" style={{ color: "var(--text-2)" }}>{t.ads.noResults}</p>
-            <p className="text-[12px]" style={{ color: "var(--text-3)" }}>{t.ads.noResultsHint}</p>
+            <p className="text-[15px] font-semibold mb-1.5 relative" style={{ color: "var(--text-1)" }}>{t.ads.noResults}</p>
+            <p className="text-[12px] max-w-xs relative" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>{t.ads.noResultsHint}</p>
+            <button
+              onClick={() => handleSearch("")}
+              className="mt-4 px-4 py-2 rounded-[8px] text-[12px] font-semibold transition-all relative"
+              style={{
+                background: "rgba(124,58,237,0.12)",
+                border: "1px solid rgba(124,58,237,0.25)",
+                color: "#A78BFA",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(124,58,237,0.20)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(124,58,237,0.12)"; }}
+            >
+              Browse all ads
+            </button>
           </motion.div>
         )}
 
         {/* Empty: filters too strict */}
         {!loading && !error && filteredAds.length === 0 && ads.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-[14px] font-medium mb-1" style={{ color: "var(--text-2)" }}>No ads match this filter</p>
-            <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Try a different preset or clear the filters</p>
+            className="flex flex-col items-center justify-center py-20 text-center relative">
+            {/* Background glow */}
+            <div style={{
+              position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)",
+              width: 160, height: 160,
+              background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)",
+              filter: "blur(30px)", pointerEvents: "none",
+            }} />
+            <div className="w-14 h-14 rounded-[12px] flex items-center justify-center mb-4 relative"
+              style={{
+                background: "linear-gradient(135deg, rgba(245,158,11,0.15), rgba(252,211,77,0.06))",
+                border: "1px solid rgba(245,158,11,0.20)",
+                boxShadow: "0 0 30px rgba(245,158,11,0.10)",
+              }}>
+              <SlidersHorizontal size={24} style={{ color: "#FCD34D", filter: "drop-shadow(0 0 6px rgba(252,211,77,0.3))" }} />
+            </div>
+            <p className="text-[15px] font-semibold mb-1.5 relative" style={{ color: "var(--text-1)" }}>No ads match this filter</p>
+            <p className="text-[12px] max-w-xs relative" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>Try a different preset or clear the filters to see more results</p>
+            <button
+              onClick={() => handleFilterChange({
+                ...filters,
+                preset: null, mediaType: null, duration: "any",
+                dropshipping: "all", aiScore: "all", platforms: [],
+                niche: null, language: "all",
+              })}
+              className="mt-4 px-4 py-2 rounded-[8px] text-[12px] font-semibold transition-all relative"
+              style={{
+                background: "rgba(245,158,11,0.10)",
+                border: "1px solid rgba(245,158,11,0.20)",
+                color: "#FCD34D",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,158,11,0.18)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(245,158,11,0.10)"; }}
+            >
+              Clear all filters
+            </button>
           </motion.div>
         )}
 
@@ -1036,17 +1252,50 @@ export default function AdsPage() {
           if (filters.country !== "US") tags.push(`Market: ${filters.country}`);
           if (tags.length === 0) return null;
           return (
-            <div className="flex flex-wrap items-center gap-1.5 mb-3">
-              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Active:</span>
+            <div className="flex flex-wrap items-center gap-2 mb-3 px-1">
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(167,139,250,0.45)" }}>Filters:</span>
               {tags.map(t => (
-                <span key={t} className="text-[10px] font-semibold px-2 py-1 rounded-[6px]"
-                  style={{ background: "rgba(124,58,237,0.10)", color: "var(--ai-light)", border: "1px solid rgba(124,58,237,0.20)" }}>
+                <span key={t} className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06))",
+                    color: "#A78BFA",
+                    border: "1px solid rgba(124,58,237,0.22)",
+                    boxShadow: "0 0 8px rgba(124,58,237,0.06)",
+                  }}>
                   {t}
+                  <X size={8} strokeWidth={2.5} style={{ opacity: 0.5 }} />
                 </span>
               ))}
-              <span className="text-[10px] font-medium ml-1" style={{ color: "var(--text-3)" }}>
-                → {filteredAds.length} results
+              {/* Result count pill */}
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ml-1"
+                style={{
+                  background: "rgba(52,211,153,0.08)",
+                  color: "#34D399",
+                  border: "1px solid rgba(52,211,153,0.15)",
+                  fontVariantNumeric: "tabular-nums",
+                  fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)",
+                }}>
+                {filteredAds.length} results
               </span>
+              {/* Clear all */}
+              <button
+                onClick={() => handleFilterChange({
+                  ...filters,
+                  preset: null, mediaType: null, duration: "any",
+                  dropshipping: "all", aiScore: "all", platforms: [],
+                  niche: null, language: "all", country: "US",
+                })}
+                className="text-[10px] font-semibold px-2 py-1 rounded-full ml-auto transition-all"
+                style={{
+                  color: "rgba(239,68,68,0.7)",
+                  background: "rgba(239,68,68,0.06)",
+                  border: "1px solid rgba(239,68,68,0.12)",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
+              >
+                Clear all
+              </button>
             </div>
           );
         })()}
@@ -1056,11 +1305,12 @@ export default function AdsPage() {
           <div className="flex items-center gap-2 mb-3">
             <button
               onClick={() => bulkMode ? exitBulk() : setBulkMode(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[7px] text-[11px] font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11px] font-medium transition-all"
               style={{
-                background: bulkMode ? "var(--ai-soft)" : "var(--bg-hover)",
-                border: `1px solid ${bulkMode ? "rgba(124,58,237,0.3)" : "var(--border)"}`,
-                color: bulkMode ? "var(--ai-light)" : "var(--text-3)",
+                background: bulkMode ? "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(167,139,250,0.08))" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${bulkMode ? "rgba(124,58,237,0.30)" : "rgba(255,255,255,0.06)"}`,
+                color: bulkMode ? "#A78BFA" : "var(--text-3)",
+                boxShadow: bulkMode ? "0 0 12px rgba(124,58,237,0.08)" : "none",
               }}
             >
               <CheckSquare size={12} strokeWidth={1.8} />
@@ -1069,20 +1319,34 @@ export default function AdsPage() {
             {bulkMode && (
               <>
                 <button onClick={bulkSelectAll}
-                  className="flex items-center gap-1 px-2 py-1.5 rounded-[7px] text-[10px] font-medium"
-                  style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}>
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-[10px] font-medium transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    color: "var(--text-2)",
+                  }}>
                   {bulkSelected.size === visibleAds.length ? <CheckSquare size={10} /> : <Square size={10} />}
                   All ({visibleAds.length})
                 </button>
                 {bulkSelected.size > 0 && (
                   <button onClick={bulkSaveAll}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[10px] font-semibold"
-                    style={{ background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}>
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[10px] font-semibold transition-all"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(124,58,237,0.18), rgba(167,139,250,0.10))",
+                      border: "1px solid rgba(124,58,237,0.30)",
+                      color: "#A78BFA",
+                      boxShadow: "0 0 16px rgba(124,58,237,0.10)",
+                    }}>
                     <Bookmark size={10} strokeWidth={2} />
                     Save {bulkSelected.size} ads
                   </button>
                 )}
-                <span className="text-[10px] ml-auto" style={{ color: "var(--text-3)" }}>
+                <span className="text-[10px] font-bold ml-auto px-2 py-1 rounded-[6px]" style={{
+                  color: "#A78BFA",
+                  background: "rgba(124,58,237,0.08)",
+                  fontVariantNumeric: "tabular-nums",
+                  fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)",
+                }}>
                   {bulkSelected.size} selected
                 </span>
               </>
@@ -1126,24 +1390,54 @@ export default function AdsPage() {
 
               {/* Free plan upgrade prompt */}
               {userPlan === "free" && !loading && visibleAds.length > 0 && (
-                <div className="mt-6 rounded-[12px] p-4 flex items-center gap-4"
-                  style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)" }}>
-                  <div className="w-9 h-9 rounded-[9px] flex items-center justify-center flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg,#7C3AED,#A78BFA)", boxShadow: "0 0 16px rgba(124,58,237,0.35)" }}>
-                    <Zap size={16} className="text-white" strokeWidth={2.5} />
+                <div className="mt-6 rounded-[14px] p-5 flex items-center gap-4 relative overflow-hidden"
+                  style={{
+                    background: "linear-gradient(135deg, #0D0E1E 0%, #161830 50%, #0D0E1E 100%)",
+                    border: "1px solid rgba(124,58,237,0.20)",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(124,58,237,0.06)",
+                  }}>
+                  {/* Gradient border effect top */}
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: 1,
+                    background: "linear-gradient(90deg, transparent, #7C3AED, #A78BFA, #7C3AED, transparent)",
+                    opacity: 0.5,
+                  }} />
+                  {/* Background pattern */}
+                  <div style={{
+                    position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.03,
+                    backgroundImage: "radial-gradient(circle at 20% 50%, rgba(124,58,237,0.5), transparent 40%), radial-gradient(circle at 80% 50%, rgba(167,139,250,0.3), transparent 40%)",
+                  }} />
+                  <div className="w-11 h-11 rounded-[11px] flex items-center justify-center flex-shrink-0 relative"
+                    style={{
+                      background: "linear-gradient(135deg,#7C3AED,#5B21B6)",
+                      boxShadow: "0 0 24px rgba(124,58,237,0.40), 0 4px 12px rgba(124,58,237,0.25)",
+                    }}>
+                    <Zap size={18} className="text-white" strokeWidth={2.5} style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.4))" }} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
+                  <div className="flex-1 min-w-0 relative">
+                    <p className="text-[14px] font-bold" style={{
+                      background: "linear-gradient(135deg, #fff 20%, #C4B5FD 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}>
                       Unlock Elite Ads &amp; Advanced Filters
                     </p>
-                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
+                    <p className="text-[11px] mt-1" style={{ color: "var(--text-3)", lineHeight: 1.4 }}>
                       Upgrade to see 85+ score ads, video filters, and export data.
                     </p>
                   </div>
                   <a href="/pricing"
-                    className="flex-shrink-0 px-3.5 py-2 rounded-[8px] text-[12px] font-semibold"
-                    style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}>
-                    Upgrade →
+                    className="flex-shrink-0 px-5 py-2.5 rounded-[9px] text-[12px] font-bold transition-all relative"
+                    style={{
+                      background: "linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)",
+                      color: "white",
+                      boxShadow: "0 4px 16px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+                      border: "1px solid rgba(167,139,250,0.3)",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 6px 24px rgba(124,58,237,0.50), inset 0 1px 0 rgba(255,255,255,0.2)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.15)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                  >
+                    Upgrade Now
                   </a>
                 </div>
               )}
