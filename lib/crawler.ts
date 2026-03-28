@@ -7,6 +7,7 @@
 
 import { prisma } from "./prisma";
 import { detectNiche, type NicheInput } from "./niche-detect";
+import { downloadAndUploadVideo } from "./r2";
 
 const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_ID   = "curious_coder~facebook-ads-library-scraper";
@@ -293,6 +294,18 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
         },
       });
       saved++;
+
+      // Upload video to R2 if available (non-blocking, best-effort)
+      if (videoUrl) {
+        downloadAndUploadVideo(videoUrl, adArchiveId).then(r2Url => {
+          if (r2Url) {
+            prisma.ad.update({
+              where: { adArchiveId },
+              data: { videoUrl: r2Url },
+            }).catch(() => {});
+          }
+        }).catch(() => {});
+      }
     } catch {
       // Skip on conflict or bad data
     }

@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
   type RawAd = {
     id: string; adArchiveId: string; pageId: string | null; pageName: string | null;
     bodyText: string | null; title: string | null; description: string | null;
-    imageUrl: string | null; adLibraryUrl: string | null; platforms: string[];
+    imageUrl: string | null; videoUrl: string | null; adLibraryUrl: string | null; platforms: string[];
     country: string; isActive: boolean; startDate: Date | null; endDate: Date | null;
     niche: string | null; rawData: Record<string, unknown>; scrapedAt: Date;
   };
@@ -302,7 +302,7 @@ function extractThumbnailUrl(rawData: unknown): string | undefined {
 type PrismaAd = {
   adArchiveId: string; pageId: string | null; pageName: string | null;
   bodyText: string | null; title: string | null; description: string | null;
-  imageUrl: string | null; adLibraryUrl: string | null; platforms: string[];
+  imageUrl: string | null; videoUrl: string | null; adLibraryUrl: string | null; platforms: string[];
   country: string; isActive: boolean; startDate: Date | null; endDate: Date | null;
   niche: string | null; rawData: unknown;
 };
@@ -336,7 +336,7 @@ function mapAdToFbAd(ad: PrismaAd): FbAd {
     ad_creative_link_descriptions: ad.description ? [ad.description] : undefined,
     ad_snapshot_url:               ad.adLibraryUrl ?? undefined,
     image_url:                     ad.imageUrl ?? extractThumbnailUrl(ad.rawData) ?? undefined,
-    video_url:                     extractVideoUrl(ad.rawData),
+    video_url:                     (ad.videoUrl?.startsWith("https://pub-") ? ad.videoUrl : undefined) ?? extractVideoUrl(ad.rawData),
     thumbnail_url:                 extractThumbnailUrl(ad.rawData) ?? ad.imageUrl ?? undefined,
     publisher_platforms:           ad.platforms.length ? ad.platforms : undefined,
     ad_delivery_start_time:        ad.startDate?.toISOString(),
