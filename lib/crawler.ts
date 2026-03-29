@@ -172,11 +172,12 @@ async function startRun(job: CrawlJob, token: string, webhookUrl?: string): Prom
     maxRequestRetries: 100,
     proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] },
   };
-  if (webhookUrl) {
-    body.webhooks = [{ eventTypes: ["ACTOR.RUN.SUCCEEDED"], requestUrl: webhookUrl }];
-  }
+  // Webhooks are set via query param, NOT in actor input body
+  const webhooksParam = webhookUrl
+    ? `&webhooks=${encodeURIComponent(JSON.stringify([{ eventTypes: ["ACTOR.RUN.SUCCEEDED"], requestUrl: webhookUrl }]))}`
+    : "";
   const res = await fetch(
-    `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=4096`,
+    `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=4096${webhooksParam}`,
     {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
