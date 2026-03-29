@@ -46,6 +46,39 @@ function fmtSpend(lower?: string, upper?: string): string | null {
   return `$${avg.toFixed(1)}`;
 }
 
+function formatSpendShort(spend: string): string {
+  if (!spend) return "";
+  const cleaned = spend.replace(/[^0-9<>-\s]/g, "").trim();
+  const parts = cleaned.split(/\s*-\s*/);
+  if (parts.length === 2) {
+    const lo = formatMoney(parseInt(parts[0]));
+    const hi = formatMoney(parseInt(parts[1]));
+    return `${lo}-${hi}`;
+  }
+  return spend.slice(0, 15);
+}
+
+function formatMoney(n: number): string {
+  if (isNaN(n)) return "$?";
+  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
+  return `$${n}`;
+}
+
+function formatReach(n: number): string {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${Math.round(n / 1000)}K`;
+  return String(n);
+}
+
+function extractDomain(url: string): string {
+  try {
+    return new URL(url.startsWith("http") ? url : "https://" + url).hostname.replace("www.", "");
+  } catch {
+    return url.slice(0, 20);
+  }
+}
+
 const AVATAR_PALETTE = ["#A78BFA", "#60A5FA", "#F472B6", "#34D399", "#FCD34D", "#FB923C", "#38BDF8"];
 function avatarColor(name: string): string {
   let h = 0;
@@ -520,6 +553,12 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
   const ai         = getAIInsights(ad);
   const platforms  = ad.publisher_platforms ?? [];
 
+  // New performance fields (type-safe — may not exist on FbAd yet)
+  const perfSpend   = (ad as any).spend_range as string | undefined;
+  const perfReach   = (ad as any).reach as number | undefined;
+  const perfWebsite = (ad as any).website as string | undefined;
+  const hasPerf     = !!(perfSpend || perfReach || perfWebsite);
+
   function handleInspect() {
     if (onSelect) onSelect(ad);
     else setModalOpen(true);
@@ -669,6 +708,50 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             {/* Spacer */}
             <div className="flex-1" />
           </div>
+
+          {/* Performance metrics row — only show if any data exists */}
+          {hasPerf && (
+            <div className="flex items-center gap-1 overflow-hidden mt-1">
+              {/* Spend badge */}
+              {perfSpend && (
+                <span className="ad-tag" style={{
+                  background: "rgba(245,158,11,0.10)",
+                  color: "#FCD34D",
+                  borderColor: "rgba(245,158,11,0.20)",
+                  fontSize: 9,
+                }}>
+                  💰 {formatSpendShort(perfSpend)}
+                </span>
+              )}
+              {/* Reach badge */}
+              {perfReach && (
+                <span className="ad-tag" style={{
+                  background: "rgba(59,130,246,0.10)",
+                  color: "#60A5FA",
+                  borderColor: "rgba(59,130,246,0.20)",
+                  fontSize: 9,
+                }}>
+                  👥 {formatReach(perfReach)}
+                </span>
+              )}
+              {/* Website domain */}
+              {perfWebsite && (
+                <span
+                  className="ad-tag"
+                  style={{
+                    background: "rgba(124,58,237,0.10)",
+                    color: "#A78BFA",
+                    borderColor: "rgba(124,58,237,0.20)",
+                    fontSize: 9,
+                    cursor: "pointer",
+                  }}
+                  onClick={(e) => { e.stopPropagation(); window.open(perfWebsite, "_blank"); }}
+                >
+                  🌐 {extractDomain(perfWebsite)} ↗
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </motion.div>
 

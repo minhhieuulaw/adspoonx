@@ -35,6 +35,12 @@ export interface FbAd {
   country?: string;
   countries?: string[];     // all countries the ad ran in
   niche?: string;           // auto-detected niche (e.g. "Fashion & Apparel")
+  reach?: number;
+  spend_text?: string;           // raw spend range from Apify (JSON string)
+  impressions_text?: string;     // raw impressions range from Apify (JSON string)
+  website?: string;
+  totalActiveTime?: number;
+  targeted_countries?: string[];
 }
 
 export interface FbAdsResponse {

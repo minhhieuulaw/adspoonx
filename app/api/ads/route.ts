@@ -144,6 +144,8 @@ export async function GET(req: NextRequest) {
     imageUrl: string | null; videoUrl: string | null; adLibraryUrl: string | null; platforms: string[];
     country: string; isActive: boolean; startDate: Date | null; endDate: Date | null;
     niche: string | null; rawData: Record<string, unknown>; scrapedAt: Date;
+    reach: number | null; spend: string | null; impressions: string | null;
+    website: string | null; totalActiveTime: number | null; dropshippingScore: number | null;
   };
 
   // Build parameterized seed + LIMIT
@@ -308,6 +310,8 @@ type PrismaAd = {
   imageUrl: string | null; videoUrl: string | null; adLibraryUrl: string | null; platforms: string[];
   country: string; isActive: boolean; startDate: Date | null; endDate: Date | null;
   niche: string | null; rawData: unknown;
+  reach: number | null; spend: string | null; impressions: string | null;
+  website: string | null; totalActiveTime: number | null; dropshippingScore: number | null;
 };
 
 const DS_PATTERNS = [
@@ -352,5 +356,11 @@ function mapAdToFbAd(ad: PrismaAd): FbAd {
     link_url:                      extractLinkUrl(ad.rawData),
     niche:                         ad.niche ?? undefined,
     ds_tag:                        computeDsTag(ad),
+    spend_text:                    ad.spend ?? undefined,
+    reach:                         ad.reach ?? undefined,
+    impressions_text:              ad.impressions ?? undefined,
+    website:                       ad.website ?? undefined,
+    totalActiveTime:               ad.totalActiveTime ?? undefined,
+    targeted_countries:            (ad.rawData as Record<string, unknown>)?.targeted_or_reached_countries as string[] | undefined,
   };
 }

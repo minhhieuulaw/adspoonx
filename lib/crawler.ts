@@ -38,8 +38,9 @@ import { downloadAndUploadVideo } from "./r2";
 import { isProductAd } from "./product-filter";
 
 const APIFY_BASE = "https://api.apify.com/v2";
-const ACTOR_ID   = "bo5X18oGenWEV9vVo";
+const ACTOR_ID   = "3853UUZQG6pjjdw11";
 const MAX_ITEMS  = 150;
+const MAX_RESULTS_PER_JOB = 150;
 const WAIT_MS    = 55_000; // 55s for actor to accumulate data
 
 // ─── Job definitions ────────────────────────────────────────────────────────
@@ -163,22 +164,28 @@ export const DEFAULT_CRAWL_JOBS: CrawlJob[] = [
   { keyword: "travel accessory",       country: "IT", mediaType: "all",   tier: 3 },
 ];
 
+// ─── URL builder for memo23 actor ───────────────────────────────────────────
+
+function buildUrl(job: CrawlJob): string {
+  return (
+    `https://www.facebook.com/ads/library/` +
+    `?active_status=active&ad_type=all&country=${job.country}` +
+    `&q=${encodeURIComponent(job.keyword)}&search_type=keyword_unordered`
+  );
+}
+
 // ─── Apify helpers ──────────────────────────────────────────────────────────
 
 async function startRun(job: CrawlJob, token: string, webhookUrl?: string): Promise<string> {
   const body: Record<string, unknown> = {
-    search: job.keyword,
-    country: job.country,
-    adType: "PRODUCT",
-    mediaType: job.mediaType || "video",
-    adStatus: "ACTIVE",
-    maxItems: MAX_ITEMS,
+    startUrls: [{ url: buildUrl(job) }],
+    maxResults: MAX_RESULTS_PER_JOB,
   };
   if (webhookUrl) {
     body.webhooks = [{ eventTypes: ["ACTOR.RUN.SUCCEEDED"], requestUrl: webhookUrl }];
   }
   const res = await fetch(
-    `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=512`,
+    `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=1024`,
     {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -337,6 +344,13 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
     // Product ad filter — reject service/political/charity/app ads
     if (!isProductAd(raw as unknown as Record<string, unknown>)) continue;
 
+    // ── Extract new performance fields from memo23 actor ────────────────────
+    const reach = typeof raw.reach_estimate === 'number' ? raw.reach_estimate : null;
+    const spend = raw.spend ? JSON.stringify(raw.spend) : null;
+    const impressions = raw.impressions_with_index ? JSON.stringify(raw.impressions_with_index) : null;
+    const website = (raw as Record<string, unknown>).Website ?? (raw as Record<string, unknown>).website ?? null;
+    const totalActiveTime = typeof raw.total_active_time === 'number' ? raw.total_active_time : null;
+
     // Store enriched rawData so extractors in api/ads/route.ts can pull video+thumbnail
     const enrichedRaw = {
       ...raw,
@@ -376,6 +390,11 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
           startDate:    raw.start_date ? new Date(raw.start_date * 1000) : null,
           endDate:      raw.end_date   ? new Date(raw.end_date   * 1000) : null,
           niche:        detectedNiche,
+          reach,
+          spend,
+          impressions,
+          website: typeof website === 'string' ? website : null,
+          totalActiveTime,
           rawData:      enrichedRaw as object,
         },
         update: {
@@ -384,6 +403,11 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
           imageUrl:  imageUrl ?? undefined,
           videoUrl:  videoUrl ?? undefined,
           niche:     detectedNiche,
+          reach: reach ?? undefined,
+          spend: spend ?? undefined,
+          impressions: impressions ?? undefined,
+          website: typeof website === 'string' ? website : undefined,
+          totalActiveTime: totalActiveTime ?? undefined,
           scrapedAt: new Date(),
           rawData:   enrichedRaw as object,
         },
@@ -451,6 +475,14 @@ interface ApifyRawAd {
   start_date?: number;
   end_date?: number;
   ad_library_url?: string;
+  reach_estimate?: number;
+  spend?: unknown;
+  impressions_with_index?: unknown;
+  Website?: string;
+  website?: string;
+  total_active_time?: number;
+  targeted_or_reached_countries?: string[];
+  categories?: string[];
   snapshot?: {
     page_name?: string;
     page_profile_picture_url?: string;

@@ -129,6 +129,12 @@ model Ad {
   checkCount    Int      @default(0)
   niche         String?
   rawData       Json
+  reach           Int?
+  spend           String?       // range text like "100 - 500"
+  impressions     String?       // range text
+  website         String?       // landing page URL
+  totalActiveTime Int?          // seconds
+  dropshippingScore Int?
   scrapedAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
