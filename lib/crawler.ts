@@ -31,8 +31,8 @@ import { isProductAd } from "./product-filter";
 
 const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_ID   = "3853UUZQG6pjjdw11";
-const MAX_ITEMS  = 300;
-const MAX_RESULTS_PER_JOB = 300;
+const MAX_ITEMS  = 20_000;
+const MAX_RESULTS_PER_JOB = 20_000;
 const WAIT_MS    = 55_000; // 55s for actor to accumulate data
 
 // ─── Job definitions ────────────────────────────────────────────────────────
@@ -145,10 +145,14 @@ export const DEFAULT_CRAWL_JOBS: CrawlJob[] = [
 // ─── URL builder for memo23 actor ───────────────────────────────────────────
 
 function buildUrl(job: CrawlJob): string {
+  const mediaType = job.mediaType === "all" ? "" : `&media_type=${job.mediaType ?? "video"}`;
   return (
     `https://www.facebook.com/ads/library/` +
     `?active_status=active&ad_type=all&country=${job.country}` +
-    `&q=${encodeURIComponent(job.keyword)}&search_type=keyword_unordered`
+    `&is_targeted_country=false` +
+    mediaType +
+    `&q=${encodeURIComponent(job.keyword)}` +
+    `&search_type=keyword_exact_phrase`
   );
 }
 
@@ -157,13 +161,22 @@ function buildUrl(job: CrawlJob): string {
 async function startRun(job: CrawlJob, token: string, webhookUrl?: string): Promise<string> {
   const body: Record<string, unknown> = {
     startUrls: [{ url: buildUrl(job) }],
-    maxResults: MAX_RESULTS_PER_JOB,
+    maxItems: MAX_RESULTS_PER_JOB,
+    includeAdReach: true,
+    includeTotalActiveAdsCount: true,
+    filterDuplicatePageIds: true,
+    enableDebugLogging: true,
+    minDelay: 5,
+    maxDelay: 10,
+    maxConcurrency: 10,
+    maxRequestRetries: 100,
+    proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] },
   };
   if (webhookUrl) {
     body.webhooks = [{ eventTypes: ["ACTOR.RUN.SUCCEEDED"], requestUrl: webhookUrl }];
   }
   const res = await fetch(
-    `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=1024`,
+    `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=4096`,
     {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -177,7 +190,7 @@ async function startRun(job: CrawlJob, token: string, webhookUrl?: string): Prom
 
 async function fetchDataset(runId: string, token: string): Promise<ApifyRawAd[]> {
   const res = await fetch(
-    `${APIFY_BASE}/actor-runs/${runId}/dataset/items?token=${token}&limit=${MAX_ITEMS}&format=json`
+    `${APIFY_BASE}/actor-runs/${runId}/dataset/items?token=${token}&limit=${MAX_ITEMS}&format=json&clean=true`
   );
   if (!res.ok) return [];
   return (await res.json()) as ApifyRawAd[];
@@ -306,16 +319,27 @@ export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<num
     const hasMedia = !!(imageUrl || videoUrl);
     const hasBody  = !!(bodyText && bodyText.trim().length >= 10);
 
-    const ctaRaw =
-      firstCard?.cta_text ??
-      (snap?.cards?.[0] as { cta_text?: string } | undefined)?.cta_text ??
-      null;
-    const ALLOWED_CTA = [
+    // Use cta_type (always English: SHOP_NOW, LEARN_MORE) instead of cta_text (localized)
+    const ctaType = (
+      (snap as Record<string, unknown> | undefined)?.cta_type ??
+      (firstCard as Record<string, unknown> | undefined)?.cta_type ??
+      null
+    ) as string | null;
+    const ctaText = firstCard?.cta_text ?? null;
+    const ALLOWED_CTA_TYPES = [
+      "SHOP_NOW", "BUY_NOW", "ORDER_NOW", "GET_OFFER", "LEARN_MORE",
+      "SEE_MORE", "GET_QUOTE", "SUBSCRIBE", "WATCH_MORE", "VIEW_MORE",
+      "SIGN_UP", "SEND_MESSAGE", "BOOK_NOW", "CONTACT_US",
+    ];
+    const ALLOWED_CTA_TEXT = [
       "shop now", "buy now", "order now", "get offer", "learn more",
       "see more", "get quote", "subscribe", "watch more", "view more",
       "order today", "buy today", "shop today",
     ];
-    const hasCta = ctaRaw ? ALLOWED_CTA.includes(ctaRaw.trim().toLowerCase()) : false;
+    const hasCta = !!(
+      (ctaType && ALLOWED_CTA_TYPES.includes(ctaType.toUpperCase())) ||
+      (ctaText && ALLOWED_CTA_TEXT.includes(ctaText.trim().toLowerCase()))
+    );
 
     if (!pageName || !hasMedia || !hasBody || !hasCta) continue;
 
@@ -479,6 +503,12 @@ interface ApifyRawAd {
       video_hd_url?: string;
       video_sd_url?: string;
       cta_text?: string;
+      cta_type?: string;
     }>;
+    cta_text?: string;
+    cta_type?: string;
+    link_url?: string;
+    page_categories?: string[];
+    page_like_count?: number;
   };
 }
