@@ -265,21 +265,33 @@ export async function startAllRunsWithWebhooks(
   const token = process.env.APIFY_API_TOKEN;
   if (!token) throw new Error("APIFY_API_TOKEN not configured");
 
-  const results = await Promise.allSettled(
-    jobs.map(job => {
-      const webhookUrl =
-        `${appUrl}/api/webhook/apify` +
-        `?secret=${encodeURIComponent(secret)}` +
-        `&keyword=${encodeURIComponent(job.keyword)}` +
-        `&country=${job.country}`;
-      return startRun(job, token, webhookUrl);
-    })
-  );
+  // Split into batches of 25 to avoid Apify concurrent limit
+  const BATCH_SIZE = 25;
+  let started = 0;
+  let errors = 0;
 
-  return {
-    started: results.filter(r => r.status === "fulfilled").length,
-    errors:  results.filter(r => r.status === "rejected").length,
-  };
+  for (let i = 0; i < jobs.length; i += BATCH_SIZE) {
+    const batch = jobs.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(job => {
+        const webhookUrl =
+          `${appUrl}/api/webhook/apify` +
+          `?secret=${encodeURIComponent(secret)}` +
+          `&keyword=${encodeURIComponent(job.keyword)}` +
+          `&country=${job.country}`;
+        return startRun(job, token, webhookUrl);
+      })
+    );
+    started += results.filter(r => r.status === "fulfilled").length;
+    errors += results.filter(r => r.status === "rejected").length;
+
+    // Wait 2s between batches to avoid rate limit
+    if (i + BATCH_SIZE < jobs.length) {
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+
+  return { started, errors };
 }
 
 export async function upsertAds(items: ApifyRawAd[], job: CrawlJob): Promise<number> {
