@@ -193,12 +193,13 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
     }
   }, []);
 
-  // Timeout: if metadata doesn't load in 4s, fall back to poster
+  // Timeout: if metadata doesn't load in 8s, fall back to poster
+  // Increased from 4s because R2 videos need more time on slow connections
   useEffect(() => {
     if (videoReady || videoError) return;
     const timeout = setTimeout(() => {
       if (!videoReady) setVideoError(true);
-    }, 4000);
+    }, 8000);
     return () => clearTimeout(timeout);
   }, [videoReady, videoError]);
 
@@ -319,19 +320,31 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
             </div>
           </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(13,14,30,0.8)" }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: "50%",
-              background: "rgba(124,58,237,0.2)", border: "1.5px solid rgba(124,58,237,0.3)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Play size={14} fill="rgba(167,139,250,0.8)" color="rgba(167,139,250,0.8)" style={{ marginLeft: 2 }} />
+          /* No poster available — show a static video frame as thumbnail.
+             Use a separate video element with #t=0.5 to grab first frame. */
+          <>
+            <video
+              src={`${src}#t=0.5`}
+              muted playsInline preload="metadata"
+              className="w-full h-full object-cover"
+              style={{ pointerEvents: "none" }}
+              aria-label={alt}
+            />
+            <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.2)" }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: "50%",
+                background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)",
+                border: "1.5px solid rgba(255,255,255,0.25)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Play size={14} fill="white" color="white" style={{ marginLeft: 2 }} />
+              </div>
             </div>
-          </div>
+          </>
         )
       ) : (
         <video
-          ref={ref} src={src} poster={poster} muted playsInline loop preload="metadata"
+          ref={ref} src={poster ? src : `${src}#t=0.5`} poster={poster} muted playsInline loop preload="metadata"
           className="w-full h-full object-cover"
           style={{ pointerEvents: "none" }}
           aria-label={alt}
