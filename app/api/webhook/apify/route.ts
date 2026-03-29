@@ -12,7 +12,16 @@ interface ApifyWebhookBody {
 
 export async function POST(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  if (searchParams.get("secret") !== process.env.CRON_SECRET) {
+  // Accept auth via bearer header OR query param (backward compat)
+  const authHeader = req.headers.get("authorization");
+  const secretParam = searchParams.get("secret");
+  const cronSecret = process.env.CRON_SECRET;
+
+  const isAuthed =
+    (authHeader === `Bearer ${cronSecret}`) ||
+    (secretParam === cronSecret);
+
+  if (!cronSecret || !isAuthed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

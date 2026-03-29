@@ -32,7 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 24 * 60 * 60 },  // 24 hours
   callbacks: {
     async jwt({ token, account, profile, user }) {
       // Credentials sign-in: user object is available directly

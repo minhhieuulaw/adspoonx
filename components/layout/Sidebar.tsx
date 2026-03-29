@@ -8,9 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
-const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
-  .split(",")
-  .map(e => e.trim().toLowerCase());
+// Admin check moved server-side — no more NEXT_PUBLIC_ADMIN_EMAILS exposure
 
 const NAV = [
   {
@@ -142,11 +140,14 @@ function NavContent({ onClose, isAdmin }: { onClose?: () => void; isAdmin: boole
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { data: session } = useSession();
 
-  const isAdmin = ADMIN_EMAILS.length > 0
-    ? ADMIN_EMAILS.includes(session?.user?.email?.toLowerCase() ?? "")
-    : false;
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetch("/api/auth/me").then(r => r.json()).then(d => setIsAdmin(d.isAdmin)).catch(() => {});
+    }
+  }, [session?.user?.email]);
 
   useEffect(() => {
     const handler = () => setMobileOpen(v => !v);

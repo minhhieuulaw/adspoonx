@@ -12,6 +12,7 @@ export async function GET() {
     const totalAds = Number(result[0]?.estimate ?? 0);
     return NextResponse.json({ ok: true, totalAds });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
+    console.error("Health check error:", e);
+    return NextResponse.json({ ok: false, error: "Health check failed" }, { status: 500 });
   }
 }

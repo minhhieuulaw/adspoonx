@@ -83,6 +83,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error("Stores API error:", e);
-    return NextResponse.json({ error: "Failed to fetch stores", detail: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch stores" }, { status: 500 });
   }
 }

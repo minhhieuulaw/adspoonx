@@ -79,7 +79,7 @@ export async function GET(
   } catch (e) {
     console.error("Store detail API error:", e);
     return NextResponse.json(
-      { error: "Failed to fetch store", detail: String(e) },
+      { error: "Failed to fetch store" },
       { status: 500 },
     );
   }

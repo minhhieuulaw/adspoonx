@@ -12,11 +12,16 @@ export async function GET(req: NextRequest) {
   const country = req.nextUrl.searchParams.get("country") ?? "";
 
   try {
-    const safeCountry = (SUPPORTED_COUNTRIES as readonly string[]).includes(country.toUpperCase()) ? country.toUpperCase() : "";
-    const countryFilter = safeCountry ? `AND country = '${safeCountry}'` : "";
+    const safeCountry = (SUPPORTED_COUNTRIES as readonly string[]).includes(country.toUpperCase())
+      ? country.toUpperCase()
+      : "";
 
-    // Get niche stats: total active, new last 24h, new last 7d
-    const niches = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(`
+    // Use parameterized queries to prevent SQL injection
+    const countryCondition = safeCountry ? `AND country = $1` : "";
+    const params: string[] = safeCountry ? [safeCountry] : [];
+
+    const niches = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      `
       SELECT
         niche,
         COUNT(*) as total_ads,
@@ -29,14 +34,18 @@ export async function GET(req: NextRequest) {
         MIN("scrapedAt") as first_seen
       FROM "Ad"
       WHERE niche IS NOT NULL AND niche != 'Other'
-      ${countryFilter}
+      ${countryCondition}
       GROUP BY niche
       HAVING COUNT(*) >= 10
       ORDER BY COUNT(*) FILTER (WHERE "scrapedAt" > now() - interval '24 hours') DESC
-    `);
+      `,
+      ...params,
+    );
 
-    // Get top 3 store avatars per niche
-    const topStoresPerNiche = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(`
+    const storeCountryCondition = safeCountry ? `AND a.country = $1` : "";
+
+    const topStoresPerNiche = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      `
       SELECT DISTINCT ON (sub.niche, sub.rn) sub.niche, sub."pageName", sub."profilePicture"
       FROM (
         SELECT
@@ -48,10 +57,12 @@ export async function GET(req: NextRequest) {
         JOIN "Shop" s ON a."pageId" = s."pageId"
         WHERE a.niche IS NOT NULL AND a.niche != 'Other'
           AND s."profilePicture" IS NOT NULL
-        ${countryFilter.replace('country', 'a.country')}
+        ${storeCountryCondition}
       ) sub
       WHERE sub.rn <= 3
-    `);
+      `,
+      ...params,
+    );
 
     // Group top stores by niche
     const storesByNiche: Record<string, Array<{ name: string; pic: string }>> = {};
@@ -84,7 +95,6 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Sort into categories
     const hotNow = [...data].sort((a, b) => b.new24h - a.new24h).slice(0, 8);
     const rising = [...data].sort((a, b) => b.growth - a.growth).slice(0, 8);
     const evergreen = [...data].sort((a, b) => b.activeAds - a.activeAds).slice(0, 8);
@@ -92,6 +102,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ hotNow, rising, evergreen, all: data });
   } catch (e) {
     console.error("Trending API error:", e);
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
