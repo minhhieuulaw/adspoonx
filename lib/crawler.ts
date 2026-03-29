@@ -265,8 +265,8 @@ export async function startAllRunsWithWebhooks(
   const token = process.env.APIFY_API_TOKEN;
   if (!token) throw new Error("APIFY_API_TOKEN not configured");
 
-  // Split into batches of 25 to avoid Apify concurrent limit
-  const BATCH_SIZE = 25;
+  // Split into batches of 10 to avoid Apify concurrent limit
+  const BATCH_SIZE = 10;
   let started = 0;
   let errors = 0;
 

@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { startAllRunsWithWebhooks, cleanOldAds, DEFAULT_CRAWL_JOBS } from "@/lib/crawler";
 
-export const maxDuration = 30; // 3 batches × 25 jobs + 2s delays
+export const maxDuration = 60; // 7 batches × 10 jobs + 2s delays
 
 export async function GET(req: NextRequest) {
   // DISABLED: tạm tắt auto-crawl để kiểm soát chi phí Apify
