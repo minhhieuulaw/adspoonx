@@ -30,9 +30,9 @@ import { downloadAndUploadVideo } from "./r2";
 import { isProductAd } from "./product-filter";
 
 const APIFY_BASE = "https://api.apify.com/v2";
-const ACTOR_ID   = "3853UUZQG6pjjdw11";
-const MAX_ITEMS  = 20_000;
-const MAX_RESULTS_PER_JOB = 20_000;
+const ACTOR_ID   = "XtaWFhbtfxyzqrFmd"; // curious_coder — $0.75/1K ads, 804 ads/keyword
+const MAX_ITEMS  = 1_000;
+const MAX_RESULTS_PER_JOB = 1_000;
 const WAIT_MS    = 55_000; // 55s for actor to accumulate data
 
 // ─── Job definitions ────────────────────────────────────────────────────────
@@ -159,25 +159,19 @@ function buildUrl(job: CrawlJob): string {
 // ─── Apify helpers ──────────────────────────────────────────────────────────
 
 async function startRun(job: CrawlJob, token: string, webhookUrl?: string): Promise<string> {
+  // curious_coder actor: uses `urls` field, `totalRecords`, `scrapeAdDetails`
+  // Rule: 1 URL per 512MB RAM → memory=512 for single URL jobs
   const body: Record<string, unknown> = {
-    startUrls: [{ url: buildUrl(job) }],
-    maxItems: MAX_RESULTS_PER_JOB,
-    includeAdReach: true,
-    includeTotalActiveAdsCount: true,
-    filterDuplicatePageIds: true,
-    enableDebugLogging: true,
-    minDelay: 5,
-    maxDelay: 10,
-    maxConcurrency: 10,
-    maxRequestRetries: 100,
-    proxy: { useApifyProxy: true, apifyProxyGroups: ["RESIDENTIAL"] },
+    urls: [{ url: buildUrl(job) }],
+    scrapeAdDetails: true,
+    totalRecords: MAX_RESULTS_PER_JOB,
   };
   // Webhooks via query param must be Base64-encoded JSON
   const webhooksParam = webhookUrl
     ? `&webhooks=${Buffer.from(JSON.stringify([{ eventTypes: ["ACTOR.RUN.SUCCEEDED"], requestUrl: webhookUrl }])).toString("base64url")}`
     : "";
   const res = await fetch(
-    `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=4096${webhooksParam}`,
+    `${APIFY_BASE}/acts/${ACTOR_ID}/runs?token=${token}&memory=512${webhooksParam}`,
     {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
