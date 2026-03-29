@@ -5,6 +5,7 @@
 
 export const SUPPORTED_COUNTRIES = [
   "US", "GB", "CA", "AU", "DE", "FR", "NL", "IT", "BR", "MX",
+  "JP", "KR", "IN", "SG", "MY", "TH", "PH", "SE", "NO",
 ] as const;
 
 export type SupportedCountry = (typeof SUPPORTED_COUNTRIES)[number];
@@ -21,6 +22,15 @@ export const COUNTRY_INFO: Record<string, { label: string; flag: string }> = {
   IT:  { label: "Italy", flag: "🇮🇹" },
   BR:  { label: "Brazil", flag: "🇧🇷" },
   MX:  { label: "Mexico", flag: "🇲🇽" },
+  JP:  { label: "Japan", flag: "🇯🇵" },
+  KR:  { label: "South Korea", flag: "🇰🇷" },
+  IN:  { label: "India", flag: "🇮🇳" },
+  SG:  { label: "Singapore", flag: "🇸🇬" },
+  MY:  { label: "Malaysia", flag: "🇲🇾" },
+  TH:  { label: "Thailand", flag: "🇹🇭" },
+  PH:  { label: "Philippines", flag: "🇵🇭" },
+  SE:  { label: "Sweden", flag: "🇸🇪" },
+  NO:  { label: "Norway", flag: "🇳🇴" },
 };
 
 /** Country codes with "ALL" prepended — for UI filter dropdowns */
