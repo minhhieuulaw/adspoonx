@@ -17,17 +17,9 @@
  *   e.g. "fitness recovery", "beauty tool", "kitchen gadget"
  *   Casts a wider net, discovers trending products.
  *
- * ─── Market Allocation (70 jobs total) ─────────────────────────────────────
- * US 18 (14 T1 + 2 T2 + 2 T3)  — largest e-commerce market
- * UK 12 ( 9 T1 + 2 T2 + 1 T3)  — strong dropshipping market
- * CA  8 ( 6 T1 + 1 T2 + 1 T3)  — high purchasing power
- * AU  7 ( 5 T1 + 1 T2 + 1 T3)  — outdoor/fitness/pet niches
- * DE  6 ( 5 T1 + 0 T2 + 1 T3)  — EU largest economy
- * FR  5 ( 4 T1 + 1 T2 + 0 T3)  — beauty/skincare strong
- * BR  5 ( 3 T1 + 1 T2 + 1 T3)  — growing e-commerce
- * MX  5 ( 3 T1 + 1 T2 + 1 T3)  — growing e-commerce
- * NL  2 ( 1 T1 + 1 T2 + 0 T3)  — high-tech consumers
- * IT  2 ( 0 T1 + 0 T2 + 2 T3)  — beauty/fashion market (broad discovery)
+ * ─── Market Allocation (US 45 + CA 25 = 70 jobs (US+CA focus)) ─────────────
+ * US 45 (40 T1 + 3 T2 + 2 T3)  — largest e-commerce market, full keyword coverage
+ * CA 25 (22 T1 + 2 T2 + 1 T3)  — high purchasing power, top keywords mirrored
  *
  * 70% video / 30% all mediaType split for video-first strategy.
  */
@@ -39,8 +31,8 @@ import { isProductAd } from "./product-filter";
 
 const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_ID   = "3853UUZQG6pjjdw11";
-const MAX_ITEMS  = 150;
-const MAX_RESULTS_PER_JOB = 150;
+const MAX_ITEMS  = 300;
+const MAX_RESULTS_PER_JOB = 300;
 const WAIT_MS    = 55_000; // 55s for actor to accumulate data
 
 // ─── Job definitions ────────────────────────────────────────────────────────
@@ -54,114 +46,100 @@ export interface CrawlJob {
 
 export const DEFAULT_CRAWL_JOBS: CrawlJob[] = [
   // ═══════════════════════════════════════════════════════════════════════════
-  // US — 18 jobs (14 Tier 1 + 2 Tier 2 + 2 Tier 3)
+  // US — 45 jobs: ALL Tier 1 product keywords + Tier 2 + Tier 3
   // ═══════════════════════════════════════════════════════════════════════════
+  // Health & Pain Relief (8)
   { keyword: "posture corrector",       country: "US", mediaType: "video", tier: 1 },
-  { keyword: "massage gun",            country: "US", mediaType: "video", tier: 1 },
-  { keyword: "neck massager",          country: "US", mediaType: "video", tier: 1 },
-  { keyword: "led facial device",      country: "US", mediaType: "video", tier: 1 },
-  { keyword: "hair removal device",    country: "US", mediaType: "all",   tier: 1 },
-  { keyword: "portable blender",       country: "US", mediaType: "video", tier: 1 },
-  { keyword: "electric spin scrubber", country: "US", mediaType: "video", tier: 1 },
-  { keyword: "wireless charger",       country: "US", mediaType: "all",   tier: 1 },
-  { keyword: "portable projector",     country: "US", mediaType: "video", tier: 1 },
-  { keyword: "dash cam",              country: "US", mediaType: "video", tier: 1 },
-  { keyword: "pet camera",            country: "US", mediaType: "video", tier: 1 },
-  { keyword: "baby monitor",          country: "US", mediaType: "all",   tier: 1 },
-  { keyword: "security camera",       country: "US", mediaType: "video", tier: 1 },
-  { keyword: "smart home gadget",     country: "US", mediaType: "all",   tier: 1 },
-  { keyword: "hair thinning solution", country: "US", mediaType: "video", tier: 2 },
-  { keyword: "back pain relief",       country: "US", mediaType: "video", tier: 2 },
-  { keyword: "fitness recovery",       country: "US", mediaType: "video", tier: 3 },
-  { keyword: "kitchen gadget",         country: "US", mediaType: "all",   tier: 3 },
+  { keyword: "massage gun",             country: "US", mediaType: "video", tier: 1 },
+  { keyword: "neck massager",           country: "US", mediaType: "video", tier: 1 },
+  { keyword: "knee massager",           country: "US", mediaType: "video", tier: 1 },
+  { keyword: "back stretcher",          country: "US", mediaType: "video", tier: 1 },
+  { keyword: "foot massager",           country: "US", mediaType: "video", tier: 1 },
+  { keyword: "heating pad",             country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "pain relief patch",       country: "US", mediaType: "video", tier: 1 },
+  // Beauty & Skincare (8)
+  { keyword: "led facial device",       country: "US", mediaType: "video", tier: 1 },
+  { keyword: "hair removal device",     country: "US", mediaType: "video", tier: 1 },
+  { keyword: "facial cleansing brush",  country: "US", mediaType: "video", tier: 1 },
+  { keyword: "blackhead remover",       country: "US", mediaType: "video", tier: 1 },
+  { keyword: "teeth whitening kit",     country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "scalp massager",          country: "US", mediaType: "video", tier: 1 },
+  { keyword: "ice face roller",         country: "US", mediaType: "video", tier: 1 },
+  { keyword: "microcurrent facial device", country: "US", mediaType: "video", tier: 1 },
+  // Home & Cleaning (6)
+  { keyword: "portable blender",        country: "US", mediaType: "video", tier: 1 },
+  { keyword: "mini vacuum",             country: "US", mediaType: "video", tier: 1 },
+  { keyword: "electric spin scrubber",  country: "US", mediaType: "video", tier: 1 },
+  { keyword: "garment steamer",         country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "storage organizer",       country: "US", mediaType: "video", tier: 1 },
+  { keyword: "cordless cleaning brush", country: "US", mediaType: "video", tier: 1 },
+  // Pet (5)
+  { keyword: "pet camera",              country: "US", mediaType: "video", tier: 1 },
+  { keyword: "pet grooming brush",      country: "US", mediaType: "video", tier: 1 },
+  { keyword: "pet hair remover",        country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "pet water fountain",      country: "US", mediaType: "video", tier: 1 },
+  { keyword: "pet feeder",              country: "US", mediaType: "video", tier: 1 },
+  // Tech & Gadgets (7)
+  { keyword: "wireless charger",        country: "US", mediaType: "video", tier: 1 },
+  { keyword: "portable projector",      country: "US", mediaType: "video", tier: 1 },
+  { keyword: "dash cam",                country: "US", mediaType: "video", tier: 1 },
+  { keyword: "mini printer",            country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "phone mount",             country: "US", mediaType: "video", tier: 1 },
+  { keyword: "power bank",              country: "US", mediaType: "video", tier: 1 },
+  { keyword: "security camera",         country: "US", mediaType: "video", tier: 1 },
+  // Baby (4)
+  { keyword: "baby monitor",            country: "US", mediaType: "video", tier: 1 },
+  { keyword: "bottle warmer",           country: "US", mediaType: "all",   tier: 1 },
+  { keyword: "baby carrier",            country: "US", mediaType: "video", tier: 1 },
+  { keyword: "diaper bag",              country: "US", mediaType: "video", tier: 1 },
+  // Auto (2)
+  { keyword: "car vacuum",              country: "US", mediaType: "video", tier: 1 },
+  { keyword: "car scratch remover",     country: "US", mediaType: "video", tier: 1 },
+  // Tier 2 — Problem-solution (3)
+  { keyword: "hair thinning solution",  country: "US", mediaType: "video", tier: 2 },
+  { keyword: "back pain relief",        country: "US", mediaType: "video", tier: 2 },
+  { keyword: "better sleep device",     country: "US", mediaType: "video", tier: 2 },
+  // Tier 3 — Broader (2)
+  { keyword: "fitness recovery",        country: "US", mediaType: "all",   tier: 3 },
+  { keyword: "kitchen gadget",          country: "US", mediaType: "all",   tier: 3 },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // UK (GB) — 12 jobs (9 Tier 1 + 2 Tier 2 + 1 Tier 3)
+  // CA — 25 jobs: Top Tier 1 keywords for Canadian market
   // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "knee massager",          country: "GB", mediaType: "video", tier: 1 },
-  { keyword: "back stretcher",         country: "GB", mediaType: "video", tier: 1 },
-  { keyword: "teeth whitening kit",    country: "GB", mediaType: "video", tier: 1 },
-  { keyword: "garment steamer",        country: "GB", mediaType: "video", tier: 1 },
-  { keyword: "pet grooming brush",     country: "GB", mediaType: "all",   tier: 1 },
-  { keyword: "pet hair remover",       country: "GB", mediaType: "video", tier: 1 },
-  { keyword: "mini printer",          country: "GB", mediaType: "video", tier: 1 },
-  { keyword: "power bank",            country: "GB", mediaType: "all",   tier: 1 },
-  { keyword: "bottle warmer",         country: "GB", mediaType: "video", tier: 1 },
-  { keyword: "posture support",        country: "GB", mediaType: "video", tier: 2 },
-  { keyword: "neck pain relief",       country: "GB", mediaType: "video", tier: 2 },
-  { keyword: "beauty tool",            country: "GB", mediaType: "all",   tier: 3 },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CA — 8 jobs (6 Tier 1 + 1 Tier 2 + 1 Tier 3)
-  // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "foot massager",          country: "CA", mediaType: "video", tier: 1 },
-  { keyword: "heating pad",            country: "CA", mediaType: "video", tier: 1 },
-  { keyword: "mini vacuum",           country: "CA", mediaType: "video", tier: 1 },
-  { keyword: "storage organizer",      country: "CA", mediaType: "all",   tier: 1 },
-  { keyword: "phone mount",           country: "CA", mediaType: "video", tier: 1 },
-  { keyword: "car vacuum",            country: "CA", mediaType: "video", tier: 1 },
-  { keyword: "better sleep device",    country: "CA", mediaType: "video", tier: 2 },
-  { keyword: "skincare device",        country: "CA", mediaType: "all",   tier: 3 },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // AU — 7 jobs (5 Tier 1 + 1 Tier 2 + 1 Tier 3)
-  // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "pain relief patch",      country: "AU", mediaType: "video", tier: 1 },
-  { keyword: "scalp massager",         country: "AU", mediaType: "video", tier: 1 },
-  { keyword: "pet water fountain",     country: "AU", mediaType: "all",   tier: 1 },
-  { keyword: "pet toy",               country: "AU", mediaType: "video", tier: 1 },
-  { keyword: "nasal aspirator",        country: "AU", mediaType: "video", tier: 1 },
-  { keyword: "pet anxiety relief",     country: "AU", mediaType: "video", tier: 2 },
-  { keyword: "pet wellness",           country: "AU", mediaType: "all",   tier: 3 },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // DE — 6 jobs (5 Tier 1 + 0 Tier 2 + 1 Tier 3)
-  // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "blackhead remover",      country: "DE", mediaType: "video", tier: 1 },
-  { keyword: "facial cleansing brush", country: "DE", mediaType: "video", tier: 1 },
-  { keyword: "ice face roller",        country: "DE", mediaType: "video", tier: 1 },
-  { keyword: "window cleaner tool",    country: "DE", mediaType: "all",   tier: 1 },
-  { keyword: "cordless cleaning brush",country: "DE", mediaType: "video", tier: 1 },
-  { keyword: "fitness tracker",        country: "DE", mediaType: "video", tier: 3 },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FR — 5 jobs (4 Tier 1 + 1 Tier 2 + 0 Tier 3)
-  // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "microcurrent facial device", country: "FR", mediaType: "video", tier: 1 },
-  { keyword: "kitchen organizer",      country: "FR", mediaType: "all",   tier: 1 },
-  { keyword: "baby carrier",           country: "FR", mediaType: "video", tier: 1 },
-  { keyword: "diaper bag",             country: "FR", mediaType: "video", tier: 1 },
-  { keyword: "under eye treatment",    country: "FR", mediaType: "video", tier: 2 },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // BR — 5 jobs (3 Tier 1 + 1 Tier 2 + 1 Tier 3)
-  // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "pet feeder",            country: "BR", mediaType: "video", tier: 1 },
-  { keyword: "dog seat cover",         country: "BR", mediaType: "video", tier: 1 },
-  { keyword: "bottle sterilizer",      country: "BR", mediaType: "all",   tier: 1 },
-  { keyword: "skin tightening device", country: "BR", mediaType: "video", tier: 2 },
-  { keyword: "home workout equipment", country: "BR", mediaType: "video", tier: 3 },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // MX — 5 jobs (3 Tier 1 + 1 Tier 2 + 1 Tier 3)
-  // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "kids drawing tablet",    country: "MX", mediaType: "video", tier: 1 },
-  { keyword: "shoe cleaning brush",    country: "MX", mediaType: "video", tier: 1 },
-  { keyword: "waterproof mattress cover", country: "MX", mediaType: "all", tier: 1 },
-  { keyword: "cellulite massager",     country: "MX", mediaType: "video", tier: 2 },
-  { keyword: "cleaning tool",          country: "MX", mediaType: "video", tier: 3 },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // NL — 2 jobs (1 Tier 1 + 1 Tier 2 + 0 Tier 3)
-  // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "car scratch remover",    country: "NL", mediaType: "video", tier: 1 },
-  { keyword: "car scratch remover",    country: "NL", mediaType: "all",   tier: 2 },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // IT — 2 jobs (0 Tier 1 + 0 Tier 2 + 2 Tier 3)
-  // ═══════════════════════════════════════════════════════════════════════════
-  { keyword: "car accessory",          country: "IT", mediaType: "video", tier: 3 },
-  { keyword: "travel accessory",       country: "IT", mediaType: "all",   tier: 3 },
+  // Health & Pain Relief (5)
+  { keyword: "massage gun",             country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "neck massager",           country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "foot massager",           country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "heating pad",             country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "posture corrector",       country: "CA", mediaType: "all",   tier: 1 },
+  // Beauty (4)
+  { keyword: "led facial device",       country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "hair removal device",     country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "teeth whitening kit",     country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "blackhead remover",       country: "CA", mediaType: "all",   tier: 1 },
+  // Home (4)
+  { keyword: "portable blender",        country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "mini vacuum",             country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "electric spin scrubber",  country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "storage organizer",       country: "CA", mediaType: "all",   tier: 1 },
+  // Pet (3)
+  { keyword: "pet camera",              country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "pet grooming brush",      country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "pet water fountain",      country: "CA", mediaType: "video", tier: 1 },
+  // Tech (3)
+  { keyword: "wireless charger",        country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "dash cam",                country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "portable projector",      country: "CA", mediaType: "all",   tier: 1 },
+  // Baby (2)
+  { keyword: "baby monitor",            country: "CA", mediaType: "video", tier: 1 },
+  { keyword: "bottle warmer",           country: "CA", mediaType: "video", tier: 1 },
+  // Auto (1)
+  { keyword: "car vacuum",              country: "CA", mediaType: "video", tier: 1 },
+  // Tier 2 (2)
+  { keyword: "back pain relief",        country: "CA", mediaType: "video", tier: 2 },
+  { keyword: "better sleep device",     country: "CA", mediaType: "video", tier: 2 },
+  // Tier 3 (1)
+  { keyword: "kitchen gadget",          country: "CA", mediaType: "all",   tier: 3 },
 ];
 
 // ─── URL builder for memo23 actor ───────────────────────────────────────────
