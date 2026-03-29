@@ -6,12 +6,13 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  // DIRECT_URL is for migrations only — runtime always uses PgBouncer (DATABASE_URL)
+  // Production DB: PostgreSQL on Coolify VPS (5.78.207.17:5432)
+  // POOLER_URL takes priority if set (legacy Supabase pooler), otherwise DATABASE_URL
   const connectionString =
     process.env.POOLER_URL ?? process.env.DATABASE_URL!;
 
-  // SSL: required for Supabase connections, not needed for Hetzner localhost
-  const needsSsl = connectionString.includes("supabase");
+  // SSL: enable if connecting via Supabase pooler (legacy), disable for local PostgreSQL
+  const needsSsl = connectionString.includes("supabase") || connectionString.includes("pooler");
 
   const adapter = new PrismaPg({
     connectionString,

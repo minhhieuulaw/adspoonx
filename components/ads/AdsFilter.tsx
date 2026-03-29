@@ -4,9 +4,9 @@ import { useState } from "react";
 import { ChevronDown, Globe, SlidersHorizontal, Trophy, TrendingUp, Leaf } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { LANGUAGE_OPTIONS, type AdLanguage } from "@/lib/detect-language";
+import { COUNTRY_FILTER_OPTIONS, COUNTRY_INFO as COUNTRY_DATA } from "@/lib/countries";
 
-// Target markets: US, EU, AU, CA, BR, MX
-const COUNTRY_CODES = ["ALL", "US", "GB", "DE", "FR", "NL", "AU", "CA", "BR", "MX"] as const;
+const COUNTRY_CODES = COUNTRY_FILTER_OPTIONS;
 
 export const PRESETS = [
   { id: "top",          label: "Top Performers", icon: "🏆", desc: "AI Score ≥ 80" },
@@ -88,18 +88,8 @@ interface AdsFilterProps {
   vertical?: boolean;
 }
 
-const COUNTRY_INFO: Record<string, { label: string; flag: string }> = {
-  ALL: { label: "All Countries", flag: "🌍" },
-  US:  { label: "United States", flag: "🇺🇸" },
-  GB:  { label: "United Kingdom", flag: "🇬🇧" },
-  DE:  { label: "Germany", flag: "🇩🇪" },
-  FR:  { label: "France", flag: "🇫🇷" },
-  NL:  { label: "Netherlands", flag: "🇳🇱" },
-  AU:  { label: "Australia", flag: "🇦🇺" },
-  CA:  { label: "Canada", flag: "🇨🇦" },
-  BR:  { label: "Brazil", flag: "🇧🇷" },
-  MX:  { label: "Mexico", flag: "🇲🇽" },
-};
+// Country info imported from lib/countries.ts as COUNTRY_DATA
+const COUNTRY_INFO = COUNTRY_DATA;
 
 // ── Section wrapper for vertical sidebar ──────────────────────────────────────
 

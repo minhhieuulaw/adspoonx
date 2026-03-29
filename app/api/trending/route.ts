@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { SUPPORTED_COUNTRIES } from "@/lib/countries";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -11,8 +12,7 @@ export async function GET(req: NextRequest) {
   const country = req.nextUrl.searchParams.get("country") ?? "";
 
   try {
-    const VALID_COUNTRIES = ["US", "GB", "DE", "FR", "NL", "AU", "CA", "BR", "MX"];
-    const safeCountry = VALID_COUNTRIES.includes(country.toUpperCase()) ? country.toUpperCase() : "";
+    const safeCountry = (SUPPORTED_COUNTRIES as readonly string[]).includes(country.toUpperCase()) ? country.toUpperCase() : "";
     const countryFilter = safeCountry ? `AND country = '${safeCountry}'` : "";
 
     // Get niche stats: total active, new last 24h, new last 7d

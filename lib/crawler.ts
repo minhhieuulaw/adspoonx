@@ -1,5 +1,5 @@
 /**
- * Crawler service — Apify → PostgreSQL (Supabase)
+ * Crawler service — Apify → PostgreSQL (production DB on 5.78.207.17)
  *
  * Strategy: start all runs IN PARALLEL → single wait → fetch all datasets at once
  * Faster than sequential: 70 jobs × 45s wait → ~60s total (not 70×30s)
