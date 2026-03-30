@@ -23,9 +23,11 @@ async function assertAdmin(req: NextRequest): Promise<boolean> {
 }
 
 function getNextRunUtc(): string {
+  // Continuous runner V4: 6 cycles per day, ~4h each
+  // Cycles start roughly at: 00, 04, 08, 12, 16, 20 UTC
   const now = new Date();
   const currentH = now.getUTCHours() + now.getUTCMinutes() / 60;
-  for (const h of [2, 10, 18]) {
+  for (const h of [0, 4, 8, 12, 16, 20]) {
     if (currentH < h) {
       return new Date(Date.UTC(
         now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h, 0, 0
@@ -35,7 +37,7 @@ function getNextRunUtc(): string {
   const tomorrow = new Date(now);
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   return new Date(Date.UTC(
-    tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 2, 0, 0
+    tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 0, 0, 0
   )).toISOString();
 }
 
