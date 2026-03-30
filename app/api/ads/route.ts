@@ -283,6 +283,18 @@ function extractVideoUrl(rawData: unknown): string | undefined {
   return undefined;
 }
 
+const R2_WRONG_PREFIX = "https://pub-eec897ae726d8bdc6f84ab1e9bc74401.r2.dev/";
+const R2_CORRECT_PREFIX = "https://pub-8ce6fe263fcc4e2293dedad7c89467ce.r2.dev/";
+
+function fixR2Url(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith(R2_WRONG_PREFIX)) {
+    return url.replace(R2_WRONG_PREFIX, R2_CORRECT_PREFIX);
+  }
+  if (url.startsWith("https://pub-")) return url;
+  return undefined;
+}
+
 function extractThumbnailUrl(rawData: unknown): string | undefined {
   if (!rawData || typeof rawData !== "object") return undefined;
   const r = rawData as Record<string, unknown>;
@@ -343,7 +355,7 @@ function mapAdToFbAd(ad: PrismaAd): FbAd {
     ad_creative_link_descriptions: ad.description ? [ad.description] : undefined,
     ad_snapshot_url:               ad.adLibraryUrl ?? undefined,
     image_url:                     ad.imageUrl ?? extractThumbnailUrl(ad.rawData) ?? undefined,
-    video_url:                     (ad.videoUrl?.startsWith("https://pub-") ? ad.videoUrl : undefined) ?? extractVideoUrl(ad.rawData),
+    video_url:                     fixR2Url(ad.videoUrl) ?? extractVideoUrl(ad.rawData),
     thumbnail_url:                 extractThumbnailUrl(ad.rawData) ?? ad.imageUrl ?? undefined,
     publisher_platforms:           ad.platforms.length ? ad.platforms : undefined,
     ad_delivery_start_time:        ad.startDate?.toISOString(),

@@ -12,6 +12,7 @@ const ACCOUNT_ID = process.env.R2_ACCOUNT_ID ?? "";
 const ACCESS_KEY = process.env.R2_ACCESS_KEY_ID ?? "";
 const SECRET_KEY = process.env.R2_SECRET_ACCESS_KEY ?? "";
 const BUCKET     = process.env.R2_BUCKET_NAME ?? "adspoonx-videos";
+const R2_PUBLIC_BASE = process.env.R2_PUBLIC_URL ?? "https://pub-8ce6fe263fcc4e2293dedad7c89467ce.r2.dev";
 
 const s3 = new S3Client({
   region: "auto",
@@ -38,7 +39,7 @@ export async function r2Upload(key: string, body: Buffer, contentType = "video/m
     ContentType: contentType,
   }));
   // Public dev URL format
-  return `https://pub-${ACCOUNT_ID}.r2.dev/${key}`;
+  return `${R2_PUBLIC_BASE}/${key}`;
 }
 
 /** Create a deterministic key from a video URL using MD5 hash */
@@ -66,7 +67,7 @@ export async function downloadAndUploadVideo(
 
   // Skip if already uploaded (dedup: same video URL = same key)
   if (await r2Exists(key)) {
-    return `https://pub-${ACCOUNT_ID}.r2.dev/${key}`;
+    return `${R2_PUBLIC_BASE}/${key}`;
   }
 
   try {
