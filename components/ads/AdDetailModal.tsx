@@ -60,10 +60,10 @@ function FlagImg({ code }: { code: string }) {
   if (!code || code.length !== 2) return null;
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={`https://flagcdn.com/20x15/${code.toLowerCase()}.png`}
-      srcSet={`https://flagcdn.com/40x30/${code.toLowerCase()}.png 2x`}
-      width={16} height={12} alt={code}
-      style={{ borderRadius: 2, display: "inline-block", verticalAlign: "middle" }} />
+    <img src={`https://hatscripts.github.io/circle-flags/flags/${code.toLowerCase()}.svg`}
+      width={16} height={16} alt={code}
+      className="rounded-full flex-shrink-0"
+      style={{ border: "1px solid rgba(255,255,255,0.08)", display: "inline-block", verticalAlign: "middle" }} />
   );
 }
 
@@ -360,8 +360,8 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
           transition={{ type: "spring", stiffness: 500, damping: 35 }}
           style={{
-            width: "min(980px, calc(100vw - 24px))",
-            height: "min(880px, calc(100vh - 32px))",
+            width: "min(1120px, calc(100vw - 24px))",
+            height: "min(900px, calc(100vh - 32px))",
             borderRadius: 16,
             background: "var(--bg-surface)",
             border: "1px solid var(--border-strong)",
@@ -418,6 +418,12 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
                 <ExternalLink size={13} strokeWidth={1.5} />
               </a>
             )}
+            <a href={`/ads/${ad.id}`} target="_blank" rel="noopener noreferrer"
+              data-tip="Open in new tab" className="panel-btn p-1.5 rounded-[7px]"
+              style={{ color: "var(--text-3)", background: "var(--bg-hover)", border: "1px solid var(--border)", display: "flex" }}
+              onClick={e => e.stopPropagation()}>
+              <Monitor size={13} strokeWidth={1.5} />
+            </a>
             <button onClick={() => void runClaudeAnalysis()} disabled={claudeLoading}
               data-tip="AI deep analysis"
               className="panel-btn flex items-center gap-1 px-2.5 py-1.5 rounded-[7px] text-[11px] font-semibold disabled:opacity-50"
@@ -438,7 +444,7 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
 
           {/* LEFT: Creative + copy (fixed width, scrollable) */}
           <div className="flex flex-col flex-shrink-0 overflow-y-auto no-scrollbar"
-            style={{ width: 360, borderRight: "1px solid var(--border)", background: "var(--bg-base)" }}>
+            style={{ width: 420, borderRight: "1px solid var(--border)", background: "var(--bg-base)" }}>
 
             {/* Creative */}
             <div style={{ background: "rgba(0,0,0,0.35)", flexShrink: 0 }}>
