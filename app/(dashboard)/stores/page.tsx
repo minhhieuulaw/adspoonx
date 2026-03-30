@@ -433,6 +433,31 @@ export default function StoresPage() {
         <FilterSidebar filters={filters} onChange={setFilters} onReset={() => setFilters(INIT_FILTERS)} total={total} />
 
         <div className="flex-1 min-w-0">
+          {/* Quick filter pills */}
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+            {[
+              { label: "All Shops", filter: INIT_FILTERS },
+              { label: "Top Performers", filter: { ...INIT_FILTERS, minAds: "100", sort: "activeAds" } },
+              { label: "New Shops", filter: { ...INIT_FILTERS, sort: "lastAdSeenAt" } },
+              { label: "Most Active", filter: { ...INIT_FILTERS, minAds: "50", sort: "activeAds" } },
+            ].map((pill, i) => {
+              const isActive = i === 0
+                ? JSON.stringify(filters) === JSON.stringify(INIT_FILTERS)
+                : filters.sort === pill.filter.sort && filters.minAds === pill.filter.minAds && !filters.q;
+              return (
+                <button key={pill.label} onClick={() => { setFilters(pill.filter); setPage(1); }}
+                  className="px-3.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all"
+                  style={{
+                    background: isActive ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.04)",
+                    color: isActive ? "#A78BFA" : "rgba(255,255,255,0.45)",
+                    border: `1px solid ${isActive ? "rgba(124,58,237,0.3)" : "rgba(255,255,255,0.06)"}`,
+                  }}>
+                  {pill.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Loading skeleton */}
           {loading && (
             <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.05)" }}>
