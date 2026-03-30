@@ -599,61 +599,110 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
                 </div>
               </div>
 
-              {/* Page + Revenue — 2 col */}
-              {(totalShopAds > 1 || estDailyRev) && (
-                <div className="grid grid-cols-2 gap-3">
-                  {totalShopAds > 1 && (
-                    <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Package size={11} strokeWidth={1.5} style={{ color: "var(--ai-light)" }} />
-                        <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>Page</span>
-                      </div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex flex-col items-center rounded-[7px] p-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", minWidth: 52 }}>
-                          <span className="font-display text-[18px] font-black" style={{ color: "var(--ai-light)" }}>{activeShopAds}</span>
-                          <span className="text-[8px]" style={{ color: "var(--text-3)" }}>/ {totalShopAds} ads</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[8px] mb-1" style={{ color: "var(--text-3)" }}>Activity</p>
-                          <MiniSparkline values={sparkData} color="var(--ai-light)" />
-                        </div>
-                      </div>
-                    </div>
+              {/* Shop Overview — unified card */}
+              <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <ShoppingBag size={12} strokeWidth={1.5} style={{ color: "var(--ai-light)" }} />
+                  <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>Shop Overview</span>
+                  {ad.page_id && (
+                    <a href={`/stores/${ad.page_id}`} target="_blank" rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="ml-auto text-[9px] font-semibold flex items-center gap-0.5 hover:underline"
+                      style={{ color: "var(--ai-light)" }}>
+                      View Shop <ExternalLink size={8} />
+                    </a>
                   )}
+                </div>
 
-                  {estDailyRev && (
-                    <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <ShoppingBag size={11} strokeWidth={1.5} style={{ color: "var(--green-light)" }} />
-                        <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>Revenue Est.</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <div className="rounded-[7px] p-2" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
-                          <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--green-light)" }}>Daily</p>
-                          <span className="font-display text-[15px] font-black" style={{ color: "var(--green-light)" }}>
-                            ${estDailyRev >= 1000 ? `${(estDailyRev / 1000).toFixed(1)}k` : estDailyRev}
-                          </span>
-                        </div>
-                        <div className="rounded-[7px] p-2" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
-                          <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--green-light)" }}>Monthly</p>
-                          <span className="font-display text-[15px] font-black" style={{ color: "var(--green-light)" }}>
-                            ${estMonthlyRev! >= 1000 ? `${(estMonthlyRev! / 1000).toFixed(1)}k` : estMonthlyRev}
-                          </span>
-                        </div>
-                      </div>
-                      {estStoreRev && (
-                        <div className="rounded-[7px] p-2 mt-1.5" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)" }}>
-                          <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--ai-light)" }}>Store monthly ({activeShopAds} ads)</p>
-                          <div className="flex items-baseline gap-1">
-                            <span className="font-display text-[15px] font-black" style={{ color: "var(--ai-light)" }}>
-                              ${estStoreRev >= 1000 ? `${(estStoreRev / 1000).toFixed(1)}k` : estStoreRev}
-                            </span>
-                            <span className="text-[9px]" style={{ color: "var(--ai-light)", opacity: 0.7 }}>~{roas}x ROAS</span>
-                          </div>
-                        </div>
-                      )}
+                {/* Store header row */}
+                <div className="flex items-center gap-2.5 mb-3 pb-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  {ad.page_profile_picture_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={ad.page_profile_picture_url} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
+                      style={{ border: `1.5px solid ${color}25` }} />
+                  ) : (
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                      style={{ background: `${color}15`, color, border: `1.5px solid ${color}25` }}>
+                      {storeName.slice(0, 1).toUpperCase()}
                     </div>
                   )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{storeName}</p>
+                    {(ad as any).website && (
+                      <a href={(ad as any).website} target="_blank" rel="noopener noreferrer"
+                        className="text-[10px] flex items-center gap-0.5 hover:underline" style={{ color: "#60A5FA" }}>
+                        {(() => { try { return new URL((ad as any).website).hostname.replace("www.",""); } catch { return ""; } })()}
+                        <ExternalLink size={7} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="rounded-[7px] p-2 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
+                    <span className="font-display text-[18px] font-black block" style={{ color: "var(--green-light)" }}>{activeShopAds}</span>
+                    <span className="text-[8px]" style={{ color: "var(--text-3)" }}>Active Ads</span>
+                  </div>
+                  <div className="rounded-[7px] p-2 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
+                    <span className="font-display text-[18px] font-black block" style={{ color: "var(--text-1)" }}>{totalShopAds}</span>
+                    <span className="text-[8px]" style={{ color: "var(--text-3)" }}>Total Ads</span>
+                  </div>
+                  <div className="rounded-[7px] p-2 text-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
+                    <span className="font-display text-[18px] font-black block" style={{ color: "var(--ai-light)" }}>
+                      {totalShopAds > 0 ? `${Math.round(activeShopAds / totalShopAds * 100)}%` : "—"}
+                    </span>
+                    <span className="text-[8px]" style={{ color: "var(--text-3)" }}>Active Rate</span>
+                  </div>
+                </div>
+
+                {/* Revenue row */}
+                {estDailyRev && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-[7px] p-2" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                      <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--green-light)" }}>Daily</p>
+                      <span className="font-display text-[14px] font-black" style={{ color: "var(--green-light)" }}>
+                        ${estDailyRev >= 1000 ? `${(estDailyRev / 1000).toFixed(1)}k` : estDailyRev}
+                      </span>
+                    </div>
+                    <div className="rounded-[7px] p-2" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                      <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--green-light)" }}>Monthly</p>
+                      <span className="font-display text-[14px] font-black" style={{ color: "var(--green-light)" }}>
+                        ${estMonthlyRev! >= 1000 ? `${(estMonthlyRev! / 1000).toFixed(1)}k` : estMonthlyRev}
+                      </span>
+                    </div>
+                    {estStoreRev && (
+                      <div className="rounded-[7px] p-2" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)" }}>
+                        <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: "var(--ai-light)" }}>Store</p>
+                        <span className="font-display text-[14px] font-black" style={{ color: "var(--ai-light)" }}>
+                          ${estStoreRev >= 1000 ? `${(estStoreRev / 1000).toFixed(1)}k` : estStoreRev}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* More from this shop — moved up, right after Shop Overview */}
+              {shopAds.length > 0 && (
+                <div className="rounded-[10px] p-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Monitor size={12} strokeWidth={1.8} style={{ color: "var(--ai-light)" }} />
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
+                        More from {storeName}
+                      </p>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-[4px]"
+                      style={{ background: "var(--ai-soft)", color: "var(--ai-light)", fontWeight: 600 }}>
+                      {totalShopAds} total
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {shopAds.map(a => <MiniAdCard key={a.id} ad={a} onClickStore={() => {
+                      if (ad.page_id) window.location.href = `/stores/${ad.page_id}`;
+                    }} />)}
+                  </div>
                 </div>
               )}
 
@@ -810,28 +859,6 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
                 )}
               </div>
 
-              {/* More from this shop — 4-col grid */}
-              {shopAds.length > 0 && (
-                <div className="pb-2">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center gap-2">
-                      <Monitor size={12} strokeWidth={1.8} style={{ color: "var(--ai-light)" }} />
-                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
-                        More from {storeName}
-                      </p>
-                    </div>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-[4px]"
-                      style={{ background: "var(--ai-soft)", color: "var(--ai-light)", fontWeight: 600 }}>
-                      {totalShopAds} total
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {shopAds.map(a => <MiniAdCard key={a.id} ad={a} onClickStore={() => {
-                      if (ad.page_id) window.location.href = `/stores/${ad.page_id}`;
-                    }} />)}
-                  </div>
-                </div>
-              )}
 
             </div>
           </div>
