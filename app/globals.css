@@ -254,6 +254,15 @@ main { position: relative; z-index: 1; }
   color: #A78BFA !important;
 }
 
+/* ── Mini ad card hover ── */
+.mini-ad-card {
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+.mini-ad-card:hover {
+  border-color: rgba(124,58,237,0.35) !important;
+  transform: translateY(-2px);
+}
+
 /* ── Ads grid — container query ── */
 .ads-grid-container { container-type: inline-size; container-name: adsgrid; }
 .ads-grid {
@@ -596,9 +605,14 @@ main { position: relative; z-index: 1; }
 
 /* ── Panel button ── */
 .panel-btn {
-  transition: transform 120ms var(--ease), background 120ms var(--ease), border-color 120ms var(--ease);
+  transition: transform 100ms ease, background 100ms ease, border-color 100ms ease, box-shadow 100ms ease;
+  border: 1px solid rgba(255,255,255,0.12) !important;
 }
-.panel-btn:hover { transform: scale(1.07); }
+.panel-btn:hover {
+  transform: scale(1.07);
+  border-color: rgba(124,58,237,0.4) !important;
+  box-shadow: 0 0 6px rgba(124,58,237,0.2);
+}
 
 /* ── Fire icon ── */
 @keyframes fire-flicker {

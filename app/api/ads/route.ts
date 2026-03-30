@@ -123,6 +123,10 @@ export async function GET(req: NextRequest) {
   // Classified filter: only show ads with a real niche (not NULL, not 'Other')
   whereParts.push(`"niche" IS NOT NULL AND "niche" != 'Other'`);
 
+  // Domain blacklist: exclude marketplace/brand ads that slipped through before filter existed
+  whereParts.push(`(website IS NULL OR website NOT ILIKE ANY(ARRAY['%temu.com%','%shein.com%','%aliexpress.com%','%wish.com%','%amazon.com%','%walmart.com%','%ebay.com%']))`);
+  whereParts.push(`"pageName" NOT ILIKE ANY(ARRAY['%temu%','%shein%','%aliexpress%'])`);
+
   // Media type filter
   const videoExpr = `COALESCE("rawData"->>'videoUrl', "rawData"->'snapshot'->>'video_hd_url', "rawData"->'snapshot'->>'video_sd_url')`;
   if (mediaType === "video") {

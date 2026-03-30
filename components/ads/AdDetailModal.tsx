@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Calendar, Eye, DollarSign, Globe, Monitor, Bookmark,
@@ -196,18 +197,18 @@ function VideoPreview({ src, poster, alt }: { src: string; poster?: string; alt:
 
 // ── Mini ad card ──────────────────────────────────────────────────────────────
 
-function MiniAdCard({ ad }: { ad: FbAd }) {
+function MiniAdCard({ ad, onClickStore }: { ad: FbAd; onClickStore?: () => void }) {
   const isActive = ad.is_active !== false;
   const days = daysRunning(ad.ad_delivery_start_time);
+  const thumb = ad.thumbnail_url ?? ad.image_url ?? (ad.video_url ? ad.video_url : null);
   return (
-    <div className="cursor-pointer rounded-[8px] overflow-hidden"
-      style={{ background: "var(--bg-card)", border: "1px solid var(--border)", transition: "border-color 150ms" }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(124,58,237,0.35)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; }}>
+    <div className="cursor-pointer rounded-[8px] overflow-hidden mini-ad-card"
+      onClick={onClickStore}
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
       <div style={{ aspectRatio: "1/1", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
-        {(ad.image_url || ad.thumbnail_url) ? (
+        {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={ad.thumbnail_url ?? ad.image_url!} alt="" loading="lazy" className="w-full h-full object-cover" />
+          <img src={thumb} alt="" loading="lazy" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[9px]" style={{ color: "var(--text-3)" }}>No preview</div>
         )}
@@ -357,7 +358,7 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
           initial={{ opacity: 0, scale: 0.96, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ type: "spring", stiffness: 400, damping: 34 }}
+          transition={{ type: "spring", stiffness: 500, damping: 35 }}
           style={{
             width: "min(980px, calc(100vw - 24px))",
             height: "min(880px, calc(100vh - 32px))",
@@ -819,7 +820,9 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
                     </span>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
-                    {shopAds.map(a => <MiniAdCard key={a.id} ad={a} />)}
+                    {shopAds.map(a => <MiniAdCard key={a.id} ad={a} onClickStore={() => {
+                      if (ad.page_id) window.location.href = `/stores/${ad.page_id}`;
+                    }} />)}
                   </div>
                 </div>
               )}

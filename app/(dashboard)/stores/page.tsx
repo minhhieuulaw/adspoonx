@@ -172,20 +172,33 @@ function WinrateCell({ store }: { store: ShopRow }) {
 
   const days = store.firstSeenAt ? Math.floor((Date.now() - new Date(store.firstSeenAt).getTime()) / 86_400_000) : 0;
 
+  // Calculate position for fixed tooltip
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const openTooltip = useCallback(() => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 8, left: Math.max(8, rect.left - 120) });
+    }
+    setOpen(true);
+  }, []);
+
   return (
     <div ref={ref} className="relative inline-flex items-center gap-1">
       <span className="text-[15px] font-bold tabular-nums" style={{ color }}>{pct}%</span>
       <button
-        onClick={e => { e.stopPropagation(); setOpen(!open); }}
-        onMouseEnter={() => setOpen(true)}
+        ref={btnRef}
+        onClick={e => { e.stopPropagation(); open ? setOpen(false) : openTooltip(); }}
+        onMouseEnter={openTooltip}
         className="p-0.5 rounded-full transition-colors"
         style={{ color: "rgba(255,255,255,0.25)" }}
       >
         <Info size={12} />
       </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 rounded-lg"
-          style={{ width: 280, background: "rgba(15,15,22,0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", padding: "12px 14px" }}>
+      {open && pos && (
+        <div className="fixed z-[100] rounded-lg"
+          style={{ top: pos.top, left: pos.left, width: 280, background: "rgba(15,15,22,0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)", padding: "12px 14px" }}>
           <p className="text-[11px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>How is Est Winrate calculated?</p>
           <p className="text-[10px] leading-relaxed mb-2.5" style={{ color: "rgba(255,255,255,0.55)" }}>
             Winrate is estimated by AI based on ad performance metrics: active ratio, ad volume, market longevity, geographic reach, and platform diversity.

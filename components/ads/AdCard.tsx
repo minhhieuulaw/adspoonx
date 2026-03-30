@@ -632,7 +632,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-3 py-2.5 flex flex-col gap-1.5 flex-1 min-h-[88px]">
+        <div className="px-3 py-2.5 flex flex-col gap-1.5 flex-1 min-h-[108px]">
           {/* Brand row + bookmark */}
           <div className="flex items-center gap-2 min-w-0">
             {ad.page_profile_picture_url ? (
@@ -698,7 +698,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
           </div>
 
           {/* Strategy + Performance tags + Platform icons */}
-          <div className="flex items-center gap-1 overflow-hidden mt-auto">
+          <div className="flex items-center gap-1 flex-wrap mt-auto">
             {/* Strategy tag — what type of ad */}
             <span className="ad-tag" style={{
               background: `${ai.hookColor}10`,
