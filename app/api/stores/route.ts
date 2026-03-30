@@ -25,23 +25,23 @@ export async function GET(req: NextRequest) {
     '"activeAds"';
 
   try {
-    // Build WHERE clauses
-    const conditions: string[] = ['"activeAds" >= $1', '"activeAds" <= $2'];
+    // Build WHERE clauses (s. prefix for Shop alias)
+    const conditions: string[] = ['s."activeAds" >= $1', 's."activeAds" <= $2'];
     const params: unknown[] = [minAds, maxAds];
     let paramIdx = 3;
 
     if (q) {
-      conditions.push(`"pageName" ILIKE '%' || $${paramIdx} || '%'`);
+      conditions.push(`s."pageName" ILIKE '%' || $${paramIdx} || '%'`);
       params.push(q);
       paramIdx++;
     }
     if (countries?.length) {
-      conditions.push(`countries && $${paramIdx}::text[]`);
+      conditions.push(`s.countries && $${paramIdx}::text[]`);
       params.push(countries);
       paramIdx++;
     }
     if (platforms?.length) {
-      conditions.push(`platforms && $${paramIdx}::text[]`);
+      conditions.push(`s.platforms && $${paramIdx}::text[]`);
       params.push(platforms);
       paramIdx++;
     }
@@ -49,17 +49,31 @@ export async function GET(req: NextRequest) {
     const whereSQL = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
     const shops = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
-      `SELECT "pageId", "pageName", "profilePicture", "activeAds", "pausedAds", "totalAds",
-              platforms, countries, "firstSeenAt", "lastAdSeenAt"
-       FROM "Shop"
+      `SELECT s."pageId", s."pageName", s."profilePicture", s."activeAds", s."pausedAds", s."totalAds",
+              s.platforms, s.countries, s."firstSeenAt", s."lastAdSeenAt",
+              -- Website domain (most common from ads)
+              (SELECT a.website FROM "Ad" a WHERE a."pageId" = s."pageId" AND a.website IS NOT NULL AND a.website != '' LIMIT 1) as website,
+              -- Top 4 ad thumbnails
+              (SELECT COALESCE(json_agg(t.img), '[]'::json) FROM (
+                SELECT COALESCE(a."imageUrl", a."videoUrl") as img
+                FROM "Ad" a WHERE a."pageId" = s."pageId" AND (a."imageUrl" IS NOT NULL OR a."videoUrl" IS NOT NULL)
+                ORDER BY a."scrapedAt" DESC LIMIT 4
+              ) t) as "adThumbnails",
+              -- Country distribution (top 3)
+              (SELECT COALESCE(json_agg(json_build_object('country', cd.country, 'pct', cd.pct)), '[]'::json) FROM (
+                SELECT a.country, ROUND(COUNT(*)::numeric * 100 / NULLIF(SUM(COUNT(*)) OVER(), 0), 0) as pct
+                FROM "Ad" a WHERE a."pageId" = s."pageId" AND a.country IS NOT NULL
+                GROUP BY a.country ORDER BY COUNT(*) DESC LIMIT 3
+              ) cd) as "countryDistribution"
+       FROM "Shop" s
        ${whereSQL}
-       ORDER BY ${orderCol} DESC NULLS LAST
+       ORDER BY s.${orderCol} DESC NULLS LAST
        LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
       ...params, limit, offset,
     );
 
     const cnt = await prisma.$queryRawUnsafe<[{ count: bigint }]>(
-      `SELECT COUNT(*) as count FROM "Shop" ${whereSQL}`,
+      `SELECT COUNT(*) as count FROM "Shop" s ${whereSQL}`,
       ...params,
     );
     const total = Number(cnt[0]?.count ?? 0);
@@ -75,6 +89,9 @@ export async function GET(req: NextRequest) {
       countries: Array.isArray(s.countries) ? s.countries : [],
       firstSeenAt: s.firstSeenAt instanceof Date ? s.firstSeenAt.toISOString() : null,
       lastAdSeenAt: s.lastAdSeenAt instanceof Date ? s.lastAdSeenAt.toISOString() : null,
+      website: s.website ? String(s.website) : null,
+      adThumbnails: Array.isArray(s.adThumbnails) ? (s.adThumbnails as string[]).filter(Boolean).slice(0, 4) : [],
+      countryDistribution: Array.isArray(s.countryDistribution) ? s.countryDistribution : [],
     }));
 
     return NextResponse.json({

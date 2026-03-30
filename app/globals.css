@@ -243,6 +243,17 @@ main { position: relative; z-index: 1; }
   background: rgba(255,255,255,0.02);
 }
 
+/* ── Store table — row hover ── */
+.store-table-row {
+  transition: background 150ms ease;
+}
+.store-table-row:hover {
+  background: rgba(124,58,237,0.04);
+}
+.store-table-row:hover td:first-child p {
+  color: #A78BFA !important;
+}
+
 /* ── Ads grid — container query ── */
 .ads-grid-container { container-type: inline-size; container-name: adsgrid; }
 .ads-grid {
