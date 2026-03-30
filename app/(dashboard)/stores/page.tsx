@@ -468,9 +468,9 @@ export default function StoresPage() {
 
           {/* Loading skeleton */}
           {loading && (
-            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div className="overflow-hidden">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="h-[88px] animate-pulse" style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.04)" }} />
+                <div key={i} className="h-[88px] animate-pulse" style={{ background: "rgba(255,255,255,0.015)", borderBottom: "1px solid rgba(255,255,255,0.06)" }} />
               ))}
             </div>
           )}
@@ -489,11 +489,11 @@ export default function StoresPage() {
 
           {/* Table */}
           {!loading && stores.length > 0 && (
-            <div className="rounded-xl overflow-hidden" style={{ background: "var(--card-deep)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full" style={{ borderCollapse: "separate", borderSpacing: 0, minWidth: 1050 }}>
                   <thead>
-                    <tr style={{ background: "rgba(255,255,255,0.015)" }}>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
                       <th className="text-left px-5 py-3.5" style={{ minWidth: 240 }}><ColLabel>Shop</ColLabel></th>
                       <th className="text-left px-4 py-3.5" style={{ width: 100 }}><ColLabel>Est Revenue</ColLabel></th>
                       <th className="text-center px-4 py-3.5" style={{ width: 100 }}><ColLabel>Trend</ColLabel></th>
@@ -515,7 +515,7 @@ export default function StoresPage() {
                         <tr key={store.pageId} className="store-table-row cursor-pointer"
                           onClick={() => setSelectedStore(store.pageId)}>
                           {/* Shop */}
-                          <td className="px-5 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td className="px-5 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="relative flex-shrink-0">
                                 {store.profilePicture ? (
@@ -549,17 +549,17 @@ export default function StoresPage() {
                           </td>
 
                           {/* Est Revenue */}
-                          <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                             <span className="text-[14px] font-bold" style={{ color: "#34D399" }}>{estimateRevenue(store.activeAds)}</span>
                           </td>
 
                           {/* Trend */}
-                          <td className="px-4 py-5 text-center" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td className="px-4 py-5 text-center" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                             <MiniChart activeAds={store.activeAds} totalAds={store.totalAds} sparkline={store.sparkline} />
                           </td>
 
                           {/* Total Active Ads */}
-                          <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                             <div>
                               <div className="flex items-baseline gap-1.5">
                                 <span className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>+{store.activeAds}</span>
@@ -582,12 +582,12 @@ export default function StoresPage() {
                           </td>
 
                           {/* Est Winrate */}
-                          <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                             <WinrateCell store={store} />
                           </td>
 
                           {/* Traffic */}
-                          <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                             {store.countryDistribution?.length > 0 ? (
                               <div className="space-y-1">
                                 {(store.countryDistribution as CountryDist[]).map((cd) => (
@@ -608,7 +608,7 @@ export default function StoresPage() {
                           </td>
 
                           {/* Save */}
-                          <td className="px-4 py-5 text-center" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td className="px-4 py-5 text-center" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                             {(() => {
                               const isSaved = savedShopIds.has(store.pageId);
                               return (
