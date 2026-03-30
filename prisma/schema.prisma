@@ -24,6 +24,7 @@ model User {
   sessions       Session[]
   subscription   Subscription?
   savedAds       SavedAd[]
+  savedShops     SavedShop[]
   savedSearches  SavedSearch[]
   scanPurchases  ScanPurchase[]
   tickets        Ticket[]
@@ -156,6 +157,18 @@ model SavedAd {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, adId])
+}
+
+model SavedShop {
+  id         String   @id @default(cuid())
+  userId     String
+  shopPageId String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, shopPageId])
+  @@index([userId])
 }
 
 model SavedSearch {

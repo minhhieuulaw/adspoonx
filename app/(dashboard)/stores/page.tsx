@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import StoreDetailModal from "@/components/stores/StoreDetailModal";
 import { relativeTime, daysActive } from "@/lib/store-helpers";
+import { useSavedShops } from "@/lib/hooks/useSavedShops";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -361,6 +362,7 @@ export default function StoresPage() {
   const [total, setTotal] = useState(0);
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const { savedIds: savedShopIds, toggleSave: toggleSaveShop } = useSavedShops();
 
   const fetchStores = useCallback(async () => {
     setLoading(true);
@@ -574,13 +576,18 @@ export default function StoresPage() {
 
                           {/* Save */}
                           <td className="px-4 py-5 text-center" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                            <button
-                              onClick={e => e.stopPropagation()}
-                              className="save-btn"
-                              title="Save"
-                            >
-                              <Bookmark size={16} strokeWidth={1.5} fill="none" />
-                            </button>
+                            {(() => {
+                              const isSaved = savedShopIds.has(store.pageId);
+                              return (
+                                <button
+                                  onClick={e => { e.stopPropagation(); toggleSaveShop(store.pageId); }}
+                                  className={`save-btn ${isSaved ? "save-btn--active" : ""}`}
+                                  title={isSaved ? "Saved" : "Save"}
+                                >
+                                  <Bookmark size={16} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? "currentColor" : "none"} />
+                                </button>
+                              );
+                            })()}
                           </td>
                         </tr>
                       );
