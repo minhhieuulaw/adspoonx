@@ -12,7 +12,7 @@ const ACCOUNT_ID = process.env.R2_ACCOUNT_ID ?? "";
 const ACCESS_KEY = process.env.R2_ACCESS_KEY_ID ?? "";
 const SECRET_KEY = process.env.R2_SECRET_ACCESS_KEY ?? "";
 const BUCKET     = process.env.R2_BUCKET_NAME ?? "adspoonx-videos";
-const R2_PUBLIC_BASE = process.env.R2_PUBLIC_URL ?? "https://pub-8ce6fe263fcc4e2293dedad7c89467ce.r2.dev";
+const R2_PUBLIC_BASE = process.env.R2_PUBLIC_URL ?? "https://videos.adspoonx.com";
 
 const s3 = new S3Client({
   region: "auto",

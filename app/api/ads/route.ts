@@ -283,15 +283,19 @@ function extractVideoUrl(rawData: unknown): string | undefined {
   return undefined;
 }
 
-const R2_WRONG_PREFIX = "https://pub-eec897ae726d8bdc6f84ab1e9bc74401.r2.dev/";
-const R2_CORRECT_PREFIX = "https://pub-8ce6fe263fcc4e2293dedad7c89467ce.r2.dev/";
+const R2_CUSTOM_DOMAIN = "https://videos.adspoonx.com/";
+const R2_OLD_PREFIXES = [
+  "https://pub-eec897ae726d8bdc6f84ab1e9bc74401.r2.dev/",
+  "https://pub-8ce6fe263fcc4e2293dedad7c89467ce.r2.dev/",
+];
 
 function fixR2Url(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
-  if (url.startsWith(R2_WRONG_PREFIX)) {
-    return url.replace(R2_WRONG_PREFIX, R2_CORRECT_PREFIX);
+  // Rewrite any old R2 dev URLs to custom domain
+  for (const prefix of R2_OLD_PREFIXES) {
+    if (url.startsWith(prefix)) return url.replace(prefix, R2_CUSTOM_DOMAIN);
   }
-  if (url.startsWith("https://pub-")) return url;
+  if (url.startsWith(R2_CUSTOM_DOMAIN)) return url;
   return undefined;
 }
 
