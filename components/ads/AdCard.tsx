@@ -464,17 +464,6 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
         </div>
       </div>
 
-      {/* VIDEO badge — top left */}
-      <div style={{
-        position: "absolute", top: 6, left: 6, pointerEvents: "none",
-        background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        borderRadius: 4, padding: "1px 5px",
-        display: "flex", alignItems: "center", gap: 3,
-      }}>
-        <Play size={7} fill="white" color="white" />
-        <span style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.85)", letterSpacing: "0.06em" }}>VIDEO</span>
-      </div>
     </div>
   );
 }
@@ -589,7 +578,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
         {/* ── AI Score Ribbon — top right flag ── */}
         <AIScoreRibbon score={ai.winningScore} />
 
-        {/* ── Creative (full-bleed, square aspect) ── */}
+        {/* ── Creative (full-bleed, 4:5 aspect) ── */}
         <div className="overflow-hidden relative" style={{ background: "rgba(0,0,0,0.25)" }}>
           {ad.video_url ? (
             <VideoCreative src={ad.video_url} poster={ad.thumbnail_url ?? ad.image_url} alt={storeName} />
@@ -604,39 +593,48 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             </div>
           )}
 
-          {/* LIVE badge overlay — bottom left */}
+          {/* LIVE + NEW badges — top left */}
           <div style={{
-            position: "absolute", bottom: ad.video_url ? 28 : 6, left: 6,
-            display: "flex", alignItems: "center", gap: 4,
-            background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-            borderRadius: 4, padding: "2px 6px",
+            position: "absolute", top: 6, left: 6, zIndex: 4,
+            display: "flex", alignItems: "center", gap: 3,
           }}>
-            <span
-              className={isActive ? "live-dot" : ""}
-              style={{
-                display: "inline-block", width: 5, height: 5, borderRadius: "50%",
-                background: isActive ? "var(--green-light)" : "rgba(255,255,255,0.3)",
-                flexShrink: 0,
-              }}
-            />
-            <span style={{
-              fontSize: 9, fontWeight: 700, letterSpacing: "0.04em",
-              color: isActive ? "var(--green-light)" : "rgba(255,255,255,0.5)",
-            }}>
-              {isActive ? "LIVE" : "OFF"}
-            </span>
-            {days !== null && (
-              <span className="font-data" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>
-                {days}d
+            {/* Status pill */}
+            <div className="badge-pill badge-pill--dark">
+              <span
+                className={isActive ? "live-dot" : ""}
+                style={{
+                  display: "inline-block", width: 5, height: 5, borderRadius: "50%",
+                  background: isActive ? "var(--green-light)" : "rgba(255,255,255,0.3)",
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.04em",
+                color: isActive ? "var(--green-light)" : "rgba(255,255,255,0.5)",
+              }}>
+                {isActive ? "LIVE" : "OFF"}
               </span>
+              {days !== null && (
+                <span className="font-data" style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>
+                  {days === 0 ? "today" : `${days}d`}
+                </span>
+              )}
+            </div>
+
+            {/* NEW fire pill — only for active ads < 10 days */}
+            {isActive && days !== null && days < 10 && (
+              <div className="badge-pill new-fire-tag">
+                <span className="new-fire-tag__flame" />
+                <span className="new-fire-tag__text">NEW</span>
+              </div>
             )}
           </div>
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-3 py-2.5 flex flex-col gap-2 flex-1 min-h-[88px]">
+        <div className="px-3 py-2.5 flex flex-col gap-1.5 flex-1 min-h-[88px]">
           {/* Brand row + bookmark */}
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             {ad.page_profile_picture_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={ad.page_profile_picture_url} alt={storeName}
@@ -653,14 +651,14 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
             <span className="text-[11px] font-medium flex-1 truncate" style={{ color: "var(--text-1)" }}>
               {storeName}
             </span>
+            {platforms.length > 0 && (
+              <span className="flex items-center gap-0.5 flex-shrink-0">
+                {platforms.map(p => <PlatformIcon key={p} platform={p} />)}
+              </span>
+            )}
             <button
               onClick={e => { e.stopPropagation(); toggleSave(ad); }}
-              className="p-1 rounded-[4px] flex-shrink-0"
-              style={{
-                color: isSaved ? "var(--ai-light)" : "var(--text-3)",
-                background: isSaved ? "var(--ai-soft)" : "transparent",
-                transition: "all 100ms",
-              }}
+              className={`save-btn flex-shrink-0 ${isSaved ? "save-btn--active" : ""}`}
               title={isSaved ? "Saved" : "Save"}
             >
               <Bookmark size={12} strokeWidth={isSaved ? 0 : 1.5} fill={isSaved ? "currentColor" : "none"} />
@@ -668,25 +666,34 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
           </div>
 
           {/* Stats row: country · impressions · spend · date */}
-          <div className="flex items-center gap-1.5 overflow-hidden" style={{ fontSize: 9, color: "var(--text-3)" }}>
+          <div className="flex items-center gap-1 overflow-hidden" style={{ fontSize: 9, color: "var(--text-3)" }}>
             <span className="flex items-center gap-0.5">
               <span style={{ fontSize: 11, lineHeight: 1 }}>{langFlag}</span>
               <span style={{ color: "var(--text-2)", fontWeight: 500, textTransform: "uppercase" }}>{adLang}</span>
             </span>
             {impressFmt && (
-              <span className="flex items-center gap-0.5 tabular-nums">
-                <Eye size={8} strokeWidth={1.5} />{impressFmt}
-              </span>
+              <>
+                <span aria-hidden="true" style={{ color: "var(--text-3)", opacity: 0.4 }}>·</span>
+                <span className="flex items-center gap-0.5 tabular-nums">
+                  <Eye size={8} strokeWidth={1.5} />{impressFmt}
+                </span>
+              </>
             )}
             {spendFmt && (
-              <span className="flex items-center gap-0.5 tabular-nums">
-                <DollarSign size={8} strokeWidth={1.5} />{spendFmt}
-              </span>
+              <>
+                <span aria-hidden="true" style={{ color: "var(--text-3)", opacity: 0.4 }}>·</span>
+                <span className="flex items-center gap-0.5 tabular-nums">
+                  <DollarSign size={8} strokeWidth={1.5} />{spendFmt}
+                </span>
+              </>
             )}
             {startDate && (
-              <span className="flex items-center gap-0.5">
-                <Calendar size={8} strokeWidth={1.5} />{startDate}
-              </span>
+              <>
+                <span aria-hidden="true" style={{ color: "var(--text-3)", opacity: 0.4 }}>·</span>
+                <span className="flex items-center gap-0.5">
+                  <Calendar size={8} strokeWidth={1.5} />{startDate}
+                </span>
+              </>
             )}
           </div>
 

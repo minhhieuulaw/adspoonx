@@ -237,7 +237,7 @@ main { position: relative; z-index: 1; }
 
 /* ── Creative wrapper ── */
 .ad-creative-wrap {
-  aspect-ratio: 1/1;
+  aspect-ratio: 4/5;
   overflow: hidden;
   position: relative;
   background: rgba(255,255,255,0.02);
@@ -375,6 +375,96 @@ main { position: relative; z-index: 1; }
   50%       { opacity: 0.55; box-shadow: 0 0 10px rgba(52,211,153,0.35); }
 }
 .live-dot { animation: live-pulse 2.5s ease infinite; }
+
+/* ── Save/Bookmark button — glow pop on hover ── */
+.save-btn {
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-3);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 180ms ease;
+  cursor: pointer;
+}
+.save-btn:hover {
+  color: var(--ai-light);
+  border-color: rgba(167,139,250,0.3);
+  box-shadow: 0 0 8px rgba(167,139,250,0.25), 0 0 2px rgba(167,139,250,0.15);
+  transform: scale(1.15);
+}
+.save-btn--active {
+  color: var(--ai-light);
+  background: var(--ai-soft);
+}
+.save-btn--active:hover {
+  border-color: rgba(167,139,250,0.5);
+  box-shadow: 0 0 12px rgba(167,139,250,0.4), 0 0 4px rgba(167,139,250,0.25);
+}
+
+/* ── Badge pill — shared base for LIVE & NEW tags ── */
+.badge-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.badge-pill--dark {
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+}
+
+/* ── NEW fire tag — dark bg, bright flame, gradient text ── */
+.new-fire-tag {
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(249,115,22,0.25);
+  box-shadow: 0 0 10px rgba(249,115,22,0.2), 0 0 3px rgba(220,38,38,0.15);
+  animation: fire-glow-pulse 2s ease infinite;
+}
+.new-fire-tag__flame {
+  display: inline-block;
+  width: 7px;
+  height: 10px;
+  background: radial-gradient(ellipse at bottom, #FDE68A 0%, #FBBF24 25%, #F97316 55%, #DC2626 80%, transparent 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  filter: drop-shadow(0 0 3px rgba(251,191,36,0.8));
+  animation: flame-flicker 0.8s ease-in-out infinite alternate;
+  flex-shrink: 0;
+}
+.new-fire-tag__text {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  background: linear-gradient(135deg, #FBBF24, #F97316);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@keyframes fire-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(249,115,22,0.15), 0 0 2px rgba(251,191,36,0.1);
+    border-color: rgba(249,115,22,0.25);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(249,115,22,0.35), 0 0 4px rgba(251,191,36,0.2);
+    border-color: rgba(249,115,22,0.45);
+  }
+}
+@keyframes flame-flicker {
+  0%   { opacity: 0.7; transform: scaleY(0.85) scaleX(0.9); }
+  25%  { opacity: 1;   transform: scaleY(1.05) scaleX(0.95); }
+  50%  { opacity: 0.85; transform: scaleY(0.95) scaleX(1.05); }
+  75%  { opacity: 1;   transform: scaleY(1.1) scaleX(0.9); }
+  100% { opacity: 0.9;  transform: scaleY(1) scaleX(1); }
+}
 
 @keyframes ai-shimmer {
   0%   { background-position: -200% 0; }
