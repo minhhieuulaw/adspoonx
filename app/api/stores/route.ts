@@ -64,7 +64,12 @@ export async function GET(req: NextRequest) {
                 SELECT a.country, ROUND(COUNT(*)::numeric * 100 / NULLIF(SUM(COUNT(*)) OVER(), 0), 0) as pct
                 FROM "Ad" a WHERE a."pageId" = s."pageId" AND a.country IS NOT NULL
                 GROUP BY a.country ORDER BY COUNT(*) DESC LIMIT 3
-              ) cd) as "countryDistribution"
+              ) cd) as "countryDistribution",
+              -- Sparkline: last 7 daily snapshots
+              (SELECT COALESCE(json_agg(json_build_object('date', sp.date, 'activeAds', sp."activeAds") ORDER BY sp.date), '[]'::json)
+               FROM "ShopSnapshot" sp
+               WHERE sp."pageId" = s."pageId" AND sp.date >= CURRENT_DATE - 7
+              ) as "sparkline"
        FROM "Shop" s
        ${whereSQL}
        ORDER BY s.${orderCol} DESC NULLS LAST
@@ -92,6 +97,7 @@ export async function GET(req: NextRequest) {
       website: s.website ? String(s.website) : null,
       adThumbnails: Array.isArray(s.adThumbnails) ? (s.adThumbnails as string[]).filter(Boolean).slice(0, 4) : [],
       countryDistribution: Array.isArray(s.countryDistribution) ? s.countryDistribution : [],
+      sparkline: Array.isArray(s.sparkline) ? s.sparkline : [],
     }));
 
     return NextResponse.json({

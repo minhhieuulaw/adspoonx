@@ -159,6 +159,17 @@ model SavedAd {
   @@unique([userId, adId])
 }
 
+model ShopSnapshot {
+  id        String   @id @default(cuid())
+  pageId    String
+  date      DateTime @db.Date
+  activeAds Int      @default(0)
+  totalAds  Int      @default(0)
+
+  @@unique([pageId, date])
+  @@index([pageId])
+}
+
 model SavedShop {
   id         String   @id @default(cuid())
   userId     String

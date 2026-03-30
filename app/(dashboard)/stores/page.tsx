@@ -29,6 +29,7 @@ interface ShopRow {
   website: string | null;
   adThumbnails: string[];
   countryDistribution: CountryDist[];
+  sparkline: { date: string; activeAds: number }[];
 }
 
 interface Filters {
@@ -110,20 +111,27 @@ function CountryFlag({ code, size = 18 }: { code: string; size?: number }) {
 
 // ── MiniChart ───────────────────────────────────────────────────────────────
 
-function MiniChart({ activeAds, totalAds }: { activeAds: number; totalAds: number }) {
+function MiniChart({ activeAds, totalAds, sparkline }: { activeAds: number; totalAds: number; sparkline?: { date: string; activeAds: number }[] }) {
   const points = useMemo(() => {
+    // Use real sparkline data if available (≥2 data points)
+    if (sparkline && sparkline.length >= 2) {
+      const max = Math.max(...sparkline.map(s => s.activeAds), 1);
+      return sparkline.map(s => Math.max(0.05, s.activeAds / max));
+    }
+    // Fallback: deterministic fake data from current counts
     const ratio = totalAds > 0 ? activeAds / totalAds : 0;
     const seed = activeAds * 7 + totalAds * 3;
     return Array.from({ length: 7 }, (_, i) => {
       const noise = ((seed * (i + 1) * 13) % 40 - 20) / 100;
       return Math.max(0.1, Math.min(1, ratio * 0.6 + (i / 6) * 0.4 + noise));
     });
-  }, [activeAds, totalAds]);
+  }, [activeAds, totalAds, sparkline]);
   const w = 80, h = 32, px = 2;
-  const stepX = (w - px * 2) / 6;
+  const stepX = (w - px * 2) / Math.max(1, points.length - 1);
   const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${px + i * stepX} ${h - px - p * (h - px * 2)}`).join(" ");
-  const areaD = pathD + ` L ${px + 6 * stepX} ${h - px} L ${px} ${h - px} Z`;
-  const isUp = points[6] >= points[0];
+  const lastIdx = points.length - 1;
+  const areaD = pathD + ` L ${px + lastIdx * stepX} ${h - px} L ${px} ${h - px} Z`;
+  const isUp = points[lastIdx] >= points[0];
   const color = isUp ? "#34D399" : "#EF4444";
   return (
     <svg width={w} height={h}>
@@ -547,7 +555,7 @@ export default function StoresPage() {
 
                           {/* Trend */}
                           <td className="px-4 py-5 text-center" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                            <MiniChart activeAds={store.activeAds} totalAds={store.totalAds} />
+                            <MiniChart activeAds={store.activeAds} totalAds={store.totalAds} sparkline={store.sparkline} />
                           </td>
 
                           {/* Total Active Ads */}
