@@ -248,7 +248,7 @@ main { position: relative; z-index: 1; }
   transition: background 150ms ease;
 }
 .store-table-row:hover {
-  background: rgba(124,58,237,0.04);
+  background: rgba(124,58,237,0.03);
 }
 .store-table-row:hover td:first-child p {
   color: #A78BFA !important;

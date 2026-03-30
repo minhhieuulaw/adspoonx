@@ -71,13 +71,6 @@ function formatReach(n: number): string {
   return String(n);
 }
 
-function extractDomain(url: string): string {
-  try {
-    return new URL(url.startsWith("http") ? url : "https://" + url).hostname.replace("www.", "");
-  } catch {
-    return url.slice(0, 20);
-  }
-}
 
 const AVATAR_PALETTE = ["#A78BFA", "#60A5FA", "#F472B6", "#34D399", "#FCD34D", "#FB923C", "#38BDF8"];
 function avatarColor(name: string): string {
@@ -558,8 +551,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
   // New performance fields (type-safe — may not exist on FbAd yet)
   const perfSpend   = (ad as any).spend_range as string | undefined;
   const perfReach   = (ad as any).reach as number | undefined;
-  const perfWebsite = (ad as any).website as string | undefined;
-  const hasPerf     = !!(perfSpend || perfReach || perfWebsite);
+  const hasPerf     = !!(perfSpend || perfReach);
 
   function handleInspect() {
     if (onSelect) onSelect(ad);
@@ -752,22 +744,6 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
                   fontSize: 9,
                 }}>
                   👥 {formatReach(perfReach)}
-                </span>
-              )}
-              {/* Website domain */}
-              {perfWebsite && (
-                <span
-                  className="ad-tag"
-                  style={{
-                    background: "rgba(124,58,237,0.10)",
-                    color: "#A78BFA",
-                    borderColor: "rgba(124,58,237,0.20)",
-                    fontSize: 9,
-                    cursor: "pointer",
-                  }}
-                  onClick={(e) => { e.stopPropagation(); window.open(perfWebsite, "_blank"); }}
-                >
-                  🌐 {extractDomain(perfWebsite)} ↗
                 </span>
               )}
             </div>

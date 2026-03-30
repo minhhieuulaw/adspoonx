@@ -53,10 +53,10 @@ export async function GET(req: NextRequest) {
               s.platforms, s.countries, s."firstSeenAt", s."lastAdSeenAt",
               -- Website domain (most common from ads)
               (SELECT a.website FROM "Ad" a WHERE a."pageId" = s."pageId" AND a.website IS NOT NULL AND a.website != '' LIMIT 1) as website,
-              -- Top 4 ad thumbnails
+              -- Top 4 ad thumbnails (images only, not video URLs)
               (SELECT COALESCE(json_agg(t.img), '[]'::json) FROM (
-                SELECT COALESCE(a."imageUrl", a."videoUrl") as img
-                FROM "Ad" a WHERE a."pageId" = s."pageId" AND (a."imageUrl" IS NOT NULL OR a."videoUrl" IS NOT NULL)
+                SELECT a."imageUrl" as img
+                FROM "Ad" a WHERE a."pageId" = s."pageId" AND a."imageUrl" IS NOT NULL AND a."imageUrl" != ''
                 ORDER BY a."scrapedAt" DESC LIMIT 4
               ) t) as "adThumbnails",
               -- Country distribution (top 3)

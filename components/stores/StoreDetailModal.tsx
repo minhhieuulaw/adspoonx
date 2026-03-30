@@ -110,13 +110,15 @@ export default function StoreDetailModal({ pageId, onClose }: Props) {
               width: "min(72vw, 960px)",
               minWidth: 380,
               background: "var(--bg-base, #0A0A0F)",
-              borderLeft: "1px solid var(--border, #1E1E2A)",
+              borderLeft: "1px solid rgba(255,255,255,0.08)",
+              borderTopLeftRadius: 16,
+              borderBottomLeftRadius: 16,
             }}
           >
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 z-10 p-2 rounded-lg transition-colors"
+              className="absolute top-3 right-3 z-10 p-2 rounded-lg transition-colors"
               style={{ color: "var(--text-muted)", background: "rgba(255,255,255,0.05)" }}
             >
               <X size={16} />
@@ -189,7 +191,7 @@ export default function StoreDetailModal({ pageId, onClose }: Props) {
                         { label: "Tracking", value: days !== null ? `${days}d` : "—", color: "#FCD34D", icon: Calendar },
                       ].map((kpi) => (
                         <div key={kpi.label} className="rounded-xl p-3 flex items-center gap-2.5"
-                          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${kpi.color}15` }}>
                             <kpi.icon size={14} style={{ color: kpi.color }} fill={kpi.fill ? kpi.color : "none"} />
                           </div>
