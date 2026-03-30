@@ -159,9 +159,9 @@ function calcWinrate(store: ShopRow): number {
 
 function winrateColor(pct: number): string {
   if (pct >= 70) return "#34D399";
-  if (pct >= 50) return "#FBBF24";
-  if (pct >= 30) return "#FB923C";
-  return "#EF4444";
+  if (pct >= 50) return "#A78BFA";
+  if (pct >= 30) return "rgba(251,191,36,0.7)";
+  return "rgba(255,255,255,0.35)";
 }
 
 function WinrateCell({ store }: { store: ShopRow }) {
@@ -254,7 +254,7 @@ function SortHeader({ label, sortKey, currentSort, onSort }: { label: string; so
 }
 
 function ColLabel({ children }: { children: React.ReactNode }) {
-  return <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.35)" }}>{children}</span>;
+  return <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.45)" }}>{children}</span>;
 }
 
 // ── Filter Sidebar ──────────────────────────────────────────────────────────
@@ -537,12 +537,12 @@ export default function StoresPage() {
                                   <a href={store.website ?? "#"} target="_blank" rel="noopener noreferrer"
                                     onClick={e => e.stopPropagation()}
                                     className="text-[11px] flex items-center gap-1 mt-0.5 hover:underline"
-                                    style={{ color: "#60A5FA" }}>
+                                    style={{ color: "rgba(167,139,250,0.7)" }}>
                                     {domain} <ExternalLink size={8} />
                                   </a>
                                 )}
-                                <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
-                                  Created on: {fmtDate(store.firstSeenAt)}
+                                <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                                  {fmtDate(store.firstSeenAt)}
                                 </p>
                               </div>
                             </div>
@@ -550,7 +550,7 @@ export default function StoresPage() {
 
                           {/* Est Revenue */}
                           <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                            <span className="text-[14px] font-bold" style={{ color: "var(--text-1)" }}>{estimateRevenue(store.activeAds)}</span>
+                            <span className="text-[14px] font-bold" style={{ color: "#34D399" }}>{estimateRevenue(store.activeAds)}</span>
                           </td>
 
                           {/* Trend */}
@@ -562,7 +562,7 @@ export default function StoresPage() {
                           <td className="px-4 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                             <div>
                               <div className="flex items-baseline gap-1.5">
-                                <span className="text-[15px] font-bold" style={{ color: "var(--text-1)" }}>+{store.activeAds}</span>
+                                <span className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>+{store.activeAds}</span>
                                 {store.pausedAds > 0 && (
                                   <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
                                     ({store.pausedAds.toLocaleString()} inactive)
@@ -593,7 +593,7 @@ export default function StoresPage() {
                                 {(store.countryDistribution as CountryDist[]).map((cd) => (
                                   <div key={cd.country} className="flex items-center gap-2">
                                     <CountryFlag code={cd.country} size={16} />
-                                    <span className="text-[12px] font-bold tabular-nums" style={{ color: "var(--text-1)" }}>{cd.pct}%</span>
+                                    <span className="text-[11px] font-semibold tabular-nums" style={{ color: "rgba(255,255,255,0.6)" }}>{cd.pct}%</span>
                                   </div>
                                 ))}
                               </div>
