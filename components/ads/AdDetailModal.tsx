@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Calendar, Eye, DollarSign, Globe, Monitor, Bookmark,
-  ExternalLink, Play, Pause, ChevronDown, TrendingUp,
+  ExternalLink, Play, Pause, ChevronDown, TrendingUp, Download, Copy, Check,
   Volume2, VolumeX, Package, ShoppingBag, Sparkles, Zap, AlertCircle, ChevronUp,
 } from "lucide-react";
 import type { FbAd } from "@/lib/facebook-ads";
@@ -115,6 +115,31 @@ function ExpandableText({ text, maxLines = 5 }: { text: string; maxLines?: numbe
   );
 }
 
+// ── Copyable Ad Copy ─────────────────────────────────────────────────────────
+
+function CopyableAdCopy({ body }: { body: string }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(body).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }
+  return (
+    <div className="px-4 py-3 flex-shrink-0 relative" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Ad Copy</p>
+        <button onClick={handleCopy}
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold transition-all"
+          style={{ background: copied ? "rgba(52,211,153,0.12)" : "rgba(255,255,255,0.04)", color: copied ? "#34D399" : "var(--text-3)", border: `1px solid ${copied ? "rgba(52,211,153,0.2)" : "rgba(255,255,255,0.08)"}` }}>
+          {copied ? <><Check size={9} /> Copied</> : <><Copy size={9} /> Copy</>}
+        </button>
+      </div>
+      <ExpandableText text={body} maxLines={7} />
+    </div>
+  );
+}
+
 // ── Video player ──────────────────────────────────────────────────────────────
 
 function VideoPreview({ src, poster, alt }: { src: string; poster?: string; alt: string }) {
@@ -159,6 +184,13 @@ function VideoPreview({ src, poster, alt }: { src: string; poster?: string; alt:
       <video ref={ref} src={src} poster={poster} muted playsInline loop preload="metadata"
         className="w-full object-cover" style={{ display: "block", maxHeight: 420 }} aria-label={alt}
         onTimeUpdate={handleTimeUpdate} />
+      {/* Download button — top right corner */}
+      <a href={src} download target="_blank" rel="noopener noreferrer"
+        onClick={e => e.stopPropagation()}
+        className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:scale-105"
+        style={{ background: "rgba(124,58,237,0.85)", backdropFilter: "blur(8px)", color: "#fff", border: "1px solid rgba(167,139,250,0.4)", boxShadow: "0 4px 16px rgba(124,58,237,0.3)" }}>
+        <Download size={12} /> Download
+      </a>
       {!playing && (
         <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1.5px solid rgba(255,255,255,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -506,10 +538,8 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
 
             {/* Ad copy */}
             {body && (
-              <div className="px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--text-3)" }}>Ad Copy</p>
-                <ExpandableText text={body} maxLines={7} />
-              </div>
+              <CopyableAdCopy body={body} />
+
             )}
 
             {/* Platforms */}
@@ -833,7 +863,7 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
                       ].map(({ label, text, bg, border, tc, lc }) => (
                         <div key={label} className="rounded-[7px] px-2 py-1.5" style={{ background: bg, border: `1px solid ${border}` }}>
                           <p className="text-[8px] font-bold uppercase mb-0.5" style={{ color: lc }}>{label}</p>
-                          <p className="text-[10px] leading-snug line-clamp-3" style={{ color: tc }}>{text}</p>
+                          <p className="text-[10px] leading-snug" style={{ color: tc }}>{text}</p>
                         </div>
                       ))}
                     </div>

@@ -644,7 +644,7 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
               {storeName}
             </span>
             {platforms.length > 0 && (
-              <span className="flex items-center gap-0.5 flex-shrink-0">
+              <span className="flex items-center gap-1 flex-shrink-0">
                 {platforms.map(p => <PlatformIcon key={p} platform={p} />)}
               </span>
             )}

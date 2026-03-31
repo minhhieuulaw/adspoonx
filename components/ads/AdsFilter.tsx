@@ -35,8 +35,7 @@ export type AIScoreTier = "all" | "weak" | "testing" | "promising" | "winning" |
 
 export const AI_SCORE_TIERS: Array<{ id: AIScoreTier; label: string; range: string; min: number; max: number; color: string; bg: string; border: string; icon: string }> = [
   { id: "all",       label: "All Scores",  range: "",        min: 0,  max: 99, color: "var(--text-2)",  bg: "transparent",              border: "transparent",              icon: "" },
-  { id: "weak",      label: "Weak",        range: "0–30",    min: 0,  max: 30, color: "#94A3B8",        bg: "rgba(148,163,184,0.10)",   border: "rgba(148,163,184,0.25)",   icon: "○" },
-  { id: "testing",   label: "Testing",     range: "31–50",   min: 31, max: 50, color: "#60A5FA",        bg: "rgba(96,165,250,0.10)",    border: "rgba(96,165,250,0.25)",    icon: "◐" },
+  { id: "testing",   label: "Testing",     range: "1–50",    min: 1,  max: 50, color: "#60A5FA",        bg: "rgba(96,165,250,0.10)",    border: "rgba(96,165,250,0.25)",    icon: "◐" },
   { id: "promising", label: "Promising",   range: "51–70",   min: 51, max: 70, color: "#FCD34D",        bg: "rgba(252,211,77,0.10)",    border: "rgba(252,211,77,0.25)",    icon: "◉" },
   { id: "winning",   label: "Winning",     range: "71–84",   min: 71, max: 84, color: "#34D399",        bg: "rgba(52,211,153,0.10)",    border: "rgba(52,211,153,0.25)",    icon: "★" },
   { id: "elite",     label: "Elite",       range: "85–99",   min: 85, max: 99, color: "#A78BFA",        bg: "rgba(167,139,250,0.12)",   border: "rgba(167,139,250,0.35)",   icon: "🔥" },
@@ -601,84 +600,6 @@ export default function AdsFilter({
         </div>
 
         <Divider />
-
-        {/* Result count */}
-        <div className="flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: "rgba(255,255,255,0.30)" }}>
-          {loading ? (
-            <span className="animate-pulse">Loading…</span>
-          ) : filteredResults !== undefined && totalResults !== undefined ? (
-            <>
-              <span style={{ color: "rgba(167,139,250,0.70)", fontWeight: 600 }}>
-                {filteredResults === totalResults ? totalResults : filteredResults}
-              </span>
-              <span>{filteredResults === totalResults ? "ads found" : `of ${totalResults} ads`}</span>
-            </>
-          ) : null}
-        </div>
-
-        <Divider />
-
-        {/* Smart Presets */}
-        <FilterSection label="Smart Presets">
-          <div className="flex flex-col gap-1.5">
-            {PRESETS.map((preset) => {
-              const isActive = values.preset === preset.id;
-              const color   = preset.id === "top" ? "#A78BFA" : preset.id === "trending" ? "#34D399" : "#F59E0B";
-              const iconBg  = preset.id === "top" ? "rgba(167,139,250,0.15)" : preset.id === "trending" ? "rgba(52,211,153,0.15)" : "rgba(245,158,11,0.15)";
-              const iconBorder = preset.id === "top" ? "rgba(167,139,250,0.32)" : preset.id === "trending" ? "rgba(52,211,153,0.32)" : "rgba(245,158,11,0.32)";
-              const cardBg  = preset.id === "top" ? "linear-gradient(135deg, rgba(167,139,250,0.10), rgba(124,58,237,0.04))" : preset.id === "trending" ? "linear-gradient(135deg, rgba(52,211,153,0.10), rgba(16,185,129,0.04))" : "linear-gradient(135deg, rgba(245,158,11,0.10), rgba(217,119,6,0.04))";
-              const PresetIcon = preset.id === "top" ? Trophy : preset.id === "trending" ? TrendingUp : Leaf;
-              return (
-                <button
-                  key={preset.id}
-                  onClick={() => togglePreset(preset.id)}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[10px] text-left"
-                  style={{
-                    background: isActive ? cardBg : "rgba(255,255,255,0.025)",
-                    border: `1px solid ${isActive ? iconBorder : "rgba(255,255,255,0.06)"}`,
-                    boxShadow: isActive ? `0 4px 20px ${color}22, 0 0 0 1px ${color}10 inset` : "none",
-                    transition: "all 160ms ease",
-                  }}
-                  onMouseEnter={e => {
-                    if (!isActive) {
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.045)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.10)";
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!isActive) {
-                      (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)";
-                    }
-                  }}
-                >
-                  <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0"
-                    style={{
-                      background: isActive ? iconBg : "rgba(255,255,255,0.04)",
-                      border: `1px solid ${isActive ? iconBorder : "rgba(255,255,255,0.07)"}`,
-                      boxShadow: isActive ? `0 0 12px ${color}30` : "none",
-                      transition: "all 160ms ease",
-                    }}>
-                    <PresetIcon size={14} style={{ color: isActive ? color : "rgba(255,255,255,0.30)" }} strokeWidth={2} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold" style={{ color: isActive ? color : "rgba(255,255,255,0.60)" }}>
-                      {preset.label}
-                    </p>
-                    <p className="text-[9px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)" }}>{preset.desc}</p>
-                  </div>
-                  {isActive && (
-                    <div style={{
-                      width: 6, height: 6, borderRadius: "50%",
-                      background: color, flexShrink: 0,
-                      boxShadow: `0 0 8px ${color}CC, 0 0 16px ${color}55`,
-                    }} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </FilterSection>
 
         <Divider />
 
