@@ -1455,9 +1455,6 @@ export default function AdsPage() {
       </div>
 
       {/* ── Ad Detail Modal (all screen sizes) ── */}
-      {/* Right spacer — matches filter sidebar width for balanced layout */}
-      <div className="hidden lg:block flex-shrink-0" style={{ width: 236 }} />
-
       <AdDetailModal
         ad={selectedAd}
         onClose={() => setSelectedAd(null)}

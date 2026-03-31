@@ -659,8 +659,6 @@ export default function StoresPage() {
           )}
         </div>
 
-        {/* Right spacer — matches filter sidebar width for balanced layout */}
-        <div className="w-[260px] flex-shrink-0 hidden lg:block" />
       </div>
 
       <StoreDetailModal pageId={selectedStore} onClose={() => setSelectedStore(null)} />

@@ -23,7 +23,7 @@ export default async function DashboardLayout({
       <div className="md:pl-64">
         <Header />
         <main className="min-h-screen" style={{ paddingTop: 56 }}>
-          <div className="p-5">{children}</div>
+          <div className="p-5" style={{ maxWidth: 1400, marginLeft: "auto", marginRight: "auto" }}>{children}</div>
         </main>
       </div>
     </div>
