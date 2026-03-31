@@ -170,6 +170,63 @@ model ShopSnapshot {
   @@index([pageId])
 }
 
+// ─── Deep Research ─────────────────────────────────────────
+
+model ResearchKeyword {
+  id              String   @id @default(cuid())
+  keyword         String
+  niche           String?
+  source          String   @default("seed")  // seed | admin | ads | expanded
+  // Metrics (computed from ads data)
+  adCount         Int      @default(0)
+  activeAds       Int      @default(0)
+  activeRatio     Float    @default(0)
+  avgDaysRunning  Float    @default(0)
+  geoCount        Int      @default(0)
+  platformCount   Int      @default(0)
+  avgAiScore      Float    @default(0)
+  newAds7d        Int      @default(0)
+  growthRate      Float    @default(0)
+  // Scores (0-100)
+  demandScore     Float    @default(0)
+  growthScore     Float    @default(0)
+  stabilityScore  Float    @default(0)
+  geoScore        Float    @default(0)
+  qualityScore    Float    @default(0)
+  opportunityScore Float   @default(0)
+  beginnerScore   Float    @default(0)
+  evergreenScore  Float    @default(0)
+  testNowScore    Float    @default(0)
+  // Signal
+  signal          String   @default("wait")  // go | wait | risk
+  aiVerdict       String?
+  // Timestamps
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  @@unique([keyword])
+  @@index([opportunityScore])
+  @@index([niche])
+}
+
+model NicheCluster {
+  id              String   @id @default(cuid())
+  niche           String   @unique
+  keywordCount    Int      @default(0)
+  avgOpportunity  Float    @default(0)
+  avgGrowth       Float    @default(0)
+  signal          String   @default("wait")  // go | wait | risk
+  beginnerSafe    Boolean  @default(false)
+  // AI-generated content
+  aiSummary       String?
+  aiHook          String?
+  aiHeadline      String?
+  aiPainPoint     String?
+  // Timestamps
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
+
 model SavedShop {
   id         String   @id @default(cuid())
   userId     String

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Sparkles, Store, TrendingUp, Bookmark, Settings, Zap, Database, X } from "lucide-react";
+import { Home, Sparkles, Store, TrendingUp, Bookmark, Settings, Zap, Database, X, FlaskConical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ const NAV = [
     items: [
       { label: "Ads Finder",      href: "/ads",      icon: Sparkles },
       { label: "Potential Store", href: "/stores",   icon: Store },
-      { label: "Trending Niche",  href: "/trending", icon: TrendingUp, tag: "new" },
+      { label: "Deep Research",   href: "/trending", icon: FlaskConical, tag: "beta" },
       { label: "Saved",           href: "/saved",    icon: Bookmark },
     ],
   },
