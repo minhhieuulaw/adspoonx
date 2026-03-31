@@ -49,20 +49,22 @@ export async function GET(req: NextRequest) {
     now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()
   ));
 
-  const [todayRuns, todayNewAds, todayClassified, totalUnclassified] = await Promise.all([
+  const [todayRuns, todayNewAds, todayClassified, totalUnclassified, totalAdsRaw, totalClassified, totalOnProduction] = await Promise.all([
     prisma.workflowRun.findMany({
       where: { runAt: { gte: todayStart } },
       orderBy: { runAt: "desc" },
     }),
     prisma.ad.count({ where: { scrapedAt: { gte: todayStart } } }),
-    // Ads scraped today that already have a real niche (not null, not "Other")
     prisma.ad.count({
       where: { scrapedAt: { gte: todayStart }, niche: { not: null, notIn: ["Other"] } },
     }),
-    // Total ads that still need classification (null OR "Other")
     prisma.ad.count({
       where: { OR: [{ niche: null }, { niche: "Other" }] },
     }),
+    // Pipeline totals
+    prisma.ad.count(),  // total raw ads crawled
+    prisma.ad.count({ where: { niche: { not: null, notIn: ["Other"] } } }),  // total classified
+    prisma.ad.count({ where: { niche: { not: null, notIn: ["Other"] }, isActive: true } }),  // total on production (active + classified)
   ]);
 
   return NextResponse.json({
@@ -75,5 +77,9 @@ export async function GET(req: NextRequest) {
     totalErrorsToday:  todayRuns.reduce((s, r) => s + (r.errors     ?? 0), 0),
     nextRun: getNextRunUtc(),
     lastRun: todayRuns[0] ?? null,
+    // Pipeline totals (all-time)
+    totalAdsRaw,
+    totalClassified,
+    totalOnProduction,
   });
 }

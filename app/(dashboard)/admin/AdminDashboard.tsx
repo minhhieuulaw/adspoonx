@@ -50,6 +50,9 @@ interface VpsStatus {
   totalErrorsToday:  number;
   nextRun:           string;
   lastRun:           { status: string; runAt: string; newAds: number; updatedAds: number; errors: number; durationMs: number | null } | null;
+  totalAdsRaw?:      number;
+  totalClassified?:  number;
+  totalOnProduction?: number;
 }
 
 const PLAN_COLORS: Record<string, string> = {
@@ -483,10 +486,10 @@ function VpsStatusBar() {
   // Pipeline step data derived from today's runs
   const pipelineStats = (() => {
     if (!data) return null;
-    const totalScraped = data.totalNewToday + data.totalUpdatedToday;
-    const totalFiltered = data.todayNewAds; // ads that passed filter
-    const totalClassified = data.todayClassified;
-    const totalStored = totalClassified; // classified = stored
+    const totalScraped = data.totalAdsRaw ?? 0;        // total raw ads crawled (all time)
+    const totalFiltered = totalScraped - (data.totalUnclassified ?? 0); // ads that passed filter
+    const totalClassified = data.totalClassified ?? 0;  // total with real niche
+    const totalStored = data.totalOnProduction ?? 0;    // active + classified = on production
     const hasActiveRun = data.lastRun?.status === "running";
     return { totalScraped, totalFiltered, totalClassified, totalStored, hasActiveRun };
   })();
@@ -589,10 +592,10 @@ function VpsStatusBar() {
               </div>
               <div className="flex items-center gap-1 overflow-x-auto">
                 {[
-                  { icon: Globe, label: "Crawl", stat: `${pipelineStats.totalScraped.toLocaleString()} scraped`, color: "#60A5FA", bg: "rgba(96,165,250,0.1)", active: pipelineStats.totalScraped > 0 },
+                  { icon: Globe, label: "Crawl", stat: `${pipelineStats.totalScraped.toLocaleString()} total`, color: "#60A5FA", bg: "rgba(96,165,250,0.1)", active: pipelineStats.totalScraped > 0 },
                   { icon: Search, label: "Filter", stat: `${pipelineStats.totalFiltered.toLocaleString()} passed`, color: "#FCD34D", bg: "rgba(252,211,77,0.1)", active: pipelineStats.totalFiltered > 0 },
                   { icon: Brain, label: "Classify", stat: `${pipelineStats.totalClassified.toLocaleString()} classified`, color: "#A78BFA", bg: "rgba(167,139,250,0.1)", active: pipelineStats.totalClassified > 0 },
-                  { icon: HardDrive, label: "Store", stat: `${pipelineStats.totalStored.toLocaleString()} stored`, color: "#34D399", bg: "rgba(52,211,153,0.1)", active: pipelineStats.totalStored > 0 },
+                  { icon: HardDrive, label: "Store", stat: `${pipelineStats.totalStored.toLocaleString()} on production`, color: "#34D399", bg: "rgba(52,211,153,0.1)", active: pipelineStats.totalStored > 0 },
                 ].map((step, i, arr) => {
                   const StepIcon = step.icon;
                   return (
