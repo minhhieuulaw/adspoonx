@@ -564,7 +564,7 @@ export default function AdsPage() {
       setLoading(true);
       setError(null);
       try {
-        const fetchLimit = params.mediaType === "video" ? 300 : 200;
+        const fetchLimit = params.mediaType === "video" ? 500 : 400;
         const apiParams: Record<string, unknown> = {
           ...params, limit: fetchLimit, seed,
           ...(params.useRegex ? { useRegex: "1" } : {}),
@@ -1307,56 +1307,7 @@ export default function AdsPage() {
 
         {/* Bulk action bar */}
         {visibleAds.length > 0 && (
-          <div className="flex items-center gap-2 mb-3">
-            <button
-              onClick={() => bulkMode ? exitBulk() : setBulkMode(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11px] font-medium transition-all"
-              style={{
-                background: bulkMode ? "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(167,139,250,0.08))" : "rgba(255,255,255,0.03)",
-                border: `1px solid ${bulkMode ? "rgba(124,58,237,0.30)" : "rgba(255,255,255,0.06)"}`,
-                color: bulkMode ? "#A78BFA" : "var(--text-3)",
-                boxShadow: bulkMode ? "0 0 12px rgba(124,58,237,0.08)" : "none",
-              }}
-            >
-              <CheckSquare size={12} strokeWidth={1.8} />
-              {bulkMode ? "Cancel" : "Select"}
-            </button>
-            {bulkMode && (
-              <>
-                <button onClick={bulkSelectAll}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-[10px] font-medium transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    color: "var(--text-2)",
-                  }}>
-                  {bulkSelected.size === visibleAds.length ? <CheckSquare size={10} /> : <Square size={10} />}
-                  All ({visibleAds.length})
-                </button>
-                {bulkSelected.size > 0 && (
-                  <button onClick={bulkSaveAll}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[10px] font-semibold transition-all"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(124,58,237,0.18), rgba(167,139,250,0.10))",
-                      border: "1px solid rgba(124,58,237,0.30)",
-                      color: "#A78BFA",
-                      boxShadow: "0 0 16px rgba(124,58,237,0.10)",
-                    }}>
-                    <Bookmark size={10} strokeWidth={2} />
-                    Save {bulkSelected.size} ads
-                  </button>
-                )}
-                <span className="text-[10px] font-bold ml-auto px-2 py-1 rounded-[6px]" style={{
-                  color: "#A78BFA",
-                  background: "rgba(124,58,237,0.08)",
-                  fontVariantNumeric: "tabular-nums",
-                  fontFamily: "var(--font-geist-mono, 'Geist Mono', monospace)",
-                }}>
-                  {bulkSelected.size} selected
-                </span>
-              </>
-            )}
-          </div>
+          <div />
         )}
 
         {/* Ads grid — container query responsive */}
