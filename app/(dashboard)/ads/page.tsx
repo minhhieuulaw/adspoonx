@@ -720,10 +720,13 @@ export default function AdsPage() {
   function exitBulk() { setBulkMode(false); setBulkSelected(new Set()); }
 
   // Filter change handler with fade transition
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleFilterChange = useCallback((newFilters: FilterValues) => {
+    setError(null); // Clear any previous error when filter changes
     setGridFade(true);
     setVisibleCount(20);
-    setTimeout(() => {
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+    fadeTimerRef.current = setTimeout(() => {
       setFilters(newFilters);
       setGridFade(false);
     }, 150);
