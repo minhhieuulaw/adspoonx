@@ -1,5 +1,5 @@
 /**
- * Product ad detection filter — ported from scripts/recover-apify.ts
+ * Product ad detection filter.
  *
  * Filters out service ads, political ads, charity, apps, etc.
  * Only keeps product/e-commerce/dropshipping ads.
@@ -111,7 +111,7 @@ const PRODUCT_PATTERNS = [
 
 /**
  * Returns true only if the ad looks like a product/dropshipping ad.
- * Takes raw Apify ad data (Record<string, unknown> or typed).
+ * Accepts raw ad data from any crawl source (Record<string, unknown>).
  */
 export function isProductAd(raw: Record<string, unknown>): boolean {
   const snap = raw.snapshot as Record<string, unknown> | undefined;

@@ -392,9 +392,6 @@ export default function AdminDashboard() {
 
       </>)}
 
-      {/* ── Crawl Control ── */}
-      <CrawlControl />
-
       {/* ── Niche Intelligence ── */}
       <NicheIntelligence />
 
@@ -746,115 +743,6 @@ function VpsStatusBar() {
   );
 }
 
-// ── Crawl Control ─────────────────────────────────────────────────────────────
-
-function CrawlControl() {
-  const [keyword, setKeyword] = useState("");
-  const [country, setCountry] = useState("US");
-  const [log,     setLog]     = useState<string[]>([]);
-  const [busy,    setBusy]    = useState(false);
-
-  function addLog(msg: string) {
-    setLog(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 49)]);
-  }
-
-  async function post(body: object) {
-    setBusy(true);
-    addLog("Processing...");
-    try {
-      const r = await fetch("/api/admin/crawl", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(body),
-      });
-      const d = await r.json() as Record<string, unknown>;
-      if (!r.ok) {
-        addLog(`❌ Lỗi: ${String(d.error ?? "unknown")}`);
-      } else if ((body as Record<string, unknown>).action === "clean") {
-        addLog(`✅ Deleted ${String(d.deleted)} old ads.`);
-      } else {
-        const saved = d.saved ?? d.totalSaved ?? "?";
-        addLog(`✅ Saved ${String(saved)} ads (quality filter on).`);
-      }
-    } catch {
-      addLog("❌ Network error");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="rounded-[12px] p-4 mt-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-      <p className="font-display text-[13px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>
-        🕷️ Crawl Control (manual)
-      </p>
-      <div className="rounded-[8px] px-3 py-2 mb-3 text-[11px]"
-        style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#F87171" }}>
-        Auto-cron <strong>DISABLED</strong> (CRON_DISABLED=true). Quality filter on:
-        only saves ads with pageName + bodyText + image/video.
-      </div>
-
-      <div className="flex gap-2 mb-3">
-        <input
-          value={keyword}
-          onChange={e => setKeyword(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && keyword && void post({ action: "crawl_single", keyword, country })}
-          placeholder="keyword (e.g. skincare)"
-          className="flex-1 px-3 py-2 rounded-[8px] text-[12px] outline-none"
-          style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-1)" }}
-        />
-        <select
-          value={country}
-          onChange={e => setCountry(e.target.value)}
-          className="px-2 py-2 rounded-[8px] text-[12px] outline-none"
-          style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-2)" }}
-        >
-          {["US","GB","AU","CA","VN","TH","ID","PH","MY","SG","DE","FR","NL"].map(c => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-3">
-        <button
-          onClick={() => { if (keyword) void post({ action: "crawl_single", keyword, country }); }}
-          disabled={busy || !keyword}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[12px] font-semibold disabled:opacity-50"
-          style={{ background: "var(--ai-soft)", border: "1px solid rgba(124,58,237,0.3)", color: "var(--ai-light)" }}
-        >
-          <Play size={11} /> Crawl 1 keyword
-        </button>
-        <button
-          onClick={() => void post({ action: "crawl_all" })}
-          disabled={busy}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[12px] font-semibold disabled:opacity-50"
-          style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.3)", color: "#60A5FA" }}
-        >
-          <RefreshCw size={11} /> Crawl All (10 jobs)
-        </button>
-        <button
-          onClick={() => void post({ action: "clean" })}
-          disabled={busy}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[12px] font-semibold disabled:opacity-50"
-          style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#F87171" }}
-        >
-          <Trash2 size={11} /> Delete ads &gt;90 days
-        </button>
-      </div>
-
-      {log.length > 0 && (
-        <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto">
-          {log.map((line, i) => (
-            <p key={i} className="font-data text-[11px] leading-relaxed"
-              style={{ color: line.includes("❌") ? "#F87171" : line.includes("✅") ? "#34D399" : "var(--text-3)" }}>
-              {line}
-            </p>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Announcements Panel ───────────────────────────────────────────────────────
 

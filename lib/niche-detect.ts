@@ -2,7 +2,7 @@
  * Niche detection — maps Facebook page_categories + keyword fallback to 15 niches.
  *
  * Priority:
- *   1. page_categories from Apify rawData (95%+ coverage)
+ *   1. page_categories from rawData.snapshot (when available)
  *   2. Keyword scan in bodyText / title / link_url
  *   3. Fallback: "Other"
  */
@@ -344,7 +344,7 @@ export function detectNicheFromKeywords(bodyText?: string | null, title?: string
 }
 
 /**
- * Extract niche input from raw Apify ad data (as stored in DB).
+ * Extract niche input from an ad's rawData (as stored in DB by any crawler).
  */
 export function nicheInputFromRaw(raw: Record<string, unknown>, ad: { bodyText?: string | null; title?: string | null }): NicheInput {
   const snap = (raw.snapshot ?? {}) as Record<string, unknown>;

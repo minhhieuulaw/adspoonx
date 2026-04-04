@@ -22,7 +22,7 @@ export interface FbAd {
   page_name?: string;
   publisher_platforms?: string[];
   spend?: { lower_bound: string; upper_bound: string };
-  // Apify-specific fields
+  // Enriched fields populated by the crawler pipeline (FB API + snapshot scraper)
   image_url?: string;
   video_url?: string;       // direct video URL (muted hover-play)
   thumbnail_url?: string;   // poster frame for video (image even when video_url exists)
@@ -36,8 +36,8 @@ export interface FbAd {
   countries?: string[];     // all countries the ad ran in
   niche?: string;           // auto-detected niche (e.g. "Fashion & Apparel")
   reach?: number;
-  spend_text?: string;           // raw spend range from Apify (JSON string)
-  impressions_text?: string;     // raw impressions range from Apify (JSON string)
+  spend_text?: string;           // raw spend range (JSON string)
+  impressions_text?: string;     // raw impressions range (JSON string)
   website?: string;
   totalActiveTime?: number;
   targeted_countries?: string[];
