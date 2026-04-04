@@ -128,11 +128,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 return (
                   <motion.div
                     key={t.id}
-                    layout
-                    initial={{ opacity: 0, x: 80, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 80, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 40 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
                     style={{
                       pointerEvents: "auto",
                       display: "flex",

@@ -1310,6 +1310,23 @@ export default function AdsPage() {
           <div />
         )}
 
+        {/* Inactive context banner — educate users on historical ads value */}
+        {filters.status === "INACTIVE" && visibleAds.length > 0 && (
+          <div className="mb-4 rounded-lg px-4 py-3 flex items-start gap-3"
+            style={{ background: "linear-gradient(135deg, rgba(96,165,250,0.06), rgba(96,165,250,0.02))", border: "1px solid rgba(96,165,250,0.15)" }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(96,165,250,0.12)" }}>
+              <span style={{ fontSize: 14 }}>📚</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-[12px] font-semibold mb-0.5" style={{ color: "#60A5FA" }}>Historical Ads Archive</p>
+              <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+                These ads have stopped running but still hold valuable insights — proven winning products, successful creative angles, and seasonal patterns. Ads that ran 60+ days are especially valuable as they generated real revenue.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Ads grid — container query responsive */}
         <AnimatePresence>
           {visibleAds.length > 0 && (

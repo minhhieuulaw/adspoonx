@@ -159,6 +159,21 @@ function fmtTime(sec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// ── URL expiry check for Facebook CDN URLs ──────────────────────────────────
+// FB URLs have ?oe=HEX param = Unix expire timestamp in hex.
+// Returns true if URL is expired (or invalid).
+function isFbUrlExpired(url: string | undefined): boolean {
+  if (!url) return false;
+  const match = url.match(/[?&]oe=([0-9a-fA-F]+)/);
+  if (!match) return false;
+  try {
+    const expireUnix = parseInt(match[1], 16);
+    return expireUnix > 0 && expireUnix < Math.floor(Date.now() / 1000);
+  } catch {
+    return false;
+  }
+}
+
 // ── Video creative with full controls ────────────────────────────────────────
 
 function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt: string }) {
@@ -174,8 +189,13 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
   const [showMenu, setShowMenu] = useState(false);
   const [hovered, setHovered] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [videoError, setVideoError] = useState(false);
+  // Pre-check: if URL is FB CDN expired, skip load attempt
+  const srcExpired = isFbUrlExpired(src);
+  const posterExpired = isFbUrlExpired(poster);
+  const [videoError, setVideoError] = useState(srcExpired);
   const [videoReady, setVideoReady] = useState(false);
+  // Use poster only if not expired
+  const validPoster = posterExpired ? undefined : poster;
 
   const handleTimeUpdate = useCallback(() => {
     const v = ref.current;
@@ -297,10 +317,11 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
       onMouseLeave={handleMouseLeave}
     >
       {videoError ? (
-        poster ? (
+        validPoster ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={poster} alt={alt} className="w-full h-full object-cover" />
+            <img src={validPoster} alt={alt} className="w-full h-full object-cover"
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
             <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.2)" }}>
               <div style={{
                 width: 40, height: 40, borderRadius: "50%",
@@ -313,31 +334,23 @@ function VideoCreative({ src, poster, alt }: { src: string; poster?: string; alt
             </div>
           </>
         ) : (
-          /* No poster available — show a static video frame as thumbnail.
-             Use a separate video element with #t=0.5 to grab first frame. */
-          <>
-            <video
-              src={`${src}#t=0.5`}
-              muted playsInline preload="metadata"
-              className="w-full h-full object-cover"
-              style={{ pointerEvents: "none" }}
-              aria-label={alt}
-            />
-            <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.2)" }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: "50%",
-                background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)",
-                border: "1.5px solid rgba(255,255,255,0.25)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Play size={14} fill="white" color="white" style={{ marginLeft: 2 }} />
-              </div>
+          /* No poster + expired/broken video → show text placeholder */
+          <div className="absolute inset-0 flex flex-col items-center justify-center"
+            style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(0,0,0,0.3))" }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: "50%",
+              background: "rgba(124,58,237,0.18)", backdropFilter: "blur(6px)",
+              border: "1.5px solid rgba(167,139,250,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8,
+            }}>
+              <Play size={16} fill="#A78BFA" color="#A78BFA" style={{ marginLeft: 2 }} />
             </div>
-          </>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>Video expired</span>
+          </div>
         )
       ) : (
         <video
-          ref={ref} src={poster ? src : `${src}#t=0.5`} poster={poster} muted playsInline loop preload="metadata"
+          ref={ref} src={validPoster ? src : `${src}#t=0.5`} poster={validPoster} muted playsInline loop preload="metadata"
           className="w-full h-full object-cover"
           style={{ pointerEvents: "none" }}
           aria-label={alt}
@@ -562,8 +575,8 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
     <>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0, transition: { duration: 0.18, delay: Math.min(index * 0.02, 0.3) } }}
-        whileHover={{ y: -4, scale: 1.015, transition: { type: "spring", stiffness: 400, damping: 22 } }}
+        animate={{ opacity: 1, y: 0, transition: { duration: 0.12, delay: Math.min(index * 0.01, 0.15) } }}
+        whileHover={{ y: -3, transition: { duration: 0.15, ease: "easeOut" } }}
         className="ad-card rounded-[10px] overflow-hidden flex flex-col cursor-pointer relative"
         onClick={handleInspect}
       >
