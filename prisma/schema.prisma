@@ -107,7 +107,7 @@ model Shop {
   @@index([lastAdSeenAt])
 }
 
-// Ads scraped from Facebook Ads Library
+// Ads scraped from Facebook Ad Library (via official Graph API + snapshot scraper)
 model Ad {
   id            String   @id @default(cuid())
   adArchiveId   String   @unique
@@ -116,8 +116,8 @@ model Ad {
   bodyText      String?
   title         String?
   description   String?
-  imageUrl      String?
-  videoUrl      String?
+  imageUrl      String?            // legacy thumbnail URL (fb CDN), kept for back-compat
+  videoUrl      String?            // legacy / primary video URL (prefer videoUrlWeb for new ads)
   adLibraryUrl  String?
   ctaType       String?
   platforms     String[]
@@ -131,11 +131,20 @@ model Ad {
   niche         String?
   rawData       Json
   reach           Int?
-  spend           String?       // range text like "100 - 500"
+  spend           String?       // legacy range text "100 - 500"
+  spendLower      Float?        // numeric spend bound from FB API (EU)
+  spendUpper      Float?        // numeric spend bound from FB API (EU)
+  currency        String?       // currency code from FB API
   impressions     String?       // range text
   website         String?       // landing page URL
   totalActiveTime Int?          // seconds
   dropshippingScore Int?
+  // ─── Cached media URLs (R2) — populated by the scraper pipeline ───────────
+  pageProfilePictureUrl String?  // R2: avatars/{pageId}.jpg (or direct URL fallback)
+  videoUrlWeb           String?  // R2: videos/web/{hash}.mp4 — H.264 720p CRF 28 (play + download)
+  thumbnailR2Url        String?  // R2: thumbnails/{hash}.jpg — poster frame
+  videoBytes            Int?     // size of videoUrlWeb in bytes
+  videoDurationSec      Int?     // duration in seconds
   scrapedAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -145,6 +154,27 @@ model Ad {
   @@index([niche])
   @@index([isActive, lastCheckedAt])
   @@index([pageId])
+}
+
+// Keyword performance tracking (scraper analytics, written by fb-scraper/db_writer.py)
+// snake_case columns intentional — legacy SQL from fb-scraper/migrate_keyword_perf.sql.
+model KeywordPerformance {
+  id          String   @id @default(cuid())
+  keyword     String
+  country     String
+  date        DateTime @default(now()) @db.Date
+  total_found Int      @default(0)
+  new_unique  Int      @default(0)
+  quality_ads Int      @default(0)
+  run_count   Int      @default(0)
+  avg_pages   Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([keyword, country, date])
+  @@index([date])
+  @@index([new_unique(sort: Desc)])
+  @@index([keyword, country])
 }
 
 model SavedAd {
