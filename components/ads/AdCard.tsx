@@ -547,6 +547,7 @@ function AIScoreRibbon({ score }: { score: number }) {
 export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
   const { savedIds, toggleSave } = useSavedAds();
   const [modalOpen, setModalOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   const isSaved    = savedIds.has(ad.id);
   const storeName  = ad.page_name ?? "Unknown";
@@ -640,12 +641,12 @@ export default function AdCard({ ad, index = 0, onSelect }: AdCardProps) {
         <div className="px-3 py-2.5 flex flex-col gap-1.5 flex-1 min-h-[108px]">
           {/* Brand row + bookmark */}
           <div className="flex items-center gap-2 min-w-0">
-            {ad.page_profile_picture_url ? (
+            {ad.page_profile_picture_url && !avatarError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={ad.page_profile_picture_url} alt={storeName}
                 className="w-5 h-5 rounded-full flex-shrink-0 object-cover"
                 style={{ border: `1px solid ${color}30` }}
-                onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                onError={() => setAvatarError(true)}
               />
             ) : (
               <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold"

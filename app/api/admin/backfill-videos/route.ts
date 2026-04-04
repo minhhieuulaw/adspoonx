@@ -7,11 +7,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { downloadAndUploadVideo } from "@/lib/r2";
+import { downloadAndUploadVideo, R2_PUBLIC_PREFIXES } from "@/lib/r2";
+import type * as Prisma from "@/lib/generated/prisma/internal/prismaNamespace";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map(e => e.trim().toLowerCase());
 const CRON_SECRET = process.env.CRON_SECRET ?? "";
 const BATCH_SIZE = 10; // Process 10 ads per request to stay within timeout
+
+/**
+ * Pending = videoUrl is NULL or not matching ANY accepted R2 prefix. Excludes
+ * `""` sentinel used to mark no-video / permanently failed ads.
+ *
+ * Historical bug: the filter used to be `NOT startsWith "https://pub-"` which
+ * re-matched every ad on the custom domain `videos.adspoonx.com` — causing an
+ * infinite re-upload loop. This helper uses the canonical prefix list.
+ */
+function pendingWhere(): Prisma.AdWhereInput {
+  return {
+    AND: [
+      { NOT: { videoUrl: "" } },
+      {
+        OR: [
+          { videoUrl: null },
+          {
+            AND: R2_PUBLIC_PREFIXES.map(prefix => ({
+              NOT: { videoUrl: { startsWith: prefix } },
+            })),
+          },
+        ],
+      },
+    ],
+  };
+}
 
 export async function POST(req: NextRequest) {
   // Allow auth via session OR cron secret header
@@ -24,14 +51,9 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Find ads that have video in rawData but no R2 URL in videoUrl column
+  // Find ads that still need R2 upload
   const ads = await prisma.ad.findMany({
-    where: {
-      OR: [
-        { videoUrl: null },
-        { videoUrl: { not: { startsWith: "https://pub-" } } },
-      ],
-    },
+    where: pendingWhere(),
     select: { adArchiveId: true, rawData: true },
     take: BATCH_SIZE,
     orderBy: { scrapedAt: "desc" }, // Newest first
@@ -77,15 +99,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Count remaining
-  const remaining = await prisma.ad.count({
-    where: {
-      OR: [
-        { videoUrl: null },
-        { videoUrl: { not: { startsWith: "https://pub-" } } },
-      ],
-      NOT: { videoUrl: "" },
-    },
-  });
+  const remaining = await prisma.ad.count({ where: pendingWhere() });
 
   return NextResponse.json({
     ok: true,
@@ -106,9 +120,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // withR2: ads whose videoUrl starts with ANY accepted R2 prefix
+  const r2OrClause: Prisma.AdWhereInput = {
+    OR: R2_PUBLIC_PREFIXES.map(prefix => ({ videoUrl: { startsWith: prefix } })),
+  };
+
   const [total, withR2, withEmpty, withNull] = await Promise.all([
     prisma.ad.count(),
-    prisma.ad.count({ where: { videoUrl: { startsWith: "https://pub-" } } }),
+    prisma.ad.count({ where: r2OrClause }),
     prisma.ad.count({ where: { videoUrl: "" } }),
     prisma.ad.count({ where: { videoUrl: null } }),
   ]);

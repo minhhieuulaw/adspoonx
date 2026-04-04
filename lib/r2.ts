@@ -14,6 +14,23 @@ const SECRET_KEY = process.env.R2_SECRET_ACCESS_KEY ?? "";
 const BUCKET     = process.env.R2_BUCKET_NAME ?? "adspoonx-videos";
 const R2_PUBLIC_BASE = process.env.R2_PUBLIC_URL ?? "https://videos.adspoonx.com";
 
+/**
+ * All accepted R2 public URL prefixes (current custom domain + legacy pub-*.r2.dev).
+ * Used by backfill WHERE + stats count — single source of truth, must stay in
+ * sync with `fixR2Url` in app/api/ads/route.ts.
+ */
+export const R2_PUBLIC_PREFIXES = [
+  "https://videos.adspoonx.com/",
+  "https://pub-eec897ae726d8bdc6f84ab1e9bc74401.r2.dev/",
+  "https://pub-8ce6fe263fcc4e2293dedad7c89467ce.r2.dev/",
+] as const;
+
+/** Returns true if `url` is already a permanent R2 URL (any accepted prefix). */
+export function isR2Url(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return R2_PUBLIC_PREFIXES.some(p => url.startsWith(p));
+}
+
 const s3 = new S3Client({
   region: "auto",
   endpoint: `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`,

@@ -358,6 +358,7 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
   const [claudeLoading, setClaudeLoading] = useState(false);
   const [claudeError,   setClaudeError]   = useState("");
   const [claudeOpen,    setClaudeOpen]    = useState(true);
+  const [avatarError,   setAvatarError]   = useState(false);
 
   async function runClaudeAnalysis() {
     setClaudeLoading(true); setClaudeError(""); setClaudeOpen(true);
@@ -412,11 +413,12 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
 
           {/* Brand info */}
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
-            {ad.page_profile_picture_url ? (
+            {ad.page_profile_picture_url && !avatarError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={ad.page_profile_picture_url} alt={storeName}
                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                style={{ border: `1.5px solid ${color}50` }} />
+                style={{ border: `1.5px solid ${color}50` }}
+                onError={() => setAvatarError(true)} />
             ) : (
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                 style={{ background: `${color}20`, color, border: `1.5px solid ${color}35` }}>
@@ -646,10 +648,11 @@ function ModalInner({ ad, onClose, allAds }: { ad: FbAd; onClose: () => void; al
 
                 {/* Store header row */}
                 <div className="flex items-center gap-2.5 mb-3 pb-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  {ad.page_profile_picture_url ? (
+                  {ad.page_profile_picture_url && !avatarError ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={ad.page_profile_picture_url} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
-                      style={{ border: `1.5px solid ${color}25` }} />
+                      style={{ border: `1.5px solid ${color}25` }}
+                      onError={() => setAvatarError(true)} />
                   ) : (
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                       style={{ background: `${color}15`, color, border: `1.5px solid ${color}25` }}>
