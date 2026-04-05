@@ -150,6 +150,13 @@ export async function GET(req: NextRequest) {
     niche: string | null; rawData: Record<string, unknown>; scrapedAt: Date;
     reach: number | null; spend: string | null; impressions: string | null;
     website: string | null; totalActiveTime: number | null; dropshippingScore: number | null;
+    // Phase 2 cached media fields populated by scraper pipeline
+    pageProfilePictureUrl: string | null;
+    videoUrlWeb: string | null;
+    thumbnailR2Url: string | null;
+    videoBytes: number | null;
+    videoDurationSec: number | null;
+    ctaType: string | null;
   };
 
   // Build parameterized seed + LIMIT
@@ -332,6 +339,13 @@ type PrismaAd = {
   niche: string | null; rawData: unknown;
   reach: number | null; spend: string | null; impressions: string | null;
   website: string | null; totalActiveTime: number | null; dropshippingScore: number | null;
+  // Phase 2 cached media (populated by scraper pipeline)
+  pageProfilePictureUrl: string | null;
+  videoUrlWeb: string | null;
+  thumbnailR2Url: string | null;
+  videoBytes: number | null;
+  videoDurationSec: number | null;
+  ctaType: string | null;
 };
 
 const DS_PATTERNS = [
@@ -354,6 +368,16 @@ function computeDsTag(ad: PrismaAd): "dropshipping" | "brand" | undefined {
 }
 
 function mapAdToFbAd(ad: PrismaAd): FbAd {
+  // Video URL: prefer cached R2 (videoUrlWeb) → legacy videoUrl R2 → rawData
+  // (rawData URLs may be expired FB CDN, UI detects and shows placeholder).
+  const videoUrl = ad.videoUrlWeb ?? fixR2Url(ad.videoUrl) ?? extractVideoUrl(ad.rawData);
+
+  // Thumbnail: prefer cached R2 thumbnail (never expires) → image → rawData
+  const thumbnail = ad.thumbnailR2Url ?? ad.imageUrl ?? extractThumbnailUrl(ad.rawData);
+
+  // Avatar: prefer cached field → rawData fallback
+  const avatar = ad.pageProfilePictureUrl ?? extractPageProfilePicture(ad.rawData);
+
   return {
     id:                            ad.adArchiveId,
     page_id:                       ad.pageId ?? undefined,
@@ -363,15 +387,15 @@ function mapAdToFbAd(ad: PrismaAd): FbAd {
     ad_creative_link_descriptions: ad.description ? [ad.description] : undefined,
     ad_snapshot_url:               ad.adLibraryUrl ?? undefined,
     image_url:                     ad.imageUrl ?? extractThumbnailUrl(ad.rawData) ?? undefined,
-    video_url:                     fixR2Url(ad.videoUrl) ?? extractVideoUrl(ad.rawData),
-    thumbnail_url:                 extractThumbnailUrl(ad.rawData) ?? ad.imageUrl ?? undefined,
+    video_url:                     videoUrl,
+    thumbnail_url:                 thumbnail,
     publisher_platforms:           ad.platforms.length ? ad.platforms : undefined,
     ad_delivery_start_time:        ad.startDate?.toISOString(),
     ad_delivery_stop_time:         ad.endDate?.toISOString(),
     is_active:                     ad.isActive,
     country:                       ad.country,
     countries:                     [ad.country],
-    page_profile_picture_url:      extractPageProfilePicture(ad.rawData),
+    page_profile_picture_url:      avatar,
     cta_text:                      extractCtaText(ad.rawData),
     link_url:                      extractLinkUrl(ad.rawData),
     niche:                         ad.niche ?? undefined,
